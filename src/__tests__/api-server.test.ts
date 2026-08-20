@@ -23,6 +23,7 @@ const { cookies, headers } = await import('next/headers')
 const { logger } = await import('@/lib/logger')
 
 const API_URL = 'http://localhost:3001'
+const WEB_ORIGIN = 'http://localhost:3000'
 
 /** Espía del `set()` del cookie store, para verificar qué se le manda al browser. */
 let cookieSet: ReturnType<typeof vi.fn>
@@ -66,6 +67,7 @@ function lastHeaders(): Headers {
 
 beforeEach(() => {
   vi.stubEnv('API_INTERNAL_URL', API_URL)
+  vi.stubEnv('WEB_PUBLIC_URL', WEB_ORIGIN)
   vi.stubGlobal('fetch', vi.fn())
   stubCookies('aquazaku_session=abc123')
   stubHeaders()
@@ -75,6 +77,65 @@ afterEach(() => {
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
   vi.clearAllMocks()
+})
+
+/**
+ * Better-Auth rechaza con 403 `MISSING_OR_NULL_ORIGIN` toda petición que cambie
+ * estado y llegue sin `Origin`. `fetch` del lado del servidor no lo manda solo,
+ * así que el helper tiene que declararlo.
+ *
+ * Este caso **rompía todo el login** y no lo veía ningún test: los de `api/`
+ * usan `app.inject()`, que no dispara el chequeo, y los de `web/` mockean
+ * `fetch`. Vivía justo en la costura entre los dos repos.
+ */
+describe('header Origin', () => {
+  it('lo manda en cada petición', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+    await apiServerFetch('/ventas')
+
+    expect(lastHeaders().get('Origin')).toBe(WEB_ORIGIN)
+  })
+
+  it('también en las mutaciones, que es donde Better-Auth lo exige', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+    await apiServerFetchRaw('/api/auth/sign-in/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    })
+
+    expect(lastHeaders().get('Origin')).toBe(WEB_ORIGIN)
+    expect(lastHeaders().get('Content-Type')).toBe('application/json')
+  })
+
+  it('manda solo el origen, sin path ni query', async () => {
+    vi.stubEnv('WEB_PUBLIC_URL', 'https://app.aquazaku.com/algo?x=1')
+    vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+    await apiServerFetch('/ventas')
+
+    // Un Origin con path no matchea contra `trustedOrigins` y vuelve el 403.
+    expect(lastHeaders().get('Origin')).toBe('https://app.aquazaku.com')
+  })
+
+  it('el caller NO puede pisarlo: sería hacerse pasar por otro origen', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+    await apiServerFetch('/ventas', { headers: { Origin: 'http://evil.com' } })
+
+    expect(lastHeaders().get('Origin')).toBe(WEB_ORIGIN)
+  })
+
+  it('sin WEB_PUBLIC_URL falla con un mensaje que dice qué hacer', async () => {
+    vi.stubEnv('WEB_PUBLIC_URL', '')
+    vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+    // Mejor un error accionable en el arranque que un 403 inexplicable al
+    // primer login.
+    await expect(apiServerFetch('/ventas')).rejects.toThrow(/WEB_PUBLIC_URL/)
+  })
 })
 
 describe('apiServerFetch()', () => {

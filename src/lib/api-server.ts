@@ -83,6 +83,39 @@ function resolveApiUrl(): string {
 }
 
 /**
+ * Origen que `web/` declara al hablarle a `api/`.
+ *
+ * ── Por qué hace falta ──────────────────────────────────────────────────────
+ *
+ * Better-Auth rechaza con **403 `MISSING_OR_NULL_ORIGIN`** cualquier petición
+ * que cambie estado y llegue sin header `Origin`. Es una defensa contra CSRF y
+ * está bien que exista. El problema es que `fetch` del lado del servidor no
+ * manda `Origin` —no hay documento que lo origine—, así que **todo el login
+ * quedaba roto**: la Server Action pedía el sign-in y recibía 403.
+ *
+ * No se vio antes porque el bug vive justo en la costura entre los dos repos:
+ * los tests de `api/` usan `app.inject()`, que no dispara el chequeo, y los de
+ * `web/` mockean `fetch`. Solo aparece corriendo los dos servidores juntos.
+ *
+ * La solución correcta es declarar el origen real, no desactivar el chequeo en
+ * `api/`: `web/` **es** el origen de estas peticiones, y `api/` ya lo tiene en
+ * su `trustedOrigins`. Apagar la validación resolvería el síntoma tirando abajo
+ * una protección legítima.
+ */
+function resolveWebOrigin(): string {
+  const url = process.env.WEB_PUBLIC_URL
+
+  if (!url) {
+    throw new Error(
+      'WEB_PUBLIC_URL no está definida: api/ rechaza con 403 las peticiones sin Origin. ' +
+        'Copiá .env.example a .env.local y completala.',
+    )
+  }
+
+  return new URL(url).origin
+}
+
+/**
  * Núcleo compartido: arma el request contra api/ y lo ejecuta.
  *
  * Devuelve también el `requestId` porque quien maneje la respuesta lo necesita
@@ -103,10 +136,13 @@ async function requestApi(
   // tuplas, y sus headers se perderían en silencio.
   const outgoingHeaders = new Headers(init.headers)
 
-  // Se setean DESPUÉS de los del caller, a propósito: la sesión y la traza no
-  // son negociables. Nadie puede pisarlas pasando su propio Cookie.
+  // Se setean DESPUÉS de los del caller, a propósito: la sesión, la traza y el
+  // origen no son negociables. Nadie puede pisarlas pasando sus propios headers.
   outgoingHeaders.set('Cookie', cookieStore.toString())
   outgoingHeaders.set('x-request-id', requestId)
+  // Sin esto, Better-Auth responde 403 a todo lo que cambie estado. Ver
+  // `resolveWebOrigin()`.
+  outgoingHeaders.set('Origin', resolveWebOrigin())
 
   const res = await fetch(`${apiUrl}${path}`, {
     ...init,

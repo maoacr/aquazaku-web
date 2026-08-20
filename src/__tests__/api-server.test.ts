@@ -1,0 +1,312 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AUTH_ME_PATH, apiServerFetch, getServerUser } from '@/lib/api-server'
+import { ApiError } from '@/lib/errors'
+
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(),
+  headers: vi.fn(),
+}))
+
+vi.mock('@/lib/logger', () => ({
+  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}))
+
+const { cookies, headers } = await import('next/headers')
+const { logger } = await import('@/lib/logger')
+
+const API_URL = 'http://localhost:3001'
+
+/** Stub de `cookies()`: solo nos importa `toString()`, que es lo que reenvía el helper. */
+function stubCookies(serialized: string): void {
+  vi.mocked(cookies).mockResolvedValue({
+    toString: () => serialized,
+  } as unknown as Awaited<ReturnType<typeof cookies>>)
+}
+
+/** Stub de `headers()` del request entrante. */
+function stubHeaders(init: Record<string, string> = {}): void {
+  const store = new Headers(init)
+  vi.mocked(headers).mockResolvedValue(store as unknown as Awaited<ReturnType<typeof headers>>)
+}
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  })
+}
+
+/** Devuelve el `RequestInit` con el que se llamó a `fetch`. */
+function lastInit(): RequestInit {
+  const mock = vi.mocked(globalThis.fetch)
+  return mock.mock.calls.at(-1)![1] as RequestInit
+}
+
+function lastUrl(): string {
+  const mock = vi.mocked(globalThis.fetch)
+  return mock.mock.calls.at(-1)![0] as string
+}
+
+function lastHeaders(): Headers {
+  return new Headers(lastInit().headers)
+}
+
+beforeEach(() => {
+  vi.stubEnv('API_INTERNAL_URL', API_URL)
+  vi.stubGlobal('fetch', vi.fn())
+  stubCookies('aquazaku_session=abc123')
+  stubHeaders()
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
+  vi.clearAllMocks()
+})
+
+describe('apiServerFetch()', () => {
+  describe('construcción del request', () => {
+    it('arma la URL a partir de API_INTERNAL_URL', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+      await apiServerFetch('/ventas')
+
+      expect(lastUrl()).toBe('http://localhost:3001/ventas')
+    })
+
+    it('no duplica la barra si API_INTERNAL_URL termina en /', async () => {
+      vi.stubEnv('API_INTERNAL_URL', 'http://localhost:3001/')
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+      await apiServerFetch('/ventas')
+
+      expect(lastUrl()).toBe('http://localhost:3001/ventas')
+    })
+
+    // Sin esto el Server Component pide datos como anónimo y api/ responde 401.
+    it('reenvía SIEMPRE las cookies del browser', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+      await apiServerFetch('/ventas')
+
+      expect(lastHeaders().get('cookie')).toBe('aquazaku_session=abc123')
+    })
+
+    it('propaga el x-request-id entrante para poder correlacionar logs', async () => {
+      stubHeaders({ 'x-request-id': '550e8400-e29b-41d4-a716-446655440000' })
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+      await apiServerFetch('/ventas')
+
+      expect(lastHeaders().get('x-request-id')).toBe('550e8400-e29b-41d4-a716-446655440000')
+    })
+
+    it('genera un x-request-id cuando el request entrante no trae uno', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+      await apiServerFetch('/ventas')
+
+      expect(lastHeaders().get('x-request-id')).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      )
+    })
+
+    it('nunca cachea por defecto: los datos de api/ dependen de la sesión', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+      await apiServerFetch('/ventas')
+
+      expect(lastInit().cache).toBe('no-store')
+    })
+
+    it('respeta un cache explícito del caller', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+      await apiServerFetch('/config', { cache: 'force-cache' })
+
+      expect(lastInit().cache).toBe('force-cache')
+    })
+
+    it('conserva method y body del caller', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+      await apiServerFetch('/ventas/1/anular', {
+        method: 'POST',
+        body: JSON.stringify({ motivo: 'error de carga' }),
+      })
+
+      expect(lastInit().method).toBe('POST')
+      expect(lastInit().body).toBe('{"motivo":"error de carga"}')
+    })
+
+    it('conserva headers del caller pasados como objeto plano', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+      await apiServerFetch('/ventas', { headers: { 'Content-Type': 'application/json' } })
+
+      expect(lastHeaders().get('content-type')).toBe('application/json')
+    })
+
+    // El spread `{ ...init.headers }` del snippet original descarta en silencio
+    // los headers cuando vienen como instancia de Headers. Acá se blinda.
+    it('conserva headers del caller pasados como instancia de Headers', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+      await apiServerFetch('/ventas', {
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+      })
+
+      expect(lastHeaders().get('content-type')).toBe('application/json')
+    })
+
+    it('conserva headers del caller pasados como array de tuplas', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+      await apiServerFetch('/ventas', { headers: [['Content-Type', 'application/json']] })
+
+      expect(lastHeaders().get('content-type')).toBe('application/json')
+    })
+
+    // Un caller no puede hacerse pasar por otra sesión pisando el header.
+    it('la cookie de sesión gana sobre un Cookie puesto por el caller', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+      await apiServerFetch('/ventas', { headers: { Cookie: 'aquazaku_session=robada' } })
+
+      expect(lastHeaders().get('cookie')).toBe('aquazaku_session=abc123')
+    })
+  })
+
+  describe('configuración faltante', () => {
+    it('falla con un mensaje accionable si API_INTERNAL_URL no está definida', async () => {
+      vi.stubEnv('API_INTERNAL_URL', '')
+
+      await expect(apiServerFetch('/ventas')).rejects.toThrow(/API_INTERNAL_URL/)
+    })
+
+    it('no llega a llamar a fetch si falta la configuración', async () => {
+      vi.stubEnv('API_INTERNAL_URL', '')
+
+      await expect(apiServerFetch('/ventas')).rejects.toThrow()
+      expect(globalThis.fetch).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('respuestas exitosas', () => {
+    it('devuelve el JSON parseado', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ id: '1', total: 4500 }))
+
+      await expect(apiServerFetch('/ventas/1')).resolves.toEqual({ id: '1', total: 4500 })
+    })
+
+    it('devuelve undefined en un 204 sin cuerpo', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(new Response(null, { status: 204 }))
+
+      await expect(apiServerFetch('/ventas/1')).resolves.toBeUndefined()
+    })
+
+    it('devuelve undefined en un 200 con cuerpo vacío', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(new Response('', { status: 200 }))
+
+      await expect(apiServerFetch('/ventas/1')).resolves.toBeUndefined()
+    })
+
+    // Si api/ devuelve HTML (proxy caído, error de infra), `res.json()` pelado
+    // tira un SyntaxError sin contexto. Queremos el cuerpo real en el error.
+    it('tira ApiError si un 200 trae un cuerpo que no es JSON', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        new Response('<html>gateway</html>', { status: 200 }),
+      )
+
+      await expect(apiServerFetch('/ventas')).rejects.toBeInstanceOf(ApiError)
+    })
+  })
+
+  describe('respuestas de error', () => {
+    it('tira ApiError con el status de api/', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue(new Response('sin permiso', { status: 403 }))
+
+      await expect(apiServerFetch('/usuarios')).rejects.toMatchObject({
+        status: 403,
+        body: 'sin permiso',
+      })
+    })
+
+    it('el ApiError incluye path y requestId para poder rastrear el log', async () => {
+      stubHeaders({ 'x-request-id': 'req-42' })
+      vi.mocked(globalThis.fetch).mockResolvedValue(new Response('boom', { status: 500 }))
+
+      await expect(apiServerFetch('/usuarios')).rejects.toMatchObject({
+        status: 500,
+        path: '/usuarios',
+        requestId: 'req-42',
+      })
+    })
+
+    it('loguea el fallo en vez de tragárselo', async () => {
+      stubHeaders({ 'x-request-id': 'req-42' })
+      vi.mocked(globalThis.fetch).mockResolvedValue(new Response('boom', { status: 500 }))
+
+      await expect(apiServerFetch('/usuarios')).rejects.toThrow()
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 500, path: '/usuarios', requestId: 'req-42' }),
+        expect.any(String),
+      )
+    })
+
+    it('deja pasar el error de red sin envolverlo en ApiError', async () => {
+      vi.mocked(globalThis.fetch).mockRejectedValue(new TypeError('fetch failed'))
+
+      await expect(apiServerFetch('/ventas')).rejects.toBeInstanceOf(TypeError)
+    })
+  })
+})
+
+describe('getServerUser()', () => {
+  beforeEach(() => {
+    vi.stubEnv('API_INTERNAL_URL', API_URL)
+  })
+
+  it('pega contra el endpoint de sesión declarado por api/', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ id: 'u1', roles: ['admin'] }))
+
+    await getServerUser()
+
+    expect(lastUrl()).toBe(`${API_URL}${AUTH_ME_PATH}`)
+  })
+
+  it('devuelve el usuario con sus roles', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      jsonResponse({ id: 'u1', roles: ['admin', 'contador'] }),
+    )
+
+    await expect(getServerUser()).resolves.toEqual({ id: 'u1', roles: ['admin', 'contador'] })
+  })
+
+  // 401 es "no hay sesión", un estado normal: la página redirige a /login.
+  it('devuelve null cuando api/ responde 401', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(new Response('no session', { status: 401 }))
+
+    await expect(getServerUser()).resolves.toBeNull()
+  })
+
+  // 403 es "hay sesión pero sin permiso": NO es null, es una pantalla de sin
+  // acceso. Tragárselo como null mandaría al usuario a /login en loop.
+  it('propaga un 403 en vez de convertirlo en null', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(new Response('forbidden', { status: 403 }))
+
+    await expect(getServerUser()).rejects.toMatchObject({ status: 403 })
+  })
+
+  it('propaga un 500 en vez de convertirlo en null', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(new Response('boom', { status: 500 }))
+
+    await expect(getServerUser()).rejects.toMatchObject({ status: 500 })
+  })
+
+  it('propaga un error de red', async () => {
+    vi.mocked(globalThis.fetch).mockRejectedValue(new TypeError('fetch failed'))
+
+    await expect(getServerUser()).rejects.toBeInstanceOf(TypeError)
+  })
+})

@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AppLayout from '@/app/(app)/layout'
 import DashboardPage from '@/app/(app)/page'
 import ModulosPage from '@/app/(app)/modulos/page'
+import type { ServerUser } from '@/lib/api-server'
+import type { Role } from '@/lib/roles'
 
 vi.mock('@/lib/api-server', () => ({ getServerUser: vi.fn() }))
 vi.mock('next/navigation', () => ({ redirect: vi.fn() }))
@@ -13,6 +15,18 @@ const { redirect } = await import('next/navigation')
 /** Props que Next le pasa a un layout de la ruta `/`. */
 function layoutProps(children: React.ReactNode) {
   return { children, params: Promise.resolve({}) }
+}
+
+/** Perfil de `/auth/me`. Solo los roles cambian entre casos de este archivo. */
+function usuario(roles: Role[]): ServerUser {
+  return {
+    id: 'u1',
+    name: 'Ana',
+    email: 'ana@aquazaku.com',
+    roles,
+    permisos: [],
+    mustChangePassword: false,
+  }
 }
 
 beforeEach(() => {
@@ -43,7 +57,7 @@ describe('<AppLayout />', () => {
   })
 
   it('renderiza el contenido cuando hay sesión', async () => {
-    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', roles: ['admin'] })
+    vi.mocked(getServerUser).mockResolvedValue(usuario(['admin']))
 
     render(await AppLayout(layoutProps(<p>contenido</p>)))
 
@@ -52,7 +66,7 @@ describe('<AppLayout />', () => {
   })
 
   it('le pasa al sidebar los roles reales del usuario', async () => {
-    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', roles: ['contador'] })
+    vi.mocked(getServerUser).mockResolvedValue(usuario(['contador']))
 
     render(await AppLayout(layoutProps(<p>contenido</p>)))
 
@@ -66,7 +80,7 @@ describe('<AppLayout />', () => {
   // El guard es del layout, no de cada página: si esto se rompe, cada página
   // nueva bajo (app) nace desprotegida sin que nadie lo note.
   it('consulta la sesión exactamente una vez por render', async () => {
-    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', roles: ['admin'] })
+    vi.mocked(getServerUser).mockResolvedValue(usuario(['admin']))
 
     render(await AppLayout(layoutProps(<p>contenido</p>)))
 

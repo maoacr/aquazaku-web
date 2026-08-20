@@ -26,9 +26,36 @@ import type { Role } from './roles'
  */
 export const AUTH_ME_PATH = '/auth/me'
 
+/**
+ * Lo que devuelve `GET /auth/me`.
+ *
+ * Verificado contra `api/src/modules/auth/routes.ts` al cerrarse Task 6: api/
+ * manda todo lo necesario para armar la pantalla en un solo viaje, no solo la
+ * identidad.
+ */
 export interface ServerUser {
   id: string
+  name: string
+  email: string
+  /** Todos activos a la vez: no hay switch-role (RN-ACC-01). */
   roles: Role[]
+  /**
+   * Permisos ya resueltos por api/, con formato `recurso:accion`, ordenados y
+   * sin duplicados. Vienen listos para que `web/` NO replique la matriz.
+   *
+   * Sirven para **ocultar** opciones, nunca para autorizar (RN-ACC-02): la
+   * barrera real es `requirePermission()` en cada endpoint de api/.
+   */
+  permisos: string[]
+  /**
+   * Primer login: hay que mandar al usuario a cambiar la contraseña antes de
+   * dejarlo entrar (spec §7.2).
+   *
+   * TODO(Task 11): el guard de `(app)/layout.tsx` todavía no lo mira, así que
+   * hoy un usuario de primer login entra derecho al dashboard. El redirect
+   * necesita que exista `/change-password`, que la crea Task 11.
+   */
+  mustChangePassword: boolean
 }
 
 /**

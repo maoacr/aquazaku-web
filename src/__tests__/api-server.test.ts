@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AUTH_ME_PATH, apiServerFetch, getServerUser } from '@/lib/api-server'
+import type { ServerUser } from '@/lib/api-server'
 import { ApiError } from '@/lib/errors'
 
 vi.mock('next/headers', () => ({
@@ -275,12 +276,58 @@ describe('getServerUser()', () => {
     expect(lastUrl()).toBe(`${API_URL}${AUTH_ME_PATH}`)
   })
 
-  it('devuelve el usuario con sus roles', async () => {
+  // Contrato real de api/, verificado contra `api/src/modules/auth/routes.ts`
+  // al cerrarse Task 6. Devuelve todo lo necesario para armar la pantalla en un
+  // solo viaje, no solo id y roles.
+  it('devuelve el perfil completo que manda api/', async () => {
+    const perfil: ServerUser = {
+      id: 'u1',
+      name: 'Ana',
+      email: 'ana@aquazaku.com',
+      roles: ['admin', 'contador'],
+      permisos: ['auditoria:leer', 'usuarios:crear'],
+      mustChangePassword: false,
+    }
+    vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse(perfil))
+
+    await expect(getServerUser()).resolves.toEqual(perfil)
+  })
+
+  it('conserva los permisos ya resueltos por api/', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValue(
-      jsonResponse({ id: 'u1', roles: ['admin', 'contador'] }),
+      jsonResponse({
+        id: 'u1',
+        name: 'Ana',
+        email: 'ana@aquazaku.com',
+        roles: ['contador'],
+        permisos: ['auditoria:leer'],
+        mustChangePassword: false,
+      }),
     )
 
-    await expect(getServerUser()).resolves.toEqual({ id: 'u1', roles: ['admin', 'contador'] })
+    const user = await getServerUser()
+
+    // api/ resuelve la matriz y la manda lista: web/ no la replica (RN-ACC-02).
+    expect(user?.permisos).toEqual(['auditoria:leer'])
+  })
+
+  // spec §7.2: en el primer login hay que forzar el cambio de contraseña. Si
+  // este campo no llegara tipado a web/, la regla no se puede aplicar.
+  it('trae mustChangePassword para poder forzar el primer cambio', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      jsonResponse({
+        id: 'u1',
+        name: 'Ana',
+        email: 'ana@aquazaku.com',
+        roles: ['pos'],
+        permisos: [],
+        mustChangePassword: true,
+      }),
+    )
+
+    const user = await getServerUser()
+
+    expect(user?.mustChangePassword).toBe(true)
   })
 
   // 401 es "no hay sesión", un estado normal: la página redirige a /login.

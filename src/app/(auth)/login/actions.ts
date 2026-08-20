@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { apiServerFetchRaw, forwardSetCookies } from '@/lib/api-server'
+import { cuerpoDeError, mensajeRateLimit } from '@/lib/form-errors'
 
 /** Endpoint de Better-Auth. Vive bajo `/api/auth/*`, que es su namespace. */
 const SIGN_IN_PATH = '/api/auth/sign-in/email'
@@ -16,22 +17,6 @@ const SIGN_IN_PATH = '/api/auth/sign-in/email'
  */
 export interface LoginState {
   error?: string
-}
-
-interface CuerpoDeError {
-  code?: string
-  reintentarEn?: number
-}
-
-/** Lee el cuerpo de error sin romperse si viene vacío o no es JSON. */
-async function cuerpoDeError(res: Response): Promise<CuerpoDeError> {
-  try {
-    const cuerpo: unknown = await res.json()
-    if (typeof cuerpo === 'object' && cuerpo !== null) return cuerpo as CuerpoDeError
-  } catch {
-    // 429 sin cuerpo, o un proxy devolviendo HTML. No es motivo para explotar.
-  }
-  return {}
 }
 
 export async function loginAction(_previo: LoginState, formData: FormData): Promise<LoginState> {
@@ -54,11 +39,7 @@ export async function loginAction(_previo: LoginState, formData: FormData): Prom
     const { code, reintentarEn } = await cuerpoDeError(res)
 
     if (res.status === 429) {
-      return {
-        error: reintentarEn
-          ? `Demasiados intentos. Probá de nuevo en ${reintentarEn} segundos.`
-          : 'Demasiados intentos. Esperá un momento antes de volver a probar.',
-      }
+      return { error: mensajeRateLimit(reintentarEn) }
     }
 
     // RN-ACC-05: la contraseña puede estar bien y el usuario seguir sin poder

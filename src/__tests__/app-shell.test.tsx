@@ -77,6 +77,36 @@ describe('<AppLayout />', () => {
     expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument()
   })
 
+  // spec §7.2. El guard vive en el layout, así que una página nueva bajo (app)
+  // no puede nacer salteándoselo.
+  it('manda a cambiar la contraseña en el primer ingreso', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({
+      ...usuario(['admin']),
+      mustChangePassword: true,
+    })
+
+    await expect(AppLayout(layoutProps(<p>privado</p>))).rejects.toThrow('NEXT_REDIRECT')
+    expect(redirect).toHaveBeenCalledWith('/change-password')
+  })
+
+  it('no muestra el dashboard mientras deba cambiar la contraseña', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({
+      ...usuario(['admin']),
+      mustChangePassword: true,
+    })
+
+    await expect(AppLayout(layoutProps(<p>privado</p>))).rejects.toThrow()
+    expect(screen.queryByText('privado')).not.toBeInTheDocument()
+  })
+
+  it('deja pasar a quien ya cambió la contraseña', async () => {
+    vi.mocked(getServerUser).mockResolvedValue(usuario(['admin']))
+
+    render(await AppLayout(layoutProps(<p>contenido</p>)))
+
+    expect(redirect).not.toHaveBeenCalled()
+  })
+
   // El guard es del layout, no de cada página: si esto se rompe, cada página
   // nueva bajo (app) nace desprotegida sin que nadie lo note.
   it('consulta la sesión exactamente una vez por render', async () => {

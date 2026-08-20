@@ -20,6 +20,16 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
     redirect('/login')
   }
 
+  // spec §7.2: en el primer ingreso hay que elegir una contraseña propia antes
+  // de entrar a ningún lado. El chequeo va acá y no en cada página por el mismo
+  // motivo que el de sesión: una página nueva no puede nacer sin él.
+  //
+  // `/change-password` vive en `(auth)`, fuera de este layout, así que mandarlo
+  // ahí no reentra por este guard y no hay loop.
+  if (user.mustChangePassword) {
+    redirect('/change-password')
+  }
+
   return (
     <div className="flex flex-1">
       <Sidebar userRoles={user.roles} />

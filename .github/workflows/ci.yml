@@ -1,0 +1,39 @@
+name: web-ci
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      # `web/` no habla con `api/` en sus tests —`fetch` está mockeado—, pero el
+      # helper valida estas dos al arrancar y falla con un mensaje claro si
+      # faltan. Los tests verifican justamente esa validación, así que tienen
+      # que existir.
+      API_INTERNAL_URL: http://localhost:3001
+      WEB_PUBLIC_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Lee la versión de `packageManager` en package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # `typecheck` corre `next typegen` primero: los tipos de rutas de Next 16
+      # se generan, y sin ese paso el chequeo falla en un clon limpio.
+      - run: pnpm typecheck
+
+      # Acá vive la regla que prohíbe `fetch()` directo y `localStorage`
+      # (ADR-0002). Es una de las tres capas de defensa del patrón BFF: si el
+      # lint no corre en CI, la capa no existe.
+      - run: pnpm lint
+
+      - run: pnpm test:coverage

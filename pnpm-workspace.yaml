@@ -1,0 +1,6 @@
+# pnpm 11 bloquea los postinstall por defecto y falla el install si hay alguno
+# sin declarar. Se aprueban de a uno, nunca en bloque.
+#
+# msw: su postinstall copia el service worker que usa el modo browser.
+allowBuilds:
+  msw: true

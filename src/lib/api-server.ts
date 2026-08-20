@@ -1,3 +1,4 @@
+import { parseSetCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 import { cookies, headers } from 'next/headers'
 import { ApiError } from './errors'
 import { logger } from './logger'
@@ -81,10 +82,16 @@ function resolveApiUrl(): string {
   return url.replace(/\/+$/, '')
 }
 
-export async function apiServerFetch<T = unknown>(
+/**
+ * Núcleo compartido: arma el request contra api/ y lo ejecuta.
+ *
+ * Devuelve también el `requestId` porque quien maneje la respuesta lo necesita
+ * para loguear, y volver a leerlo del header store daría uno distinto.
+ */
+async function requestApi(
   path: string,
-  init: RequestInit = {},
-): Promise<T> {
+  init: RequestInit,
+): Promise<{ res: Response; requestId: string }> {
   const apiUrl = resolveApiUrl()
   const cookieStore = await cookies()
   const headerStore = await headers()
@@ -108,6 +115,55 @@ export async function apiServerFetch<T = unknown>(
     // serviría la sesión de un usuario a otro.
     cache: init.cache ?? 'no-store',
   })
+
+  return { res, requestId }
+}
+
+/**
+ * Igual que `apiServerFetch`, pero devuelve el `Response` sin consumir y **sin
+ * tirar** ante un status de error.
+ *
+ * Existe por el sign-in, que necesita leer el `set-cookie` de la respuesta —
+ * algo imposible con `apiServerFetch`, que ya consumió el cuerpo y devuelve
+ * JSON. Y porque en auth los status "de error" son estados normales de la
+ * pantalla: un 401 es "credenciales inválidas" y un 429 es "esperá un rato",
+ * no excepciones.
+ *
+ * Para todo lo demás usá `apiServerFetch`: chequea el status por vos.
+ */
+export async function apiServerFetchRaw(path: string, init: RequestInit = {}): Promise<Response> {
+  const { res } = await requestApi(path, init)
+  return res
+}
+
+/**
+ * Copia al browser las cookies que emitió api/, tal como vinieron.
+ *
+ * Se parsea con el mismo parser que usa Next internamente en vez de extraer el
+ * valor con una regex: así se preservan `path`, `domain`, `secure`, `sameSite`
+ * y el vencimiento que api/ realmente puso. Reconstruirlos a mano significa que
+ * el día que api/ cambie uno, el logout deje de borrar la cookie y el usuario
+ * quede logueado creyendo que salió.
+ *
+ * Solo se puede llamar desde una Server Action o un Route Handler: son los
+ * únicos contextos donde Next deja escribir cookies.
+ */
+export async function forwardSetCookies(res: Response): Promise<void> {
+  const emitidas = res.headers.getSetCookie()
+  if (emitidas.length === 0) return
+
+  const cookieStore = await cookies()
+  for (const linea of emitidas) {
+    const cookie = parseSetCookie(linea)
+    if (cookie) cookieStore.set(cookie)
+  }
+}
+
+export async function apiServerFetch<T = unknown>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const { res, requestId } = await requestApi(path, init)
 
   if (!res.ok) {
     const body = await res.text()

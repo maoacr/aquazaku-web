@@ -1,5 +1,12 @@
+import { stringifyCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AUTH_ME_PATH, apiServerFetch, getServerUser } from '@/lib/api-server'
+import {
+  AUTH_ME_PATH,
+  apiServerFetch,
+  apiServerFetchRaw,
+  forwardSetCookies,
+  getServerUser,
+} from '@/lib/api-server'
 import type { ServerUser } from '@/lib/api-server'
 import { ApiError } from '@/lib/errors'
 
@@ -17,10 +24,15 @@ const { logger } = await import('@/lib/logger')
 
 const API_URL = 'http://localhost:3001'
 
-/** Stub de `cookies()`: solo nos importa `toString()`, que es lo que reenvía el helper. */
+/** Espía del `set()` del cookie store, para verificar qué se le manda al browser. */
+let cookieSet: ReturnType<typeof vi.fn>
+
+/** Stub de `cookies()`: `toString()` es lo que se reenvía, `set()` lo que se emite. */
 function stubCookies(serialized: string): void {
+  cookieSet = vi.fn()
   vi.mocked(cookies).mockResolvedValue({
     toString: () => serialized,
+    set: cookieSet,
   } as unknown as Awaited<ReturnType<typeof cookies>>)
 }
 
@@ -260,6 +272,129 @@ describe('apiServerFetch()', () => {
 
       await expect(apiServerFetch('/ventas')).rejects.toBeInstanceOf(TypeError)
     })
+  })
+})
+
+describe('apiServerFetchRaw()', () => {
+  // El sign-in necesita el `set-cookie` de la respuesta, y `apiServerFetch`
+  // devuelve JSON parseado: el Response ya se consumió. De ahí esta variante.
+  it('devuelve el Response sin tocar', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+    const res = await apiServerFetchRaw('/api/auth/sign-in/email', { method: 'POST' })
+
+    expect(res).toBeInstanceOf(Response)
+    await expect(res.json()).resolves.toEqual({ ok: true })
+  })
+
+  it('reenvía cookies y x-request-id igual que apiServerFetch', async () => {
+    stubHeaders({ 'x-request-id': 'req-7' })
+    vi.mocked(globalThis.fetch).mockResolvedValue(jsonResponse({ ok: true }))
+
+    await apiServerFetchRaw('/api/auth/sign-in/email', { method: 'POST' })
+
+    expect(lastHeaders().get('cookie')).toBe('aquazaku_session=abc123')
+    expect(lastHeaders().get('x-request-id')).toBe('req-7')
+  })
+
+  // Un 401 en el sign-in es "credenciales inválidas": lo maneja el formulario,
+  // no es una excepción. Un 429 es rate limit y hay que leerle el cuerpo.
+  it('NO tira ante un status de error: el caller decide', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(new Response('nope', { status: 401 }))
+
+    const res = await apiServerFetchRaw('/api/auth/sign-in/email', { method: 'POST' })
+
+    expect(res.status).toBe(401)
+  })
+
+  it('falla igual si falta API_INTERNAL_URL', async () => {
+    vi.stubEnv('API_INTERNAL_URL', '')
+
+    await expect(apiServerFetchRaw('/x')).rejects.toThrow(/API_INTERNAL_URL/)
+  })
+})
+
+describe('forwardSetCookies()', () => {
+  function conCookies(...cookies: string[]): Response {
+    const headers = new Headers()
+    for (const c of cookies) headers.append('set-cookie', c)
+    return new Response(null, { status: 200, headers })
+  }
+
+  // El snippet del plan extraía el valor con una regex y volvía a armar la
+  // cookie con atributos hardcodeados. Eso descarta lo que api/ realmente puso
+  // y, si algún día cambian `path` o `domain`, el logout deja de borrarla.
+  it('reenvía la cookie con los atributos que puso api/, no inventados', async () => {
+    await forwardSetCookies(
+      conCookies('aquazaku_session=tok.firma; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800'),
+    )
+
+    expect(cookieSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'aquazaku_session',
+        value: 'tok.firma',
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 604800,
+      }),
+    )
+  })
+
+  // Better-Auth firma sus cookies: el valor es `token.firma`. Si se partiera
+  // por el punto o se re-escapara distinto, la firma dejaría de validar.
+  //
+  // `parseSetCookie` DECODIFICA el valor (`%3D%3D` → `==`) y `stringifyCookie`
+  // lo vuelve a codificar igual. Lo que importa no es la representación
+  // intermedia sino que el round-trip sea simétrico: el browser tiene que
+  // recibir byte por byte lo que emitió api/. Eso es lo que se prueba acá.
+  it.each([
+    'aquazaku_session=tok.firma; Path=/',
+    'aquazaku_session=a.b.c%3D%3D; Path=/',
+    'aquazaku_session=abc%2Fdef%2B123%3D; Path=/; HttpOnly; Secure',
+  ])('reemite %s sin alterarlo', async (original) => {
+    await forwardSetCookies(conCookies(original))
+
+    const emitida = cookieSet.mock.calls.at(-1)![0] as Parameters<typeof stringifyCookie>[0]
+    const reemitida = stringifyCookie(emitida)
+
+    // El par `nombre=valor` es lo que lleva la firma: tiene que salir idéntico.
+    expect(reemitida.split('; ')[0]).toBe(original.split('; ')[0])
+
+    // Los atributos se comparan como conjunto: `stringifyCookie` los serializa
+    // en su propio orden, y ese orden no es parte del contrato.
+    expect(new Set(reemitida.split('; ').slice(1))).toEqual(
+      new Set(original.split('; ').slice(1)),
+    )
+  })
+
+  it('reenvía todas las cookies, no solo la primera', async () => {
+    await forwardSetCookies(
+      conCookies('aquazaku_session=tok; Path=/', 'otra=x; Path=/'),
+    )
+
+    expect(cookieSet).toHaveBeenCalledTimes(2)
+  })
+
+  it('no hace nada si la respuesta no trae set-cookie', async () => {
+    await forwardSetCookies(conCookies())
+
+    expect(cookieSet).not.toHaveBeenCalled()
+  })
+
+  // Una línea vacía es lo único que el parser rechaza. Descartarla en vez de
+  // emitir una cookie sin nombre evita ensuciar el response con basura.
+  it('descarta una linea de set-cookie que el parser no entiende', async () => {
+    await forwardSetCookies(conCookies('', 'aquazaku_session=tok; Path=/'))
+
+    expect(cookieSet).toHaveBeenCalledTimes(1)
+    expect(cookieSet).toHaveBeenCalledWith(expect.objectContaining({ name: 'aquazaku_session' }))
+  })
+
+  it('preserva secure cuando api/ lo manda', async () => {
+    await forwardSetCookies(conCookies('aquazaku_session=tok; Path=/; Secure; HttpOnly'))
+
+    expect(cookieSet).toHaveBeenCalledWith(expect.objectContaining({ secure: true }))
   })
 })
 

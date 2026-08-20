@@ -12,6 +12,14 @@ export const LARGO_MINIMO_PASSWORD = 8
 export interface CuerpoDeError {
   code?: string
   reintentarEn?: number
+  /**
+   * Mensaje listo para mostrarle a la persona.
+   *
+   * `api/` lo manda en los errores de negocio (ej: `ULTIMO_ADMIN`) ya explicando
+   * qué hacer. Reescribirlo del lado de `web/` crearía dos textos que se
+   * desincronizan el día que uno cambie.
+   */
+  mensaje?: string
 }
 
 /**

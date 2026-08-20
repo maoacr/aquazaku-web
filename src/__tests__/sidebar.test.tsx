@@ -14,14 +14,14 @@ describe('<Sidebar />', () => {
   }
 
   it('muestra los módulos de admin', () => {
-    render(<Sidebar userRoles={['admin']} />)
+    render(<Sidebar userRoles={['admin']} userName="Persona de prueba" />)
 
     expect(within(nav()).getByRole('link', { name: 'Usuarios' })).toBeInTheDocument()
     expect(within(nav()).getByRole('link', { name: 'Auditoría' })).toBeInTheDocument()
   })
 
   it('apunta cada link al href del módulo', () => {
-    render(<Sidebar userRoles={['admin']} />)
+    render(<Sidebar userRoles={['admin']} userName="Persona de prueba" />)
 
     expect(within(nav()).getByRole('link', { name: 'Usuarios' })).toHaveAttribute(
       'href',
@@ -30,7 +30,7 @@ describe('<Sidebar />', () => {
   })
 
   it('manda al contador a su propia ruta de auditoría', () => {
-    render(<Sidebar userRoles={['contador']} />)
+    render(<Sidebar userRoles={['contador']} userName="Persona de prueba" />)
 
     expect(within(nav()).getByRole('link', { name: 'Auditoría' })).toHaveAttribute(
       'href',
@@ -39,13 +39,13 @@ describe('<Sidebar />', () => {
   })
 
   it('deja el menú vacío para pos, sin romper el layout', () => {
-    render(<Sidebar userRoles={['pos']} />)
+    render(<Sidebar userRoles={['pos']} userName="Persona de prueba" />)
 
     expect(within(nav()).queryAllByRole('link')).toHaveLength(0)
   })
 
   it('deja el menú vacío para seller', () => {
-    render(<Sidebar userRoles={['seller']} />)
+    render(<Sidebar userRoles={['seller']} userName="Persona de prueba" />)
 
     expect(within(nav()).queryAllByRole('link')).toHaveLength(0)
   })
@@ -53,7 +53,7 @@ describe('<Sidebar />', () => {
   // RN-ACC-01: sin switch-role, un admin que además es contador ve las dos
   // puertas a la vez. Si acá apareciera una sola, el multi-rol estaría roto.
   it('muestra la unión de módulos para un usuario multi-rol', () => {
-    render(<Sidebar userRoles={['admin', 'contador']} />)
+    render(<Sidebar userRoles={['admin', 'contador']} userName="Persona de prueba" />)
 
     const hrefs = within(nav())
       .getAllByRole('link')
@@ -63,8 +63,24 @@ describe('<Sidebar />', () => {
   })
 
   it('siempre rotula la marca', () => {
-    render(<Sidebar userRoles={[]} />)
+    render(<Sidebar userRoles={[]} userName="Persona de prueba" />)
 
     expect(screen.getByText('Aquazaku')).toBeVisible()
+  })
+})
+
+describe('cierre de sesión', () => {
+  it('el shell ofrece salir: sin esto no habría forma de cerrar sesión', () => {
+    render(<Sidebar userRoles={['admin']} userName="Mao Jefe" />)
+
+    // `api/` expone el endpoint desde Task 6, pero el shell no lo usaba: el
+    // usuario quedaba adentro hasta que le venciera la cookie.
+    expect(screen.getByRole('button', { name: /cerrar sesión/i })).toBeInTheDocument()
+  })
+
+  it('muestra quién está usando el sistema', () => {
+    render(<Sidebar userRoles={['pos']} userName="Yeimy Rodríguez" />)
+
+    expect(screen.getByText('Yeimy Rodríguez')).toBeInTheDocument()
   })
 })

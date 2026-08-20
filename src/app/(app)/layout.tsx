@@ -32,7 +32,7 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
 
   return (
     <div className="flex flex-1">
-      <Sidebar userRoles={user.roles} />
+      <Sidebar userRoles={user.roles} userName={user.name} />
       <main className="flex-1 p-6">{children}</main>
     </div>
   )

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { CerrarSesion } from '@/components/ui/cerrar-sesion'
 import { computeVisibleModules } from '@/lib/modules'
 import type { Role } from '@/lib/roles'
 
@@ -12,11 +13,11 @@ import type { Role } from '@/lib/roles'
  * Recordá que esto es cosmética (RN-ACC-02): esconder un link no protege nada.
  * La barrera real la pone `requirePermission()` en cada endpoint de api/.
  */
-export function Sidebar({ userRoles }: { userRoles: Role[] }) {
+export function Sidebar({ userRoles, userName }: { userRoles: Role[]; userName: string }) {
   const modules = computeVisibleModules(userRoles)
 
   return (
-    <aside className="w-64 shrink-0 border-r border-neutral-200 p-4">
+    <aside className="flex w-64 shrink-0 flex-col border-r border-neutral-800 p-4">
       <h2 className="mb-4 text-lg font-semibold tracking-tight">Aquazaku</h2>
 
       {/* El aria-label distingue este nav de cualquier otro que aparezca
@@ -32,6 +33,8 @@ export function Sidebar({ userRoles }: { userRoles: Role[] }) {
           </Link>
         ))}
       </nav>
+
+      <CerrarSesion nombre={userName} />
     </aside>
   )
 }

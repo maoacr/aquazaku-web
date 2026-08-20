@@ -1,0 +1,29 @@
+import { redirect } from 'next/navigation'
+import { Sidebar } from '@/components/ui/sidebar'
+import { getServerUser } from '@/lib/api-server'
+
+/**
+ * Layout de todo lo que requiere sesión.
+ *
+ * El guard vive acá y no en cada página: una página nueva bajo `(app)/` nace
+ * protegida sin que su autor tenga que acordarse de nada. `(app)` es un route
+ * group, así que no agrega segmento a la URL — el dashboard queda en `/`.
+ *
+ * Un `getServerUser()` que devuelve `null` es "no hay sesión" y va a /login.
+ * Cualquier otro fallo (403, 5xx, api/ caída) se propaga a propósito: mandar a
+ * /login a alguien que SÍ tiene sesión lo dejaría en un loop de redirects.
+ */
+export default async function AppLayout({ children }: LayoutProps<'/'>) {
+  const user = await getServerUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  return (
+    <div className="flex flex-1">
+      <Sidebar userRoles={user.roles} />
+      <main className="flex-1 p-6">{children}</main>
+    </div>
+  )
+}

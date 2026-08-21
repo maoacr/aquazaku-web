@@ -17,7 +17,7 @@ export function Sidebar({ userRoles, userName }: { userRoles: Role[]; userName: 
   const modules = computeVisibleModules(userRoles)
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-neutral-800 p-4">
+    <aside className="flex w-64 shrink-0 flex-col border-r border-sutil p-4">
       <h2 className="mb-4 text-lg font-semibold tracking-tight">Aquazaku</h2>
 
       {/* El aria-label distingue este nav de cualquier otro que aparezca
@@ -27,7 +27,7 @@ export function Sidebar({ userRoles, userName }: { userRoles: Role[]; userName: 
           <Link
             key={modulo.id}
             href={modulo.href}
-            className="rounded p-2 text-sm hover:bg-neutral-100"
+            className="rounded p-2 text-sm hover:bg-accion"
           >
             {modulo.label}
           </Link>

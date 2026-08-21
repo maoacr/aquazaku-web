@@ -1,0 +1,229 @@
+/* Aquazaku — design tokens
+   Generado del sistema de diseño. Valores finales, no aproximados.
+   Los tokens semánticos cambian con [data-tema="oscuro"].
+
+   ── COPIA VERSIONADA, no editar a mano ──────────────────────────────────────
+
+   El original vive en `claude-design/tokens.css`, que NO es parte de este repo
+   —el workspace lo ignora— así que el build no puede leerlo desde ahí. Se copia.
+
+   Si el sistema de diseño cambia, se vuelve a copiar entero. Editar este
+   archivo crea una segunda verdad sobre los colores de la marca, y la que gana
+   pasa a ser la que alguien tocó último. */
+
+:root {
+  /* ---- Marca ---- */
+  --aq-marca-primaria: #1D78B3;
+  --aq-marca-acento:   #5CD9CC;
+  --aq-marca-exito:    #33BD73;
+
+  --aq-gradiente-marca: linear-gradient(135deg, #0E2A3C 0%, #12525C 60%, #14603F 100%);
+  --aq-gradiente-cinta: linear-gradient(90deg, #1D78B3 0%, #5CD9CC 52%, #33BD73 100%);
+
+  /* ---- Escala primaria (azul) ---- */
+  --aq-primaria-50:  #EFF8FD;
+  --aq-primaria-100: #DAEEF9;
+  --aq-primaria-200: #B8DEF4;
+  --aq-primaria-300: #86C6EA;
+  --aq-primaria-400: #4EA9DA;
+  --aq-primaria-500: #2A8CC4;
+  --aq-primaria-600: #1D78B3;
+  --aq-primaria-700: #1A6091;
+  --aq-primaria-800: #1B5178;
+  --aq-primaria-900: #12384F;
+  --aq-primaria-950: #0E2A3C;
+
+  /* ---- Escala acento (aqua) ---- */
+  --aq-acento-50:  #EFFDFB;
+  --aq-acento-100: #D0F8F3;
+  --aq-acento-200: #A3F0E8;
+  --aq-acento-300: #6FE2D8;
+  --aq-acento-400: #5CD9CC;
+  --aq-acento-500: #26BDB1;
+  --aq-acento-600: #199990;
+  --aq-acento-700: #187A74;
+  --aq-acento-800: #18615D;
+  --aq-acento-900: #12525C;
+  --aq-acento-950: #0A3538;
+
+  /* ---- Escala éxito (verde de marca — RESERVADA) ---- */
+  --aq-exito-50:  #EFFBF4;
+  --aq-exito-100: #D7F5E4;
+  --aq-exito-200: #B1EACB;
+  --aq-exito-300: #7DD9A9;
+  --aq-exito-400: #4CC886;
+  --aq-exito-500: #33BD73;
+  --aq-exito-600: #1F9D5D;
+  --aq-exito-700: #1B7C4B;
+  --aq-exito-800: #19623E;
+  --aq-exito-900: #175134;
+  --aq-exito-950: #0A2E1E;
+
+  /* ---- Advertencia ---- */
+  --aq-advertencia-50:  #FBF3DE;
+  --aq-advertencia-300: #EFC55C;
+  --aq-advertencia-500: #E5A00D;
+  --aq-advertencia-700: #8A5F04;
+  --aq-advertencia-800: #6B4A03;
+  --aq-advertencia-900: #4A3305;
+
+  /* ---- Error ---- */
+  --aq-error-50:  #FDF3F2;
+  --aq-error-300: #EE8377;
+  --aq-error-400: #E4574A;
+  --aq-error-500: #C0362A;
+  --aq-error-700: #9E2A20;
+  --aq-error-800: #7F1F17;
+  --aq-error-900: #5A1610;
+
+  /* ---- Neutros (azulados) ---- */
+  --aq-neutro-0:   #FFFFFF;
+  --aq-neutro-50:  #F6F9FB;
+  --aq-neutro-100: #EDF2F5;
+  --aq-neutro-200: #DDE5EA;
+  --aq-neutro-300: #C3CFD6;
+  --aq-neutro-400: #9AA9B3;
+  --aq-neutro-500: #74848F;
+  --aq-neutro-600: #566670;
+  --aq-neutro-700: #414F58;
+  --aq-neutro-800: #2C383F;
+  --aq-neutro-900: #1B252B;
+  --aq-neutro-950: #101719;
+
+  /* ---- Tokens semánticos · MODO CLARO ---- */
+  --aq-superficie-fondo:   var(--aq-neutro-50);
+  --aq-superficie-tarjeta: var(--aq-neutro-0);
+  --aq-superficie-elevada: var(--aq-neutro-0);
+  --aq-borde-sutil:        var(--aq-neutro-200);
+  --aq-borde-fuerte:       var(--aq-neutro-300);
+  --aq-texto-principal:    var(--aq-neutro-900);
+  --aq-texto-secundario:   var(--aq-neutro-600);
+  --aq-texto-tenue:        var(--aq-neutro-500);
+  --aq-texto-invertido:    var(--aq-neutro-0);
+  --aq-accion-primaria:       #1D78B3;
+  --aq-accion-primaria-hover: #1A6091;
+  --aq-accion-destructiva:    #C0362A;
+  --aq-anillo-foco:           #5CD9CC;
+  --aq-agua-activo:           #199990;
+  --aq-dato-estimado:         var(--aq-neutro-300);
+
+  /* ---- Tipografía ---- */
+  /* `--font-plex-*` las inyecta next/font desde el layout; los nombres literales
+     quedan como respaldo si la fuente no carga. */
+  --aq-font-sans: var(--font-plex-sans), 'IBM Plex Sans', Helvetica, Arial, sans-serif;
+  --aq-font-mono: var(--font-plex-mono), 'IBM Plex Mono', ui-monospace, monospace;
+
+  --aq-titulo-pantalla: 600 32px/40px var(--aq-font-sans);
+  --aq-titulo-seccion:  600 24px/32px var(--aq-font-sans);
+  --aq-titulo-tarjeta:  600 20px/28px var(--aq-font-sans);
+  --aq-cuerpo-grande:   400 18px/28px var(--aq-font-sans);
+  --aq-cuerpo:          400 16px/24px var(--aq-font-sans);
+  --aq-cuerpo-chico:    400 14px/20px var(--aq-font-sans);
+  --aq-etiqueta:        600 13px/18px var(--aq-font-sans);
+  --aq-micro:           500 11px/16px var(--aq-font-sans);
+
+  /* móvil — mínimo absoluto 16px */
+  --aq-m-titulo:     600 28px/34px var(--aq-font-sans);
+  --aq-m-cifra:      600 34px/38px var(--aq-font-mono);
+  --aq-m-seccion:    600 22px/28px var(--aq-font-sans);
+  --aq-m-cuerpo:     400 18px/26px var(--aq-font-sans);
+  --aq-m-cuerpo-min: 400 16px/22px var(--aq-font-sans);
+
+  --aq-micro-tracking: .12em;
+
+  /* ---- Espacio (base 4px) ---- */
+  --aq-esp-0: 0;
+  --aq-esp-1: 4px;
+  --aq-esp-2: 8px;
+  --aq-esp-3: 12px;
+  --aq-esp-4: 16px;
+  --aq-esp-5: 20px;
+  --aq-esp-6: 24px;
+  --aq-esp-8: 32px;
+  --aq-esp-10: 40px;
+  --aq-esp-12: 48px;
+  --aq-esp-16: 64px;
+
+  /* ---- Radios ---- */
+  --aq-radio-0: 0;
+  --aq-radio-sm: 4px;
+  --aq-radio-md: 8px;
+  --aq-radio-lg: 12px;
+  --aq-radio-xl: 16px;
+  --aq-radio-pill: 999px;
+
+  /* ---- Elevación (solo modo claro) ---- */
+  --aq-elev-1: 0 1px 2px rgba(14,42,60,.10), 0 1px 1px rgba(14,42,60,.06);
+  --aq-elev-2: 0 4px 10px -3px rgba(14,42,60,.16), 0 2px 4px -2px rgba(14,42,60,.10);
+  --aq-elev-3: 0 12px 28px -10px rgba(14,42,60,.24), 0 4px 8px -4px rgba(14,42,60,.12);
+  --aq-elev-4: 0 24px 48px -16px rgba(14,42,60,.32), 0 8px 16px -8px rgba(14,42,60,.16);
+
+  /* ---- Objetivos táctiles ---- */
+  --aq-tactil-min: 44px;
+  --aq-tactil-primario: 56px;
+  --aq-tactil-primario-movil: 60px;
+}
+
+/* ---- Tokens semánticos · MODO OSCURO ----
+   En oscuro la elevación se expresa con TONO, no con sombra. */
+[data-tema="oscuro"] {
+  --aq-superficie-fondo:   var(--aq-neutro-950);
+  --aq-superficie-tarjeta: var(--aq-neutro-900);
+  --aq-superficie-elevada: var(--aq-neutro-800);
+  --aq-borde-sutil:        var(--aq-neutro-800);
+  --aq-borde-fuerte:       var(--aq-neutro-600);
+  --aq-texto-principal:    var(--aq-neutro-100);
+  --aq-texto-secundario:   var(--aq-neutro-400);
+  --aq-texto-tenue:        var(--aq-neutro-500);
+  --aq-texto-invertido:    var(--aq-neutro-950);
+  --aq-accion-primaria:       #4EA9DA;
+  --aq-accion-primaria-hover: #86C6EA;
+  --aq-accion-destructiva:    #E4574A;
+  --aq-agua-activo:           #5CD9CC;
+  --aq-dato-estimado:         var(--aq-neutro-600);
+
+  --aq-elev-1: none;
+  --aq-elev-2: none;
+  --aq-elev-3: none;
+  --aq-elev-4: none;
+}
+
+/* ---- Foco: nunca suprimir. El POS se opera con teclado. ---- */
+.aq-foco:focus-visible,
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--aq-superficie-tarjeta), 0 0 0 5px var(--aq-anillo-foco);
+}
+
+/* ---- Cifras: tabulares en toda cantidad, ID, documento y dinero ---- */
+.aq-cifra {
+  font-family: var(--aq-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Dato estimado: tramo de incertidumbre ---- */
+.aq-tramo-estimado {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--aq-marca-primaria), var(--aq-marca-primaria) 6px,
+    var(--aq-primaria-200), var(--aq-primaria-200) 12px
+  );
+}
+
+/* ---- Formas del semáforo. Nunca solo color. ---- */
+.aq-forma-cubierto { border-radius: var(--aq-radio-pill); }
+.aq-forma-justo    { clip-path: polygon(50% 0%, 100% 100%, 0% 100%); }
+.aq-forma-expuesto { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+
+/* ---- Animaciones ---- */
+@keyframes aq-spin  { to { transform: rotate(360deg); } }
+@keyframes aq-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@keyframes aq-in    { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.aq-esqueleto { background: var(--aq-neutro-100); border-radius: var(--aq-radio-sm); animation: aq-pulse 1.4s ease-in-out infinite; }
+.aq-entrada   { animation: aq-in .25s ease both; }
+.aq-spinner   { border-radius: var(--aq-radio-pill); border: 3px solid var(--aq-primaria-100); border-top-color: var(--aq-accion-primaria); animation: aq-spin .8s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .aq-esqueleto, .aq-entrada, .aq-spinner { animation: none; }
+}

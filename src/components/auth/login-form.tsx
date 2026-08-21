@@ -29,7 +29,7 @@ export function LoginForm() {
           required
           autoComplete="email"
           aria-describedby={estado.error ? 'login-error' : undefined}
-          className="rounded border border-neutral-300 p-2"
+          className="rounded border border-fuerte p-2"
         />
       </label>
 
@@ -41,7 +41,7 @@ export function LoginForm() {
           required
           autoComplete="current-password"
           aria-describedby={estado.error ? 'login-error' : undefined}
-          className="rounded border border-neutral-300 p-2"
+          className="rounded border border-fuerte p-2"
         />
       </label>
 
@@ -50,12 +50,12 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pendiente}
-        className="rounded bg-neutral-900 p-2 text-sm text-white disabled:opacity-50"
+        className="h-14 rounded-md bg-accion px-5 font-semibold text-invertido hover:bg-accion-hover disabled:opacity-50"
       >
         {pendiente ? 'Entrando…' : 'Entrar'}
       </button>
 
-      <Link href="/forgot-password" className="text-sm text-neutral-500 underline">
+      <Link href="/forgot-password" className="text-sm text-tenue underline">
         ¿Olvidaste tu contraseña?
       </Link>
     </form>

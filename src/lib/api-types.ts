@@ -82,3 +82,55 @@ export interface Producto {
   createdAt: string
   updatedAt: string
 }
+
+/** Una fila de `GET /stock` — M2. Las tres cifras salen de la misma consulta. */
+export interface ResumenDeStock {
+  productoId: string
+  codigo: string
+  nombre: string
+  activo: boolean
+  total: number
+  /** Lo que se puede vender hoy: excluye lo vencido. */
+  vendible: number
+  /**
+   * Vencido con saldo. **No es lo mismo que descartado**: el producto sigue
+   * físicamente en la bodega ocupando lugar, y descartarlo es un acto de
+   * alguien, no una consecuencia del calendario.
+   */
+  vencido: number
+}
+
+/** Un lote con saldo — `GET /stock/:productoId/lotes`, en orden FIFO. */
+export interface LoteConSaldo {
+  id: string
+  codigo: string
+  saldo: number
+  fechaEmpaque: string
+  fechaVencimiento: string
+}
+
+export type TipoDeMovimiento = 'produccion' | 'ajuste' | 'descarte' | 'venta' | 'devolucion'
+export type CausaDeDescarte = 'falla_produccion' | 'mal_manejo_cliente' | 'vencido' | 'otro'
+
+/** Una fila del libro — `GET /stock/movimientos`. */
+export interface MovimientoDeStock {
+  id: number
+  loteId: string
+  loteCodigo: string
+  productoCodigo: string
+  /** Positivo entra, negativo sale. Nunca cero. */
+  cantidad: number
+  tipo: TipoDeMovimiento
+  motivo: string | null
+  causa: CausaDeDescarte | null
+  documentoId: string | null
+  registradoPor: string | null
+  /** `null` significa que la cuenta se borró y el movimiento sobrevivió. */
+  registradoPorNombre: string | null
+  createdAt: string
+}
+
+export interface PaginaDeMovimientos {
+  filas: MovimientoDeStock[]
+  siguienteCursor: number | null
+}

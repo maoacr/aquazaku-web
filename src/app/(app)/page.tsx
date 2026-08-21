@@ -8,7 +8,7 @@ export default function DashboardPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-      <p className="mt-2 text-sm text-neutral-500">Bienvenido a Aquazaku.</p>
+      <p className="mt-2 text-sm text-tenue">Bienvenido a Aquazaku.</p>
     </div>
   )
 }

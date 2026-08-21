@@ -19,11 +19,11 @@ export function ForgotPasswordForm() {
     return (
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Revisá tu correo</h1>
-        <p role="status" className="text-sm text-neutral-600">
+        <p role="status" className="text-sm text-secundario">
           Si ese email tiene una cuenta, le mandamos un link para crear una contraseña nueva.
           El link vence, así que usalo pronto.
         </p>
-        <Link href="/login" className="text-sm text-neutral-500 underline">
+        <Link href="/login" className="text-sm text-tenue underline">
           Volver a iniciar sesión
         </Link>
       </div>
@@ -44,19 +44,19 @@ export function ForgotPasswordForm() {
           required
           autoComplete="email"
           aria-describedby={estado.error ? 'forgot-error' : undefined}
-          className="rounded border border-neutral-300 p-2"
+          className="rounded border border-fuerte p-2"
         />
       </label>
 
       <button
         type="submit"
         disabled={pendiente}
-        className="rounded bg-neutral-900 p-2 text-sm text-white disabled:opacity-50"
+        className="h-14 rounded-md bg-accion px-5 font-semibold text-invertido hover:bg-accion-hover disabled:opacity-50"
       >
         {pendiente ? 'Enviando…' : 'Enviarme el link'}
       </button>
 
-      <Link href="/login" className="text-sm text-neutral-500 underline">
+      <Link href="/login" className="text-sm text-tenue underline">
         Volver a iniciar sesión
       </Link>
     </form>

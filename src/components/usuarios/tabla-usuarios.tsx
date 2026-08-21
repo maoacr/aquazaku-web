@@ -47,7 +47,7 @@ function Fila({ usuario }: { usuario: UsuarioListado }) {
         <Td>
           <span className="font-medium">{usuario.name}</span>
           {usuario.mustChangePassword ? (
-            <p className="mt-0.5 text-xs text-neutral-500">Pendiente de cambiar contraseña</p>
+            <p className="mt-0.5 text-xs text-tenue">Pendiente de cambiar contraseña</p>
           ) : null}
         </Td>
         <Td>{usuario.email}</Td>
@@ -76,7 +76,7 @@ function Fila({ usuario }: { usuario: UsuarioListado }) {
             <button
               type="submit"
               disabled={guardandoRoles}
-              className="rounded border border-neutral-700 px-2 py-1 text-xs disabled:opacity-50"
+              className="rounded border border-fuerte px-2 py-1 text-xs disabled:opacity-50"
             >
               {guardandoRoles ? 'Guardando…' : 'Guardar roles'}
             </button>
@@ -90,7 +90,7 @@ function Fila({ usuario }: { usuario: UsuarioListado }) {
             <button
               type="submit"
               disabled={cambiandoEstado}
-              className="whitespace-nowrap rounded border border-neutral-700 px-2 py-1 text-xs disabled:opacity-50"
+              className="whitespace-nowrap rounded border border-fuerte px-2 py-1 text-xs disabled:opacity-50"
             >
               {cambiandoEstado ? '…' : activo ? 'Desactivar' : 'Reactivar'}
             </button>

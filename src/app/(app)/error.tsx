@@ -34,7 +34,7 @@ export default function ErrorDeApp({
         </p>
         {/* Se avisa que quedó registrado: es cierto —`requirePermission` audita
             todos los denegados— y desalienta insistir. */}
-        <p className="text-neutral-500">El intento quedó registrado en la auditoría.</p>
+        <p className="text-tenue">El intento quedó registrado en la auditoría.</p>
       </Aviso>
     )
   }
@@ -46,15 +46,15 @@ export default function ErrorDeApp({
         // El digest es lo que permite encontrar este error exacto en los logs.
         // Sin él, un reporte de usuario es "no andaba" y no hay por dónde
         // empezar a buscar.
-        <p className="text-neutral-500">
+        <p className="text-tenue">
           Si vuelve a pasar, pasale este código a soporte:{' '}
-          <code className="font-mono text-neutral-300">{error.digest}</code>
+          <code className="font-mono text-secundario">{error.digest}</code>
         </p>
       ) : null}
       <button
         type="button"
         onClick={reset}
-        className="mt-2 justify-self-start rounded border border-neutral-700 px-4 py-2 text-sm"
+        className="mt-2 justify-self-start rounded border border-fuerte px-4 py-2 text-sm"
       >
         Reintentar
       </button>
@@ -66,7 +66,7 @@ function Aviso({ titulo, children }: { titulo: string; children: React.ReactNode
   return (
     <div role="alert" className="grid max-w-prose gap-2">
       <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
-      <div className="grid gap-2 text-sm text-neutral-400">{children}</div>
+      <div className="grid gap-2 text-sm text-secundario">{children}</div>
     </div>
   )
 }

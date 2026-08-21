@@ -20,7 +20,7 @@ export function Tabla({ children }: { children: ReactNode }) {
   return (
     // `overflow-x-auto` para que en un teléfono la tabla scrollee sola en vez
     // de estirar la página entera (mobile-first).
-    <div className="overflow-x-auto rounded-lg border border-neutral-800">
+    <div className="overflow-x-auto rounded-lg border border-sutil">
       <table className="w-full border-collapse text-sm">{children}</table>
     </div>
   )
@@ -28,7 +28,7 @@ export function Tabla({ children }: { children: ReactNode }) {
 
 export function Encabezados({ children }: { children: ReactNode }) {
   return (
-    <thead className="bg-neutral-900/60 text-left text-xs uppercase tracking-wide text-neutral-400">
+    <thead className="bg-fondo text-left text-xs uppercase tracking-wide text-secundario">
       <tr>{children}</tr>
     </thead>
   )
@@ -39,14 +39,14 @@ export function Th({ children }: { children: ReactNode }) {
 }
 
 export function Td({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <td className={`border-t border-neutral-800 px-3 py-2 align-top ${className}`}>{children}</td>
+  return <td className={`border-t border-sutil px-3 py-2 align-top ${className}`}>{children}</td>
 }
 
 /** Fila única que ocupa toda la tabla cuando no hay datos que mostrar. */
 export function SinResultados({ columnas, children }: { columnas: number; children: ReactNode }) {
   return (
     <tr>
-      <td colSpan={columnas} className="border-t border-neutral-800 px-3 py-8 text-center text-neutral-500">
+      <td colSpan={columnas} className="border-t border-sutil px-3 py-8 text-center text-tenue">
         {children}
       </td>
     </tr>
@@ -63,7 +63,7 @@ export function Etiqueta({ tono, children }: { tono: 'ok' | 'alerta' | 'neutro';
   const estilos = {
     ok: 'bg-emerald-950 text-emerald-300 ring-emerald-900',
     alerta: 'bg-red-950 text-red-300 ring-red-900',
-    neutro: 'bg-neutral-800 text-neutral-300 ring-neutral-700',
+    neutro: 'bg-elevada text-secundario ring-sutil',
   } as const
 
   return (

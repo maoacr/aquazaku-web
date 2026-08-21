@@ -30,11 +30,11 @@ export function GestionDeProducto({ producto }: { producto: Producto }) {
   const listoPeroApagado = !producto.activo && !sinPrecio
 
   return (
-    <article className="grid gap-4 rounded-lg border border-neutral-800 p-4">
+    <article className="grid gap-4 rounded-lg border border-sutil p-4">
       <header className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <h3 className="font-medium">{producto.nombre}</h3>
-          <p className="font-mono text-xs text-neutral-500">{producto.codigo}</p>
+          <p className="font-mono text-xs text-tenue">{producto.codigo}</p>
         </div>
         {producto.activo ? (
           <Etiqueta tono="ok">activo</Etiqueta>
@@ -73,7 +73,7 @@ export function GestionDeProducto({ producto }: { producto: Producto }) {
           <button
             type="submit"
             disabled={guardando}
-            className="rounded bg-neutral-100 px-3 py-1.5 text-sm font-medium text-neutral-900 disabled:opacity-50"
+            className="rounded bg-accion px-3 py-1.5 text-sm font-medium text-invertido disabled:opacity-50"
           >
             {guardando ? 'Guardando…' : 'Guardar precios'}
           </button>
@@ -84,7 +84,7 @@ export function GestionDeProducto({ producto }: { producto: Producto }) {
         Desactivar es un form y no un link: cambia estado del servidor. Un GET
         que muta es la clase de cosa que un prefetch del browser dispara solo.
       */}
-      <form action={cambiarEstado} className="border-t border-neutral-800 pt-3">
+      <form action={cambiarEstado} className="border-t border-sutil pt-3">
         <input type="hidden" name="id" value={producto.id} />
         <input type="hidden" name="activar" value={producto.activo ? 'no' : 'si'} />
 
@@ -98,7 +98,7 @@ export function GestionDeProducto({ producto }: { producto: Producto }) {
         <button
           type="submit"
           disabled={cambiando}
-          className="text-sm text-neutral-400 underline underline-offset-4 hover:text-neutral-200 disabled:opacity-50"
+          className="text-sm text-secundario underline underline-offset-4 hover:text-principal disabled:opacity-50"
         >
           {producto.activo ? 'Desactivar producto' : 'Reactivar producto'}
         </button>

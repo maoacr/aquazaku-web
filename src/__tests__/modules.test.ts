@@ -11,25 +11,32 @@ describe('computeVisibleModules()', () => {
     expect(ids).toContain('productos')
   })
 
-  it('contador ve su auditoría y el catálogo', () => {
+  it('contador ve catálogo, stock y su auditoría', () => {
     const ids = computeVisibleModules(['contador']).map((m) => m.id)
 
-    expect(ids).toEqual(['productos', 'contador-auditoria'])
+    // Necesita el inventario para cerrar los números, no solo la bitácora.
+    expect(ids).toEqual(['productos', 'stock', 'contador-auditoria'])
   })
 
-  // Los cuatro roles leen el catálogo (RN-CAT-06). Hasta M0 estos dos roles no
-  // veían ningún módulo; M1 les da el primero. Un `pos` que no ve precios no
-  // puede vender, y por eso esta es la primera pantalla que entra a su menú.
-  it.each(['pos', 'seller'] as const)('%s ve el catálogo de productos', (rol) => {
-    expect(computeVisibleModules([rol]).map((m) => m.id)).toEqual(['productos'])
+  // Hasta M0 estos dos roles no veían ningún módulo. M1 les dio el catálogo
+  // (RN-CAT-06) y M2 el stock: quien vende necesita saber qué hay.
+  it.each(['pos', 'seller'] as const)('%s ve catálogo y stock', (rol) => {
+    expect(computeVisibleModules([rol]).map((m) => m.id)).toEqual(['productos', 'stock'])
   })
 
-  it('el catálogo es el único módulo que ven los cuatro roles', () => {
+  /**
+   * Este test afirmaba que el catálogo era el ÚNICO módulo universal, y era
+   * cierto en M1. M2 sumó el stock.
+   *
+   * Se reescribe como lista para que crezca a conciencia: agregar un módulo que
+   * vean los cuatro roles obliga a tocar acá y decir por qué.
+   */
+  it('los módulos que ven los cuatro roles son catálogo y stock', () => {
     const paraTodos = ALL_MODULES.filter((m) =>
       (['admin', 'seller', 'pos', 'contador'] as Role[]).every((rol) => m.roles.includes(rol)),
     )
 
-    expect(paraTodos.map((m) => m.id)).toEqual(['productos'])
+    expect(paraTodos.map((m) => m.id)).toEqual(['productos', 'stock'])
   })
 
   it('sin roles no ve nada', () => {
@@ -41,7 +48,7 @@ describe('computeVisibleModules()', () => {
   it('multi-rol ve la unión de los módulos de todos sus roles', () => {
     const ids = computeVisibleModules(['admin', 'contador']).map((m) => m.id)
 
-    expect(ids).toEqual(['productos', 'usuarios', 'auditoria', 'contador-auditoria'])
+    expect(ids).toEqual(['productos', 'stock', 'usuarios', 'auditoria', 'contador-auditoria'])
   })
 
   it('multi-rol no duplica un módulo que dos roles comparten', () => {

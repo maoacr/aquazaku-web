@@ -41,14 +41,14 @@ describe('<Sidebar />', () => {
   // Hasta M0 estos dos roles tenían el menú vacío. M1 les da su primera
   // pantalla: los cuatro roles leen el catálogo (RN-CAT-06), porque un `pos`
   // que no ve precios no puede vender.
-  it.each(['pos', 'seller'] as const)('%s ve el catálogo y nada más', (rol) => {
+  it.each(['pos', 'seller'] as const)('%s ve catálogo y stock', (rol) => {
     render(<Sidebar userRoles={[rol]} userName="Persona de prueba" />)
 
     const hrefs = within(nav())
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'))
 
-    expect(hrefs).toEqual(['/modulos/productos'])
+    expect(hrefs).toEqual(['/modulos/productos', '/modulos/stock'])
   })
 
   it('no muestra el link de gestión: esa pantalla es solo de admin', () => {
@@ -68,6 +68,7 @@ describe('<Sidebar />', () => {
 
     expect(hrefs).toEqual([
       '/modulos/productos',
+      '/modulos/stock',
       '/modulos/usuarios',
       '/modulos/auditoria',
       '/contador/auditoria',

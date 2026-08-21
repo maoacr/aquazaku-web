@@ -21,7 +21,7 @@ export default async function UsuariosPage() {
     <div className="grid gap-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Usuarios</h1>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="mt-1 text-sm text-tenue">
           Altas, roles y estado. Todo cambio queda registrado en la auditoría.
         </p>
       </header>

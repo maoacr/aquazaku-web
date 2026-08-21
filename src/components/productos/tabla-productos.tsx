@@ -28,7 +28,7 @@ export function TablaDeProductos({ productos }: { productos: Producto[] }) {
             <tr key={p.id}>
               <Td className="font-mono text-xs">{p.codigo}</Td>
               <Td>{p.nombre}</Td>
-              <Td className="whitespace-nowrap text-neutral-400">
+              <Td className="whitespace-nowrap text-secundario">
                 {p.presentacion === 'paca'
                   ? `${p.unidades} × ${p.contenidoMl} ml`
                   : `${p.contenidoMl / 1000} L`}
@@ -36,7 +36,7 @@ export function TablaDeProductos({ productos }: { productos: Producto[] }) {
               </Td>
               <Td className="whitespace-nowrap tabular-nums">{pesos(p.precioResidencial)}</Td>
               <Td className="whitespace-nowrap tabular-nums">{pesos(p.precioComercial)}</Td>
-              <Td className="whitespace-nowrap tabular-nums text-neutral-400">
+              <Td className="whitespace-nowrap tabular-nums text-secundario">
                 {pesos(p.precioMinimo)}
               </Td>
               <Td>

@@ -1,26 +1,125 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import './tokens.css';
 
+/**
+ * Puente entre los tokens de Aquazaku y Tailwind v4.
+ *
+ * Los tokens (`--aq-*`) son la fuente de verdad y vienen del sistema de diseño.
+ * Acá solo se los expone como utilidades: `bg-fondo`, `text-principal`,
+ * `border-sutil`. Nadie escribe un hex en un componente.
+ *
+ * Las utilidades apuntan a los tokens SEMÁNTICOS, no a la escala. Así el modo
+ * oscuro funciona solo: cambia el token, y cada `bg-tarjeta` del sistema lo
+ * sigue sin que ninguna clase se entere.
+ */
+/**
+ * Estados semánticos, con su par de modo oscuro.
+ *
+ * Los tokens del sistema traen las escalas numeradas
+ * (`--aq-advertencia-500`) pero **no** definen qué paso usar en cada modo, y el
+ * bloque `[data-tema="oscuro"]` de `tokens.css` no los toca. Sin esto, una
+ * alerta en modo oscuro usaría el amarillo pensado para fondo blanco.
+ *
+ * Los valores salen de la tabla del sistema de diseño: en oscuro, el color del
+ * texto sube de paso y el fondo baja, para conservar el contraste.
+ *
+ * Se definen acá y no en `tokens.css` porque esa es una copia del original: si
+ * el sistema cambia, se vuelve a copiar entera y estas líneas sobrevivirían.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --aq-estado-exito-base:   var(--aq-exito-500);
+  --aq-estado-exito-fondo:  var(--aq-exito-50);
+  --aq-estado-exito-borde:  var(--aq-exito-300);
+  --aq-estado-exito-texto:  var(--aq-exito-900);
+
+  --aq-estado-alerta-base:  var(--aq-advertencia-500);
+  --aq-estado-alerta-fondo: var(--aq-advertencia-50);
+  --aq-estado-alerta-borde: var(--aq-advertencia-300);
+  --aq-estado-alerta-texto: var(--aq-advertencia-800);
+
+  --aq-estado-error-base:   var(--aq-error-500);
+  --aq-estado-error-fondo:  var(--aq-error-50);
+  --aq-estado-error-borde:  var(--aq-error-400);
+  --aq-estado-error-texto:  var(--aq-error-800);
+}
+
+[data-tema='oscuro'] {
+  --aq-estado-exito-fondo:  #14603F;
+  --aq-estado-exito-texto:  var(--aq-exito-300);
+  --aq-estado-exito-borde:  var(--aq-exito-700);
+
+  --aq-estado-alerta-fondo: var(--aq-advertencia-900);
+  --aq-estado-alerta-texto: var(--aq-advertencia-300);
+  --aq-estado-alerta-borde: var(--aq-advertencia-700);
+
+  --aq-estado-error-fondo:  var(--aq-error-900);
+  --aq-estado-error-texto:  var(--aq-error-300);
+  --aq-estado-error-borde:  var(--aq-error-700);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-fondo: var(--aq-superficie-fondo);
+  --color-tarjeta: var(--aq-superficie-tarjeta);
+  --color-elevada: var(--aq-superficie-elevada);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-sutil: var(--aq-borde-sutil);
+  --color-fuerte: var(--aq-borde-fuerte);
+
+  --color-principal: var(--aq-texto-principal);
+  --color-secundario: var(--aq-texto-secundario);
+  --color-tenue: var(--aq-texto-tenue);
+  --color-invertido: var(--aq-texto-invertido);
+
+  --color-accion: var(--aq-accion-primaria);
+  --color-accion-hover: var(--aq-accion-primaria-hover);
+  --color-destructiva: var(--aq-accion-destructiva);
+
+  /* Agua, botellones y bases. Nunca se mezcla con dinero. */
+  --color-agua: var(--aq-agua-activo);
+
+  /* El verde es RESERVADO: solo significa "cuadra" o "todo en orden". */
+  --color-exito: var(--aq-estado-exito-base);
+  --color-exito-fondo: var(--aq-estado-exito-fondo);
+  --color-exito-borde: var(--aq-estado-exito-borde);
+  --color-exito-texto: var(--aq-estado-exito-texto);
+
+  --color-alerta: var(--aq-estado-alerta-base);
+  --color-alerta-fondo: var(--aq-estado-alerta-fondo);
+  --color-alerta-borde: var(--aq-estado-alerta-borde);
+  --color-alerta-texto: var(--aq-estado-alerta-texto);
+
+  --color-error: var(--aq-estado-error-base);
+  --color-error-fondo: var(--aq-estado-error-fondo);
+  --color-error-borde: var(--aq-estado-error-borde);
+  --color-error-texto: var(--aq-estado-error-texto);
+
+  --font-sans: var(--aq-font-sans);
+  --font-mono: var(--aq-font-mono);
+
+  --radius-sm: var(--aq-radio-sm);
+  --radius-md: var(--aq-radio-md);
+  --radius-lg: var(--aq-radio-lg);
+  --radius-xl: var(--aq-radio-xl);
+
+  --shadow-elev-1: var(--aq-elev-1);
+  --shadow-elev-2: var(--aq-elev-2);
+  --shadow-elev-3: var(--aq-elev-3);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--aq-superficie-fondo);
+  color: var(--aq-texto-principal);
+  font: var(--aq-cuerpo);
+}
+
+/**
+ * Etiqueta micro: 11px en mayúsculas con tracking.
+ *
+ * Es el único texto del sistema por debajo de 13px, y solo se permite en
+ * mayúsculas y espaciado — a ese tamaño, en minúsculas, deja de leerse.
+ */
+.aq-micro {
+  font: var(--aq-micro);
+  letter-spacing: var(--aq-micro-tracking);
+  text-transform: uppercase;
 }

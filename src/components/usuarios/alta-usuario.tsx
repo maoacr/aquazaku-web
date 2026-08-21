@@ -24,8 +24,8 @@ export function AltaDeUsuario() {
   const [estado, accion, enviando] = useActionState(crearUsuarioAction, INICIAL)
 
   return (
-    <form action={accion} className="grid gap-4 rounded-lg border border-neutral-800 p-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">
+    <form action={accion} className="grid gap-4 rounded-lg border border-sutil p-4">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-secundario">
         Nuevo usuario
       </h2>
 
@@ -43,7 +43,7 @@ export function AltaDeUsuario() {
             name="name"
             required
             autoComplete="off"
-            className="rounded border border-neutral-700 bg-transparent px-2 py-1.5"
+            className="rounded border border-fuerte bg-transparent px-2 py-1.5"
           />
         </label>
 
@@ -54,7 +54,7 @@ export function AltaDeUsuario() {
             type="email"
             required
             autoComplete="off"
-            className="rounded border border-neutral-700 bg-transparent px-2 py-1.5"
+            className="rounded border border-fuerte bg-transparent px-2 py-1.5"
           />
         </label>
 
@@ -68,7 +68,7 @@ export function AltaDeUsuario() {
             // `new-password` evita que el gestor de contraseñas del admin
             // ofrezca las suyas al crear una cuenta ajena.
             autoComplete="new-password"
-            className="rounded border border-neutral-700 bg-transparent px-2 py-1.5"
+            className="rounded border border-fuerte bg-transparent px-2 py-1.5"
           />
         </label>
       </div>
@@ -86,7 +86,7 @@ export function AltaDeUsuario() {
             </label>
           ))}
         </div>
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-tenue">
           Se puede crear sin roles: entra al sistema y no ve ningún módulo.
         </p>
       </fieldset>
@@ -94,7 +94,7 @@ export function AltaDeUsuario() {
       <button
         type="submit"
         disabled={enviando}
-        className="justify-self-start rounded bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 disabled:opacity-50"
+        className="justify-self-start rounded bg-accion px-4 py-2 text-sm font-medium text-invertido disabled:opacity-50"
       >
         {enviando ? 'Creando…' : 'Crear usuario'}
       </button>

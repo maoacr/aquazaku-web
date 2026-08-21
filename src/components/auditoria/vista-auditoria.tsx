@@ -59,7 +59,7 @@ export async function VistaDeAuditoria({
     <div className="grid gap-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Auditoría</h1>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="mt-1 text-sm text-tenue">
           Registro inmutable de las acciones sensibles del sistema.
         </p>
       </header>
@@ -88,7 +88,7 @@ export async function VistaDeAuditoria({
       {siguiente ? (
         <a
           href={siguiente}
-          className="justify-self-start rounded border border-neutral-700 px-4 py-2 text-sm"
+          className="justify-self-start rounded border border-fuerte px-4 py-2 text-sm"
         >
           Cargar más ↓
         </a>
@@ -96,7 +96,7 @@ export async function VistaDeAuditoria({
         // Solo se dice cuando hay algo que terminar de ver: en una tabla vacía
         // el mensaje sobra.
         pagina.filas.length > 0 && (
-          <p className="text-xs text-neutral-600">No hay más registros.</p>
+          <p className="text-xs text-secundario">No hay más registros.</p>
         )
       )}
     </div>
@@ -106,7 +106,7 @@ export async function VistaDeAuditoria({
 function FilaDeRegistro({ fila }: { fila: RegistroDeAuditoria }) {
   return (
     <tr>
-      <Td className="whitespace-nowrap tabular-nums text-neutral-400">
+      <Td className="whitespace-nowrap tabular-nums text-secundario">
         {new Date(fila.createdAt).toLocaleString('es-CO', {
           dateStyle: 'short',
           timeStyle: 'medium',
@@ -117,18 +117,18 @@ function FilaDeRegistro({ fila }: { fila: RegistroDeAuditoria }) {
         {fila.userName ? (
           <>
             <span>{fila.userName}</span>
-            <p className="text-xs text-neutral-500">{fila.userEmail}</p>
+            <p className="text-xs text-tenue">{fila.userEmail}</p>
           </>
         ) : fila.userId ? (
           // El registro sobrevivió al borrado del usuario: `audit_log` no tiene
           // FK a `users` justamente para esto. Decirlo es mejor que una celda
           // vacía que parece un dato faltante.
-          <span className="text-neutral-500 italic">(cuenta eliminada)</span>
+          <span className="text-tenue italic">(cuenta eliminada)</span>
         ) : (
-          <span className="text-neutral-500 italic">(sin sesión)</span>
+          <span className="text-tenue italic">(sin sesión)</span>
         )}
         {fila.rolEjercido && fila.rolEjercido.length > 0 ? (
-          <p className="text-xs text-neutral-600">{fila.rolEjercido.join(', ')}</p>
+          <p className="text-xs text-secundario">{fila.rolEjercido.join(', ')}</p>
         ) : null}
       </Td>
 
@@ -142,11 +142,11 @@ function FilaDeRegistro({ fila }: { fila: RegistroDeAuditoria }) {
 
       <Td className="max-w-md">
         {fila.payload ? (
-          <code className="block truncate text-xs text-neutral-400">
+          <code className="block truncate text-xs text-secundario">
             {JSON.stringify(fila.payload)}
           </code>
         ) : null}
-        {fila.ip ? <p className="text-xs text-neutral-600">{fila.ip}</p> : null}
+        {fila.ip ? <p className="text-xs text-secundario">{fila.ip}</p> : null}
       </Td>
     </tr>
   )
@@ -164,34 +164,34 @@ function Filtros({ filtros, ruta }: { filtros: FiltrosDeAuditoria; ruta: string 
     <form
       action={ruta}
       method="get"
-      className="grid gap-3 rounded-lg border border-neutral-800 p-4 sm:grid-cols-5"
+      className="grid gap-3 rounded-lg border border-sutil p-4 sm:grid-cols-5"
     >
       <label className="grid gap-1 text-xs">
-        <span className="text-neutral-400">Acción</span>
+        <span className="text-secundario">Acción</span>
         <input
           name="action"
           defaultValue={filtros.action ?? ''}
           placeholder="ventas:anular"
-          className="rounded border border-neutral-700 bg-transparent px-2 py-1.5 text-sm"
+          className="rounded border border-fuerte bg-transparent px-2 py-1.5 text-sm"
         />
       </label>
 
       <label className="grid gap-1 text-xs">
-        <span className="text-neutral-400">Módulo</span>
+        <span className="text-secundario">Módulo</span>
         <input
           name="resource"
           defaultValue={filtros.resource ?? ''}
           placeholder="usuarios"
-          className="rounded border border-neutral-700 bg-transparent px-2 py-1.5 text-sm"
+          className="rounded border border-fuerte bg-transparent px-2 py-1.5 text-sm"
         />
       </label>
 
       <label className="grid gap-1 text-xs">
-        <span className="text-neutral-400">Resultado</span>
+        <span className="text-secundario">Resultado</span>
         <select
           name="result"
           defaultValue={filtros.result ?? ''}
-          className="rounded border border-neutral-700 bg-transparent px-2 py-1.5 text-sm"
+          className="rounded border border-fuerte bg-transparent px-2 py-1.5 text-sm"
         >
           <option value="">Todos</option>
           <option value="ok">Permitidos</option>
@@ -201,35 +201,35 @@ function Filtros({ filtros, ruta }: { filtros: FiltrosDeAuditoria; ruta: string 
       </label>
 
       <label className="grid gap-1 text-xs">
-        <span className="text-neutral-400">Desde</span>
+        <span className="text-secundario">Desde</span>
         <input
           name="desde"
           type="date"
           defaultValue={filtros.desde ?? ''}
-          className="rounded border border-neutral-700 bg-transparent px-2 py-1.5 text-sm"
+          className="rounded border border-fuerte bg-transparent px-2 py-1.5 text-sm"
         />
       </label>
 
       <label className="grid gap-1 text-xs">
-        <span className="text-neutral-400">Hasta</span>
+        <span className="text-secundario">Hasta</span>
         <input
           name="hasta"
           type="date"
           defaultValue={filtros.hasta ?? ''}
-          className="rounded border border-neutral-700 bg-transparent px-2 py-1.5 text-sm"
+          className="rounded border border-fuerte bg-transparent px-2 py-1.5 text-sm"
         />
       </label>
 
       <div className="flex items-end gap-2 sm:col-span-5">
         <button
           type="submit"
-          className="rounded bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900"
+          className="rounded bg-accion px-4 py-2 text-sm font-medium text-invertido"
         >
           Filtrar
         </button>
         {/* Un link y no un reset: `reset` devuelve los campos a sus valores
             iniciales, que son justamente los filtros aplicados. */}
-        <a href={ruta} className="rounded border border-neutral-700 px-4 py-2 text-sm">
+        <a href={ruta} className="rounded border border-fuerte px-4 py-2 text-sm">
           Limpiar
         </a>
       </div>

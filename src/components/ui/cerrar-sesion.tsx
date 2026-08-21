@@ -12,13 +12,13 @@ import { cerrarSesionAction } from '@/app/(app)/actions'
  */
 export function CerrarSesion({ nombre }: { nombre: string }) {
   return (
-    <form action={cerrarSesionAction} className="mt-auto border-t border-neutral-800 pt-4">
-      <p className="truncate px-2 text-xs text-neutral-500" title={nombre}>
+    <form action={cerrarSesionAction} className="mt-auto border-t border-sutil pt-4">
+      <p className="truncate px-2 text-xs text-tenue" title={nombre}>
         {nombre}
       </p>
       <button
         type="submit"
-        className="mt-1 w-full rounded p-2 text-left text-sm hover:bg-neutral-900"
+        className="mt-1 w-full rounded p-2 text-left text-sm hover:bg-fondo"
       >
         Cerrar sesión
       </button>

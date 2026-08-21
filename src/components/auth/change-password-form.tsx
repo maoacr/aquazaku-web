@@ -18,7 +18,7 @@ export function ChangePasswordForm({ primerIngreso = false }: { primerIngreso?: 
       <h1 className="text-2xl font-semibold tracking-tight">Cambiar contraseña</h1>
 
       {primerIngreso && (
-        <p role="status" className="text-sm text-neutral-600">
+        <p role="status" className="text-sm text-secundario">
           Es tu primer ingreso: elegí una contraseña propia antes de seguir.
         </p>
       )}
@@ -33,21 +33,21 @@ export function ChangePasswordForm({ primerIngreso = false }: { primerIngreso?: 
           required
           autoComplete="current-password"
           aria-describedby={estado.error ? 'change-error' : undefined}
-          className="rounded border border-neutral-300 p-2"
+          className="rounded border border-fuerte p-2"
         />
       </label>
 
       <PasswordFields describedBy={estado.error ? 'change-error' : undefined} />
 
       {/* Avisar antes, no después: cambiarla cierra todas las sesiones. */}
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-tenue">
         Al cambiarla se cierran todas tus sesiones y vas a tener que entrar de nuevo.
       </p>
 
       <button
         type="submit"
         disabled={pendiente}
-        className="rounded bg-neutral-900 p-2 text-sm text-white disabled:opacity-50"
+        className="h-14 rounded-md bg-accion px-5 font-semibold text-invertido hover:bg-accion-hover disabled:opacity-50"
       >
         {pendiente ? 'Guardando…' : 'Cambiar contraseña'}
       </button>

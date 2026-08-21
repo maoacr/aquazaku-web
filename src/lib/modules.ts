@@ -25,6 +25,14 @@ export const ALL_MODULES: MenuModule[] = [
     href: '/modulos/productos',
     roles: ['admin', 'seller', 'pos', 'contador'],
   },
+  // Los cuatro roles ven el stock: el contador necesita el inventario para
+  // cerrar los números, y quien vende necesita saber qué hay.
+  {
+    id: 'stock',
+    label: 'Stock',
+    href: '/modulos/stock',
+    roles: ['admin', 'seller', 'pos', 'contador'],
+  },
   { id: 'usuarios', label: 'Usuarios', href: '/modulos/usuarios', roles: ['admin'] },
   { id: 'auditoria', label: 'Auditoría', href: '/modulos/auditoria', roles: ['admin'] },
   {

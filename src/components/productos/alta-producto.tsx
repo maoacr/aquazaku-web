@@ -6,7 +6,7 @@ import { FormError } from '@/components/auth/form-error'
 
 const INICIAL: EstadoDeFormulario = {}
 
-const campo = 'rounded border border-neutral-700 bg-transparent px-2 py-1.5'
+const campo = 'rounded border border-fuerte bg-transparent px-2 py-1.5'
 
 /**
  * Alta de producto.
@@ -22,8 +22,8 @@ export function AltaDeProducto() {
   const [estado, accion, enviando] = useActionState(crearProductoAction, INICIAL)
 
   return (
-    <form action={accion} className="grid gap-4 rounded-lg border border-neutral-800 p-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">
+    <form action={accion} className="grid gap-4 rounded-lg border border-sutil p-4">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-secundario">
         Nuevo producto
       </h2>
 
@@ -74,7 +74,7 @@ export function AltaDeProducto() {
         <button
           type="submit"
           disabled={enviando}
-          className="rounded bg-neutral-100 px-3 py-1.5 text-sm font-medium text-neutral-900 disabled:opacity-50"
+          className="rounded bg-accion px-3 py-1.5 text-sm font-medium text-invertido disabled:opacity-50"
         >
           {enviando ? 'Creando…' : 'Crear producto'}
         </button>
@@ -123,7 +123,7 @@ export function CamposDePrecio({ producto }: { producto?: {
       <label className="grid gap-1 text-sm">
         <span>
           Precio mínimo
-          <span className="ml-1 text-xs text-neutral-500">(piso absoluto)</span>
+          <span className="ml-1 text-xs text-tenue">(piso absoluto)</span>
         </span>
         <input
           name="precioMinimo"

@@ -26,12 +26,12 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <button
         type="submit"
         disabled={pendiente}
-        className="rounded bg-neutral-900 p-2 text-sm text-white disabled:opacity-50"
+        className="h-14 rounded-md bg-accion px-5 font-semibold text-invertido hover:bg-accion-hover disabled:opacity-50"
       >
         {pendiente ? 'Guardando…' : 'Guardar contraseña'}
       </button>
 
-      <Link href="/forgot-password" className="text-sm text-neutral-500 underline">
+      <Link href="/forgot-password" className="text-sm text-tenue underline">
         Pedir un link nuevo
       </Link>
     </form>

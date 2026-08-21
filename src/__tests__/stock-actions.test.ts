@@ -23,6 +23,18 @@ function respuesta(status: number, body: unknown = {}): Response {
   })
 }
 
+/**
+ * Mock que devuelve una respuesta NUEVA en cada llamada.
+ *
+ * `mockResolvedValue` entrega siempre el mismo objeto, y el body de un
+ * `Response` solo se puede leer una vez: la segunda llamada revienta con "Body
+ * has already been read". En producción no pasa —cada request trae su propia
+ * respuesta— así que el mock estaría inventando un fallo que no existe.
+ */
+function respondeSiempre(status: number, body: unknown = {}): void {
+  vi.mocked(apiServerFetchRaw).mockImplementation(async () => respuesta(status, body))
+}
+
 function ultimoPedido(): { url: string; body: Record<string, unknown> } {
   const llamada = vi.mocked(apiServerFetchRaw).mock.calls.at(-1)!
   const init = (llamada[1] ?? {}) as RequestInit
@@ -167,5 +179,60 @@ describe('registrarEntradaAction()', () => {
 
     expect(estado.error).toMatch(/mayor que cero/)
     expect(apiServerFetchRaw).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * El token existe solo para limpiar el formulario.
+ *
+ * Sin él, dos ajustes seguidos con el mismo resultado producen el mismo
+ * mensaje, y la pantalla no puede distinguir "se envió de nuevo" de "no pasó
+ * nada" — así que el campo de motivo se quedaría con el texto anterior, y
+ * dejar «-8» ahí invita a mandarlo otra vez sin querer.
+ */
+describe('cada éxito trae su propio token', () => {
+  it('dos operaciones idénticas devuelven tokens distintos', async () => {
+    respondeSiempre(200, { saldo: 92 })
+
+    const primera = await ajustarLoteAction({}, form({ loteId: 'l1', cantidad: '-8', motivo: MOTIVO_VALIDO }))
+    const segunda = await ajustarLoteAction({}, form({ loteId: 'l1', cantidad: '-8', motivo: MOTIVO_VALIDO }))
+
+    expect(primera.ok).toBe(segunda.ok)
+    expect(primera.token).toBeDefined()
+    expect(primera.token).not.toBe(segunda.token)
+  })
+
+  it('un error NO trae token: lo escrito se conserva', async () => {
+    vi.mocked(apiServerFetchRaw).mockResolvedValue(
+      respuesta(409, { code: 'STOCK_INSUFICIENTE', mensaje: 'no alcanza' }),
+    )
+
+    const estado = await ajustarLoteAction(
+      {},
+      form({ loteId: 'l1', cantidad: '-500', motivo: MOTIVO_VALIDO }),
+    )
+
+    // Hacer reescribir el motivo por un error de cantidad castiga a quien ya
+    // pensó la explicación.
+    expect(estado.token).toBeUndefined()
+  })
+
+  it('un rechazo local tampoco trae token', async () => {
+    const estado = await ajustarLoteAction({}, form({ loteId: 'l1', cantidad: '0', motivo: MOTIVO_VALIDO }))
+
+    expect(estado.token).toBeUndefined()
+  })
+
+  it('las tres operaciones marcan su éxito igual', async () => {
+    respondeSiempre(201, { codigo: 'L1', fechaVencimiento: '2026-09-21', saldo: 97 })
+
+    const entrada = await registrarEntradaAction(
+      {},
+      form({ productoId: 'p1', cantidad: '10', fechaEmpaque: '2026-08-22', motivo: MOTIVO_VALIDO }),
+    )
+    const descarte = await descartarAction({}, form({ loteId: 'l1', cantidad: '1', causa: 'vencido' }))
+
+    expect(entrada.token).toBeDefined()
+    expect(descarte.token).toBeDefined()
   })
 })

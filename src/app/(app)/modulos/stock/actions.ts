@@ -21,6 +21,22 @@ const RUTA = '/modulos/stock'
 export interface EstadoDeFormulario {
   error?: string
   ok?: string
+  /**
+   * Identifica **esta** operación exitosa, y solo sirve para limpiar el
+   * formulario.
+   *
+   * Sin él, dos ajustes seguidos con el mismo resultado producen el mismo
+   * mensaje, y la pantalla no puede distinguir "se envió de nuevo" de "no pasó
+   * nada". El token cambia siempre, así que la limpieza queda **derivada** del
+   * estado en vez de sincronizada con un efecto — que es lo que dispara
+   * renders en cascada.
+   */
+  token?: string
+}
+
+/** Marca una operación exitosa como distinta de la anterior. */
+function exito(mensaje: string): EstadoDeFormulario {
+  return { ok: mensaje, token: crypto.randomUUID() }
 }
 
 async function mensajeDeError(res: Response, generico: string): Promise<string> {
@@ -80,9 +96,9 @@ export async function registrarEntradaAction(
   const lote = (await res.json()) as { codigo: string; fechaVencimiento: string }
 
   revalidatePath(RUTA)
-  return {
-    ok: `Lote ${lote.codigo} creado con ${cantidad} unidades. Vence el ${lote.fechaVencimiento}.`,
-  }
+  return exito(
+    `Lote ${lote.codigo} creado con ${cantidad} unidades. Vence el ${lote.fechaVencimiento}.`,
+  )
 }
 
 export async function ajustarLoteAction(
@@ -114,7 +130,7 @@ export async function ajustarLoteAction(
   const { saldo } = (await res.json()) as { saldo: number }
 
   revalidatePath(RUTA)
-  return { ok: `Ajuste registrado. El lote queda en ${saldo} unidades.` }
+  return exito(`Ajuste registrado. El lote queda en ${saldo} unidades.`)
 }
 
 export async function descartarAction(
@@ -150,5 +166,5 @@ export async function descartarAction(
   const { saldo } = (await res.json()) as { saldo: number }
 
   revalidatePath(RUTA)
-  return { ok: `Descarte registrado. El lote queda en ${saldo} unidades.` }
+  return exito(`Descarte registrado. El lote queda en ${saldo} unidades.`)
 }

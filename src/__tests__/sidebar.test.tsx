@@ -38,16 +38,23 @@ describe('<Sidebar />', () => {
     )
   })
 
-  it('deja el menú vacío para pos, sin romper el layout', () => {
-    render(<Sidebar userRoles={['pos']} userName="Persona de prueba" />)
+  // Hasta M0 estos dos roles tenían el menú vacío. M1 les da su primera
+  // pantalla: los cuatro roles leen el catálogo (RN-CAT-06), porque un `pos`
+  // que no ve precios no puede vender.
+  it.each(['pos', 'seller'] as const)('%s ve el catálogo y nada más', (rol) => {
+    render(<Sidebar userRoles={[rol]} userName="Persona de prueba" />)
 
-    expect(within(nav()).queryAllByRole('link')).toHaveLength(0)
+    const hrefs = within(nav())
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'))
+
+    expect(hrefs).toEqual(['/modulos/productos'])
   })
 
-  it('deja el menú vacío para seller', () => {
-    render(<Sidebar userRoles={['seller']} userName="Persona de prueba" />)
+  it('no muestra el link de gestión: esa pantalla es solo de admin', () => {
+    render(<Sidebar userRoles={['pos']} userName="Persona de prueba" />)
 
-    expect(within(nav()).queryAllByRole('link')).toHaveLength(0)
+    expect(within(nav()).queryByRole('link', { name: /gestion/i })).toBeNull()
   })
 
   // RN-ACC-01: sin switch-role, un admin que además es contador ve las dos
@@ -59,7 +66,12 @@ describe('<Sidebar />', () => {
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'))
 
-    expect(hrefs).toEqual(['/modulos/usuarios', '/modulos/auditoria', '/contador/auditoria'])
+    expect(hrefs).toEqual([
+      '/modulos/productos',
+      '/modulos/usuarios',
+      '/modulos/auditoria',
+      '/contador/auditoria',
+    ])
   })
 
   it('siempre rotula la marca', () => {

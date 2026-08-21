@@ -17,6 +17,14 @@ export interface MenuModule {
  * el modelo de alcances resuelve del lado de api/.
  */
 export const ALL_MODULES: MenuModule[] = [
+  // Los cuatro roles ven el catálogo: un `pos` que no ve precios no puede
+  // vender, y el `contador` lo necesita para leer un comprobante (RN-CAT-06).
+  {
+    id: 'productos',
+    label: 'Productos',
+    href: '/modulos/productos',
+    roles: ['admin', 'seller', 'pos', 'contador'],
+  },
   { id: 'usuarios', label: 'Usuarios', href: '/modulos/usuarios', roles: ['admin'] },
   { id: 'auditoria', label: 'Auditoría', href: '/modulos/auditoria', roles: ['admin'] },
   {

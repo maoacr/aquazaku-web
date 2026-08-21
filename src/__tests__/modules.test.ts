@@ -3,25 +3,33 @@ import { ALL_MODULES, computeVisibleModules } from '@/lib/modules'
 import type { Role } from '@/lib/roles'
 
 describe('computeVisibleModules()', () => {
-  it('admin ve usuarios y auditoría', () => {
+  it('admin ve usuarios, auditoría y productos', () => {
     const ids = computeVisibleModules(['admin']).map((m) => m.id)
 
     expect(ids).toContain('usuarios')
     expect(ids).toContain('auditoria')
+    expect(ids).toContain('productos')
   })
 
-  it('contador ve solo su propia auditoría', () => {
+  it('contador ve su auditoría y el catálogo', () => {
     const ids = computeVisibleModules(['contador']).map((m) => m.id)
 
-    expect(ids).toEqual(['contador-auditoria'])
+    expect(ids).toEqual(['productos', 'contador-auditoria'])
   })
 
-  it('pos no ve ningún módulo de M0', () => {
-    expect(computeVisibleModules(['pos'])).toEqual([])
+  // Los cuatro roles leen el catálogo (RN-CAT-06). Hasta M0 estos dos roles no
+  // veían ningún módulo; M1 les da el primero. Un `pos` que no ve precios no
+  // puede vender, y por eso esta es la primera pantalla que entra a su menú.
+  it.each(['pos', 'seller'] as const)('%s ve el catálogo de productos', (rol) => {
+    expect(computeVisibleModules([rol]).map((m) => m.id)).toEqual(['productos'])
   })
 
-  it('seller no ve ningún módulo de M0', () => {
-    expect(computeVisibleModules(['seller'])).toEqual([])
+  it('el catálogo es el único módulo que ven los cuatro roles', () => {
+    const paraTodos = ALL_MODULES.filter((m) =>
+      (['admin', 'seller', 'pos', 'contador'] as Role[]).every((rol) => m.roles.includes(rol)),
+    )
+
+    expect(paraTodos.map((m) => m.id)).toEqual(['productos'])
   })
 
   it('sin roles no ve nada', () => {
@@ -33,7 +41,7 @@ describe('computeVisibleModules()', () => {
   it('multi-rol ve la unión de los módulos de todos sus roles', () => {
     const ids = computeVisibleModules(['admin', 'contador']).map((m) => m.id)
 
-    expect(ids).toEqual(['usuarios', 'auditoria', 'contador-auditoria'])
+    expect(ids).toEqual(['productos', 'usuarios', 'auditoria', 'contador-auditoria'])
   })
 
   it('multi-rol no duplica un módulo que dos roles comparten', () => {

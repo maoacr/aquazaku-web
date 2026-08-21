@@ -7,8 +7,8 @@ import type { Role } from './roles'
  * que `api/` agregue un campo habría que buscarlo en varios archivos, y el día
  * que lo renombre nadie se enteraría hasta ver la pantalla vacía.
  *
- * Verificadas contra `api/src/modules/users/service.ts` y
- * `api/src/modules/audit/query.ts`.
+ * Verificadas contra `api/src/modules/users/service.ts`,
+ * `api/src/modules/audit/query.ts` y `api/src/db/schema.ts`.
  */
 
 /** `GET /users` y `GET /users/:id`. */
@@ -52,4 +52,33 @@ export interface PaginaDeAuditoria {
   filas: RegistroDeAuditoria[]
   /** `null` significa que no hay más: el botón "cargar más" se oculta. */
   siguienteCursor: number | null
+}
+
+/**
+ * Una fila de `GET /productos` — M1.
+ *
+ * Los montos y `litros` llegan como **string**: la columna es `numeric` y
+ * Drizzle la serializa así. Pasarlos por un float del lenguaje es exactamente
+ * donde se pierde el peso que después no cuadra en el cierre, así que se
+ * muestran y se reenvían tal cual, sin convertir.
+ */
+export interface Producto {
+  id: string
+  /** Generado por api/ — RN-CAT-11. La identidad es el `id`, no esto. */
+  codigo: string
+  nombre: string
+  presentacion: 'paca' | 'botellon'
+  contenidoMl: number
+  unidades: number
+  /** Derivado en la base desde contenido × unidades. Nunca se escribe. */
+  litros: string
+  precioResidencial: string
+  precioComercial: string
+  /** Piso absoluto: ningún descuento lo perfora (RN-CAT-04). */
+  precioMinimo: string
+  precioIncluyeImpuestos: boolean
+  tarifaIvaPorcentaje: string
+  activo: boolean
+  createdAt: string
+  updatedAt: string
 }

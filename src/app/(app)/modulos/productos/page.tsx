@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { TablaDeProductos } from '@/components/productos/tabla-productos'
 import { apiServerFetch, getServerUser } from '@/lib/api-server'
 import type { Producto } from '@/lib/api-types'
+import { analizarVendibilidad, avisoDeNoVendibles, necesitaDesglose } from '@/lib/productos'
 
 /**
  * Catálogo — lo ven los cuatro roles.
@@ -20,13 +21,8 @@ export default async function ProductosPage() {
 
   const puedeGestionar = usuario?.permisos.includes('productos:editar_precios') ?? false
 
-  // Lo que importa no es si falta el precio: es si el producto se puede vender.
-  // Un producto con precio cargado pero desactivado tampoco se vende, y ese
-  // caso es más fácil de pasar por alto — el aviso de "falta precio" ya se
-  // apagó y solo queda una etiqueta gris.
-  const noVendibles = productos.filter((p) => !p.activo)
-  const esperandoPrecio = noVendibles.filter((p) => Number(p.precioResidencial) === 0)
-  const soloFaltaActivar = noVendibles.length - esperandoPrecio.length
+  const vendibilidad = analizarVendibilidad(productos)
+  const { noVendibles, esperandoPrecio, soloFaltaActivar } = vendibilidad
 
   return (
     <div className="grid gap-6">
@@ -50,21 +46,18 @@ export default async function ProductosPage() {
 
       {noVendibles.length > 0 ? (
         <div className="grid gap-1 rounded border border-amber-900 bg-amber-950/40 px-3 py-2 text-sm text-amber-300">
-          <p className="font-medium">
-            {noVendibles.length === 1
-              ? '1 producto no se puede vender todavía.'
-              : `${noVendibles.length} productos no se pueden vender todavía.`}
-          </p>
-          {esperandoPrecio.length > 0 ? (
+          <p className="font-medium">{avisoDeNoVendibles(noVendibles.length, esperandoPrecio.length)}</p>
+
+          {/*
+            El desglose aparece SOLO cuando conviven los dos motivos. Con un
+            motivo único, el resumen ya lo dijo todo y repetirlo es ruido: el
+            lector busca la diferencia entre las dos líneas y no la encuentra.
+          */}
+          {necesitaDesglose(vendibilidad) ? (
             <p className="text-amber-400/80">
-              {esperandoPrecio.map((p) => p.codigo).join(', ')} — esperando precio.
-            </p>
-          ) : null}
-          {soloFaltaActivar > 0 ? (
-            <p className="text-amber-400/80">
-              {soloFaltaActivar === 1
-                ? '1 ya tiene precio cargado: solo falta activarlo.'
-                : `${soloFaltaActivar} ya tienen precio cargado: solo falta activarlos.`}
+              Esperando precio: {esperandoPrecio.map((p) => p.codigo).join(', ')}. Los otros{' '}
+              {soloFaltaActivar === 1 ? 'ya tiene precio' : 'ya tienen precio'} y solo falta
+              activar{soloFaltaActivar === 1 ? 'lo' : 'los'}.
             </p>
           ) : null}
         </div>

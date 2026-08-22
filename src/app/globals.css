@@ -155,23 +155,47 @@ body {
  * dos botones y el CSS muestra el que corresponde. La misma cascada que ya
  * decide los colores decide cuál se ve, sin una línea de JS.
  */
-.aq-en-claro,
-.aq-en-oscuro {
+.aq-toggle-tema .aq-en-claro,
+.aq-toggle-tema .aq-en-oscuro {
   display: none;
 }
 
-/* Sin atributo y sin preferencia declarada: los tokens base son claros. */
-:root:not([data-tema]) .aq-en-claro,
-[data-tema='claro'] .aq-en-claro,
-[data-tema='oscuro'] .aq-en-oscuro {
+/*
+ * Los botones también traen utilidades de Tailwind, y `.flex` declara
+ * `display` igual que estas reglas. Que gane una u otra no puede depender del
+ * orden en que salieron ni de si Tailwind las dejó dentro de `@layer`: en
+ * desarrollo el CSS se reconstruye por partes y ese orden cambia.
+ *
+ * Por eso hay una escalera de especificidad, que sí es invariante:
+ *
+ *   0,1,0  las utilidades (`.flex`)
+ *   0,2,0  esconder        (`.aq-toggle-tema .aq-en-*`)
+ *   0,3,0  mostrar         (`[data-tema=…] .aq-toggle-tema .aq-en-*`)
+ *
+ * Cada escalón le gana al anterior por especificidad, en cualquier orden.
+ *
+ * Y los tres casos de "mostrar" son mutuamente excluyentes —tema explícito
+ * claro, explícito oscuro, o sin atributo con lo que diga el sistema—, así
+ * que ninguno necesita pisar a otro.
+ */
+[data-tema='claro'] .aq-toggle-tema .aq-en-claro,
+[data-tema='oscuro'] .aq-toggle-tema .aq-en-oscuro {
   display: inline-flex;
 }
 
+/*
+ * Sin atributo manda el sistema operativo. Las dos consultas son complementarias
+ * —`not all and (…)` cubre todo lo que no es oscuro, incluido el browser que no
+ * entienda `prefers-color-scheme`—, así que siempre se ve exactamente uno.
+ */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-tema]) .aq-en-claro {
-    display: none;
+  :root:not([data-tema]) .aq-toggle-tema .aq-en-oscuro {
+    display: inline-flex;
   }
-  :root:not([data-tema]) .aq-en-oscuro {
+}
+
+@media not all and (prefers-color-scheme: dark) {
+  :root:not([data-tema]) .aq-toggle-tema .aq-en-claro {
     display: inline-flex;
   }
 }

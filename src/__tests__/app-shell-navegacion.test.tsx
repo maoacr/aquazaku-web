@@ -14,7 +14,7 @@ import type { Role } from '@/lib/roles'
  * veces —cajón y columna— y cada consulta encontraba todo duplicado.
  */
 function pintar(roles: Role[] = ['admin']) {
-  render(
+  return render(
     <AppShell userRoles={roles} userName="Ana Gómez">
       <p>contenido</p>
     </AppShell>,
@@ -120,6 +120,27 @@ describe('los controles de sesión viven en la cabecera', () => {
     for (const nombre of [/perfil de/i, /cambiar a tema/i, /cerrar sesión/i]) {
       const control = screen.getAllByLabelText(nombre)[0]!
       expect(nav.contains(control)).toBe(false)
+    }
+  })
+
+  /**
+   * Se renderizan los dos botones —luna y sol— y el CSS muestra el que
+   * corresponde. Esa decisión vive en `globals.css`, y para ganarle a la
+   * utilidad `.flex` necesita el escalón de especificidad que da
+   * `aq-toggle-tema`. Sin esa clase se ven los dos a la vez, que es
+   * justamente el defecto que este test cuida.
+   *
+   * jsdom no resuelve la cascada, así que acá se verifica el enganche: que los
+   * dos botones existan y que cuelguen del contenedor que les da el escalón.
+   */
+  it('los dos botones del tema cuelgan del contenedor que les da especificidad', () => {
+    const { container } = pintar()
+
+    const escalon = container.querySelector('.aq-toggle-tema')
+    expect(escalon).not.toBeNull()
+
+    for (const clase of ['aq-en-claro', 'aq-en-oscuro']) {
+      expect(escalon!.querySelector(`.${clase}`)).not.toBeNull()
     }
   })
 

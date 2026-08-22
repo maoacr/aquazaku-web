@@ -54,10 +54,14 @@ export function AccionesDeSesion({ nombre }: { nombre: string }) {
  * El tercer estado, `sistema`, no está acá: vive en el perfil. Es la preferencia
  * de fondo, no algo que se cambie de un toque, y ocupando un botón obligaría a
  * pasar por él cada vez que alguien solo quiere ver claro.
+ *
+ * `aq-toggle-tema` no es decorativa: es el escalón que le da a las reglas de
+ * `globals.css` la especificidad necesaria para ganarle a `.flex`. Sin ella se
+ * ven los dos botones a la vez.
  */
 function ToggleDeTema() {
   return (
-    <form action={cambiarTemaAction} className="contents">
+    <form action={cambiarTemaAction} className="contents aq-toggle-tema">
       <button
         type="submit"
         name="tema"

@@ -77,7 +77,13 @@ export function CabeceraYMenu({
           {abierto ? <X aria-hidden className="size-5" /> : <Menu aria-hidden className="size-5" />}
         </button>
 
-        {marca}
+        {/*
+          En teléfono la marca va acá porque el menú está detrás de un cajón: sin
+          ella, la pantalla no dice en qué sistema estás. En escritorio vive
+          arriba del panel de marca —como en el arte de referencia— y acá
+          desaparece: repetirla al lado del panel la deja huérfana.
+        */}
+        <span className="sm:hidden">{marca}</span>
         {acciones}
 
         {/*
@@ -110,10 +116,17 @@ export function CabeceraYMenu({
         style={{ gridArea: 'menu' }}
         // `-translate-x-full` en vez de `hidden`: un elemento con `display:none`
         // no se puede animar, y el cajón entra deslizándose.
-        className={`aq-vidrio fixed inset-y-0 left-0 z-30 flex w-72 max-w-[85vw] flex-col border-y-0 border-l-0 p-4 transition-transform duration-200 ease-out motion-reduce:transition-none sm:static sm:w-auto sm:max-w-none sm:translate-x-0 sm:shadow-none ${
+        className={`aq-panel-marca fixed inset-y-0 left-0 z-30 flex w-72 max-w-[85vw] flex-col py-5 transition-transform duration-200 ease-out motion-reduce:transition-none sm:relative sm:w-auto sm:max-w-none sm:translate-x-0 sm:shadow-none ${
           abierto ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
+        {/*
+          La marca corona el panel, que es donde la pone el arte. En teléfono el
+          cajón ya se abre desde la cabecera —que la muestra— así que acá sería
+          la segunda vez en la misma pantalla.
+        */}
+        <div className="mb-1 hidden px-5 sm:block">{marca}</div>
+
         {/* Cerrar al navegar: tocar un módulo y que el cajón quede tapando la
             pantalla a la que acabás de llegar es la forma más rápida de que se
             sienta roto. */}

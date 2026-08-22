@@ -12,17 +12,22 @@ import type { ReactNode } from 'react'
  * cliente a todo el armazón: así el menú se sigue armando en el servidor y solo
  * este enlace corre en el browser.
  *
- * ── El par fondo/texto ──────────────────────────────────────────────────────
+ * ── El activo no es azul, y el arte de referencia tiene razón ───────────────
  *
- * `bg-accion` + `text-invertido` es el par del sistema para "azul de acción con
- * texto encima", y queda **reservado para el módulo activo**. Antes se usaba en
- * el `hover` de todos los enlaces, que era el bug: dos enlaces se veían iguales
- * —uno porque estabas ahí, otro porque tenías el mouse encima— y el activo
- * dejaba de significar nada.
+ * D2 pedía `bg-accion` + `text-invertido` para el módulo activo. El arte
+ * (`claude-design/disenos/Panel de planta`) usa otra cosa: teal `#12525C` con
+ * una barra aqua de 3 px a la izquierda.
  *
- * El hover pasa a `bg-fondo`. El plan pedía `bg-tarjeta`, pero el `<nav>` ya es
- * `bg-tarjeta`: ese hover no se vería. `bg-fondo` es el mismo hover que ya usan
- * los iconos de la cabecera, que está sobre la misma superficie.
+ * Y es mejor. El azul de acción es el color de los BOTONES; usarlo para «estás
+ * acá» mezcla acción con ubicación y deja al menú compitiendo con el botón
+ * primario de la pantalla. Teal con barra dice ubicación y nada más.
+ *
+ * La barra tiene otra ventaja: es un canal de FORMA, no solo de color. El
+ * módulo activo se distingue en escala de grises, igual que los estados del
+ * semáforo — la misma idea de R40, aplicada a la navegación.
+ *
+ * El hover es el realce aqua al 10 % del arte. Sobre el panel oscuro se lee sin
+ * competir con el activo, que además tiene la barra.
  */
 export function EnlaceDeMenu({
   href,
@@ -41,10 +46,10 @@ export function EnlaceDeMenu({
       // `page` y no `true`: le dice al lector de pantalla que este enlace es la
       // página actual, no que sea un control encendido.
       aria-current={activo ? 'page' : undefined}
-      className={`flex min-h-11 items-center gap-2.5 rounded-md px-3 text-[14px] ${
+      className={`flex min-h-11 items-center gap-2.5 border-l-[3px] py-2 pl-3 pr-3 text-[14px] transition-colors motion-reduce:transition-none ${
         activo
-          ? 'bg-accion font-medium text-invertido'
-          : 'text-principal hover:bg-fondo hover:text-principal'
+          ? 'border-menu-barra bg-menu-activo font-semibold text-menu-texto'
+          : 'border-transparent text-menu-apagado hover:bg-menu-realce hover:text-menu-texto'
       }`}
     >
       {icono}

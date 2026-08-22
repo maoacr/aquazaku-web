@@ -71,6 +71,69 @@
   --aq-marca-aqua-media:  #3CBEAA;
   --aq-marca-aqua-luz:    #BEF0F0;
 
+  /*
+   * ── El menú es una superficie de MARCA, no una superficie de datos ────────
+   *
+   * Los valores salen del arte de referencia
+   * (`claude-design/disenos/Panel de planta`), medidos sobre sus estilos:
+   * el panel en `#0E2A3C` —el navy profundo de la marca, no un neutro— y el
+   * módulo activo en `#12525C` con una barra aqua de 3 px.
+   *
+   * Va oscuro en los DOS modos, y esa es la decisión. El menú no muestra datos:
+   * muestra dónde está parada la persona. Tratarlo como una tarjeta más lo hace
+   * desaparecer contra el contenido, y el arte lo usa como el ancla visual de la
+   * pantalla — es lo primero que se ve y lo que no se mueve.
+   *
+   * ── El activo NO es azul, y el arte tiene razón ───────────────────────────
+   *
+   * D2 pedía `bg-accion` + `text-invertido` para el módulo activo. El azul de
+   * acción es el color de los BOTONES: usarlo para «estás acá» mezcla acción con
+   * ubicación, y deja al menú compitiendo con el botón primario de la pantalla.
+   *
+   * Teal con barra aqua dice ubicación y nada más. Medido: 8,43:1 el texto sobre
+   * el activo, y 5,13:1 la barra contra su fondo —WCAG pide 3:1 para un
+   * indicador—.
+   */
+  /*
+   * El fondo del menú NO es un color plano: es el recorrido del agua.
+   *
+   * Arriba el navy profundo —el agua como entra de la red— y abajo el verde de
+   * la marca —el agua ya potable—. Es la misma secuencia del isotipo y de la
+   * cinta de la cabecera, puesta en vertical porque el menú es alto.
+   *
+   * No es decoración: el producto de Aquazaku es agua, y el único lugar del
+   * sistema donde eso se puede decir sin competir con una cifra es una
+   * superficie de marca. El menú lo es; una tabla no.
+   *
+   * El recorrido es LARGO y con poco contraste entre paradas — de `#0E2A3C` a
+   * `#14603F` hay muy poca distancia perceptual— así que se lee como
+   * profundidad, no como un arcoíris.
+   */
+  --aq-menu-fondo: linear-gradient(
+    180deg,
+    #0E2A3C 0%,
+    #103C4C 38%,
+    #12525C 72%,
+    #14603F 100%
+  );
+  /* El color plano equivalente, para donde no se pueda usar un gradiente. */
+  --aq-menu-plano:   #0E2A3C;
+  --aq-menu-activo:  #12525C;
+  --aq-menu-barra:   var(--aq-acento-400);
+  --aq-menu-texto:   var(--aq-acento-50);
+  --aq-menu-apagado: var(--aq-neutro-300);
+  /* El realce del hover: aqua al 10 %, como en el arte. */
+  --aq-menu-realce:  rgb(92 217 204 / 0.1);
+
+  /*
+   * La onda de la marca, en línea como data URI.
+   *
+   * Va acá y no como archivo porque se usa de MÁSCARA: un `<img>` traería sus
+   * propios colores y habría que mantener una versión por tema. Como máscara
+   * solo aporta la forma, y el color lo pone quien la usa.
+   */
+  --aq-onda-marca: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 120' preserveAspectRatio='none'%3E%3Cpath d='M0 46c20-20 40-20 60 0s40 20 60 0 40-20 60 0 40 20 60 0v74H0Z' fill='%23fff' opacity='.55'/%3E%3Cpath d='M0 74c20-20 40-20 60 0s40 20 60 0 40-20 60 0 40 20 60 0v46H0Z' fill='%23fff'/%3E%3C/svg%3E");
+
   --aq-marca-verde-honda: #003C1E;
   --aq-marca-verde-media: #1EAA64;
   --aq-marca-verde-luz:   #DCFAAA;
@@ -264,6 +327,13 @@
   --color-alerta-texto: var(--aq-estado-alerta-texto);
 
   --color-velo: var(--aq-velo);
+  --color-menu: var(--aq-menu-plano);
+  --color-menu-activo: var(--aq-menu-activo);
+  --color-menu-barra: var(--aq-menu-barra);
+  --color-menu-texto: var(--aq-menu-texto);
+  --color-menu-apagado: var(--aq-menu-apagado);
+  --color-menu-realce: var(--aq-menu-realce);
+
   --color-vidrio: var(--aq-vidrio-fondo);
   --color-vidrio-borde: var(--aq-vidrio-borde);
 
@@ -315,10 +385,20 @@ body {
   grid-template-rows: auto 1fr auto;
 }
 
+/*
+ * En escritorio el menú ocupa TODA la altura y la cabecera empieza después.
+ *
+ * Antes la cabecera cruzaba de lado a lado y el menú colgaba debajo. Con un
+ * menú claro daba igual; con el panel de marca oscuro no: partido en dos por la
+ * cabecera deja de leerse como una pieza y pasa a ser un recuadro.
+ *
+ * Es también como está armado el arte de referencia, y 14,75rem son los 236 px
+ * que mide ahí.
+ */
 @media (min-width: 40rem) {
   .aq-armazon {
-    grid-template-areas: 'cabecera cabecera' 'menu contenido' 'pie pie';
-    grid-template-columns: 16rem 1fr;
+    grid-template-areas: 'menu cabecera' 'menu contenido' 'menu pie';
+    grid-template-columns: 14.75rem 1fr;
   }
 }
 
@@ -405,6 +485,66 @@ body {
   box-shadow:
     inset 0 1px 0 0 var(--aq-vidrio-brillo),
     var(--aq-elev-2);
+}
+
+/**
+ * ─── El panel de marca del menú ─────────────────────────────────────────────
+ *
+ * El fondo cuenta el recorrido del agua, y encima van dos capas que le dan
+ * cuerpo de líquido en vez de plano pintado:
+ *
+ *   `::before` · un resplandor aqua muy abierto en la parte baja, donde el
+ *                gradiente ya está en verde. Sugiere luz atravesando agua.
+ *   `::after`  · la onda de la marca, en la base, al 7 %. Es la misma forma que
+ *                llevan las gotas del isotipo — repetirla acá ata el menú a la
+ *                marca sin poner un logo más.
+ *
+ * Los dos van `pointer-events: none` y detrás del contenido: son ambiente.
+ */
+/*
+ * OJO: esta clase NO declara `position`, y no es un olvido.
+ *
+ * Los pseudo-elementos necesitan un ancestro posicionado, y la tentación es
+ * poner `position: relative` acá. Pero esta regla va **sin capa**, así que le
+ * gana a la utilidad `fixed` de Tailwind —que vive en `@layer utilities`— y en
+ * teléfono el cajón deja de flotar: se mete en el grid como un ítem más, con
+ * `grid-area: menu` apuntando a un área que en móvil no existe. El armazón se
+ * llena de filas y columnas implícitas y la pantalla se desarma.
+ *
+ * Es el mismo defecto que tuvo el toggle de tema. El posicionamiento lo pone
+ * quien usa la clase: `fixed` en teléfono, `sm:relative` en escritorio.
+ */
+.aq-panel-marca {
+  isolation: isolate;
+  background: var(--aq-menu-fondo);
+  color: var(--aq-menu-texto);
+}
+
+.aq-panel-marca::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(120% 45% at 50% 108%, rgb(92 217 204 / 0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/*
+ * La onda va como `mask` y no como imagen de fondo: así toma el color de
+ * `background`, y el día que el gradiente cambie la onda lo sigue sola.
+ */
+.aq-panel-marca::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 8.5rem;
+  z-index: -1;
+  background: var(--aq-acento-200);
+  opacity: 0.07;
+  -webkit-mask: var(--aq-onda-marca) bottom / 100% 100% no-repeat;
+  mask: var(--aq-onda-marca) bottom / 100% 100% no-repeat;
+  pointer-events: none;
 }
 
 /**

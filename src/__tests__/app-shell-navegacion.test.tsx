@@ -39,10 +39,42 @@ describe('se puede volver al inicio', () => {
    * Quien entraba a un módulo no tenía forma de volver al dashboard salvo
    * editar la URL.
    */
-  it('la marca lleva al inicio', () => {
+  /**
+   * La marca se renderiza DOS veces, y es a propósito.
+   *
+   * En teléfono el menú vive detrás de un cajón, así que la marca va en la
+   * cabecera — sin ella la pantalla no dice en qué sistema estás. En escritorio
+   * corona el panel de marca, que es donde la pone el arte de referencia;
+   * repetirla al lado del panel la dejaría huérfana.
+   *
+   * Como el servidor no sabe el ancho de la pantalla, se pintan las dos y el CSS
+   * muestra una —el mismo patrón que el toggle de tema—. `display: none` la saca
+   * del árbol de accesibilidad, así que un lector de pantalla siempre encuentra
+   * exactamente una.
+   */
+  it('la marca lleva al inicio, en las dos versiones', () => {
     pintar()
 
-    expect(screen.getByRole('link', { name: 'Ir al inicio' })).toHaveAttribute('href', '/')
+    const marcas = screen.getAllByRole('link', { name: 'Ir al inicio' })
+
+    expect(marcas).toHaveLength(2)
+    for (const marca of marcas) expect(marca).toHaveAttribute('href', '/')
+  })
+
+  it('hay una para teléfono y otra para escritorio, nunca las dos a la vez', () => {
+    pintar()
+
+    // El contenedor de cada una decide en qué ancho se ve. Se mira ESE y no el
+    // enlace: la clase que las alterna vive en el envoltorio.
+    const envoltorios = screen
+      .getAllByRole('link', { name: 'Ir al inicio' })
+      .map((marca) => marca.parentElement?.className ?? '')
+
+    expect(envoltorios.some((c) => c.includes('sm:hidden')), 'falta la de teléfono').toBe(true)
+    expect(
+      envoltorios.some((c) => c.includes('hidden') && c.includes('sm:block')),
+      'falta la de escritorio',
+    ).toBe(true)
   })
 
   it('el menú tiene una entrada explícita de Inicio', () => {
@@ -50,14 +82,19 @@ describe('se puede volver al inicio', () => {
 
     // La convención del logo es de quien vive en la web. Alguien que atiende un
     // mostrador merece un link que lo diga.
-    expect(within(menu()).getByRole('link', { name: /inicio/i })).toHaveAttribute('href', '/')
+    const enMenu = within(menu()).getAllByRole('link', { name: /inicio/i })
+
+    // Dos: la marca que corona el panel y la entrada del menú.
+    expect(enMenu.at(-1)).toHaveAttribute('href', '/')
   })
 
   it('Inicio está antes que los módulos', () => {
     pintar()
 
     const enlaces = within(menu()).getAllByRole('link')
-    expect(enlaces[0]).toHaveTextContent(/inicio/i)
+
+    // El primero es la marca del panel; el siguiente tiene que ser Inicio.
+    expect(enlaces[1]).toHaveTextContent(/inicio/i)
   })
 })
 
@@ -97,7 +134,10 @@ describe('el menú muestra lo que cada rol puede ver', () => {
   it('sin roles queda solo Inicio: un menú vacío no rompe el armazón', () => {
     pintar([])
 
-    expect(within(menu()).getAllByRole('link')).toHaveLength(1)
+    // Dos enlaces: la marca que corona el panel y la entrada de Inicio. Ningún
+    // módulo, que es el punto — alguien sin roles entra al sistema y no ve nada
+    // que no pueda usar.
+    expect(within(menu()).getAllByRole('link')).toHaveLength(2)
   })
 })
 

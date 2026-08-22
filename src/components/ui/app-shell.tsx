@@ -99,7 +99,7 @@ function MenuLateral({ modules }: { modules: ReturnType<typeof computeVisibleMod
       // `overflow-y-auto` recorta lo que se salga de la caja, y el anillo sale
       // 5 px —2 de separación más 3 de grosor—, así que sin ese aire el primer y
       // el último ítem se quedan sin la mitad del anillo. Medido, no supuesto.
-      className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-[5px]"
+      className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto py-[5px] pr-2"
     >
       {/*
         Inicio va explícito y no solo en la marca. Confiar en que «el logo

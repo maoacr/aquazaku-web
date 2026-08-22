@@ -61,10 +61,17 @@ export function CabeceraYMenu({
     <>
       <header
         style={{ gridArea: 'cabecera' }}
-        // Vidrio y no `bg-tarjeta`: la cabecera flota sobre el contenido que
-        // scrollea, así que dejar pasar lo de atrás desenfocado es lo que le
-        // da profundidad. `border-b` en vez del borde completo de `.aq-vidrio`.
-        className="aq-vidrio relative flex items-center gap-1 border-x-0 border-t-0 px-2 py-2 sm:px-4"
+        /*
+          Sin superficie propia: ni fondo, ni borde, ni sombra.
+ 
+          La cabecera NO se superpone a nada. El contenido scrollea en su propia
+          fila del grid, debajo, así que una lámina acá no está tapando nada — es
+          una barra que se dibuja sola y parte la pantalla en dos.
+
+          Sin ella, los tres controles quedan flotando sobre el mismo fondo que
+          el contenido, que es exactamente lo que son: chrome, no una sección.
+        */
+        className="relative flex items-center gap-1 px-2 py-2 sm:px-4"
       >
         <button
           ref={botonRef}
@@ -89,17 +96,17 @@ export function CabeceraYMenu({
         {acciones}
 
         {/*
-          La línea de marca repite la secuencia del isotipo: azul, aqua, verde.
-          Es el agua entrando de la red y saliendo potable.
+          Acá había una línea de 2 px con el gradiente de marca, y se fue.
 
-          Va absoluta sobre el borde en vez de ser una fila del grid: una fila
-          de 2 px para una línea decorativa desordena el resto del armazón.
+          Contaba la misma historia que ahora cuenta el panel del menú —el agua
+          que entra azul y sale potable— así que eran dos veces el mismo gesto
+          en la misma pantalla. Repetido pierde significado, y en 2 px cruzando
+          todo el ancho deja de leerse como marca: se lee como una raya de color
+          suelta.
+
+          La cabecera se separa del contenido con el borde del vidrio, que es lo
+          que un borde tiene que hacer.
         */}
-        <span
-          aria-hidden
-          className="absolute inset-x-0 -bottom-px h-0.5"
-          style={{ background: 'var(--aq-gradiente-cinta)' }}
-        />
       </header>
 
       {/* Fondo que cierra al tocar afuera. `aria-hidden` porque `Escape` y el

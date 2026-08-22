@@ -66,7 +66,7 @@ export function EsqueletoDeTabla({
       // El texto para lector de pantalla va acá, UNA vez, en vez de en cada
       // rectángulo.
       aria-label="Cargando"
-      className="overflow-hidden rounded-lg border border-sutil bg-tarjeta"
+      className="overflow-hidden aq-tarjeta"
     >
       <div className="border-b border-sutil px-4 py-3">
         <Esqueleto className="h-3 w-24" />

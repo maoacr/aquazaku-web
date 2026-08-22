@@ -111,7 +111,7 @@ export default async function DashboardPage() {
           {stock.map((p) => (
             <li
               key={p.productoId}
-              className="rounded-lg border border-sutil bg-tarjeta p-4"
+              className="aq-tarjeta p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

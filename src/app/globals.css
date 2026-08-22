@@ -204,6 +204,26 @@
    * FUERTE y sigue yendo solo en superficies de marca. `--aq-ambiente` es otra
    * cosa —2 % de opacidad, sin bordes visibles— y no compite con una cifra.
    */
+  /*
+   * ── La tarjeta de datos, en vidrio ────────────────────────────────────────
+   *
+   * Más translúcida que una superficie opaca, menos que el panel de acceso. La
+   * diferencia importa: detrás de esta tarjeta hay CIFRAS, y una lámina fina
+   * baja el contraste de lo que sostiene.
+   *
+   * Lo que deja pasar no es cualquier cosa: es `--aq-ambiente`, el resplandor
+   * de marca del fondo. Por eso se lee como luz de agua atravesando la pieza y
+   * no como opacidad — hay algo real detrás que refractar.
+   *
+   * El alfa está elegido MIDIENDO: es el punto donde el texto principal y el
+   * secundario siguen por encima de 4,5:1 sobre el color que compone la lámina
+   * con el fondo.
+   */
+  --aq-tarjeta-fondo:  rgb(255 255 255 / 0.72);
+  --aq-tarjeta-borde:  rgb(255 255 255 / 0.9);
+  --aq-tarjeta-brillo: rgb(255 255 255 / 0.75);
+  --aq-tarjeta-luz:    rgb(255 255 255 / 0.5);
+
   --aq-vidrio-fondo:  rgb(255 255 255 / 0.62);
   /*
    * La lámina de los paneles que viven SOBRE el gradiente de marca.
@@ -289,6 +309,10 @@
    * justo para dibujar el borde—. Con la lámina clara de modo claro, en oscuro
    * queda una nube lechosa que tapa en vez de dejar ver.
    */
+  --aq-tarjeta-fondo:  rgb(30 42 50 / 0.55);
+  --aq-tarjeta-borde:  rgb(150 225 220 / 0.14);
+  --aq-tarjeta-brillo: rgb(180 240 240 / 0.10);
+  --aq-tarjeta-luz:    rgb(120 220 230 / 0.07);
   --aq-vidrio-fondo:  rgb(20 30 36 / 0.58);
   --aq-vidrio-fondo-panel: rgb(14 22 28 / 0.82);
 
@@ -580,6 +604,48 @@ body {
 }
 
 /**
+ * ─── La tarjeta de datos ────────────────────────────────────────────────────
+ *
+ * Vidrio, pero contenido. Lleva las mismas tres capas que el panel de acceso
+ * —lámina, canto y reflejo— con la mano mucho más liviana, porque acá abajo hay
+ * números que alguien tiene que leer de un vistazo desde el mostrador.
+ *
+ * El reflejo entra por arriba a la izquierda y se apaga antes de la mitad: cae
+ * sobre el título, nunca sobre la cifra. Un brillo cruzando un «110» lo vuelve
+ * decorado en vez de dato.
+ *
+ * Sin `backdrop-filter` el navegador sube la lámina a opaca (`@supports` abajo).
+ * Vale la pena: translúcido sin desenfoque deja leer el texto de atrás
+ * atravesando la tarjeta, que es peor que no tener vidrio.
+ */
+.aq-tarjeta {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--aq-radio-lg);
+  background: var(--aq-tarjeta-fondo);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid var(--aq-tarjeta-borde);
+  box-shadow: inset 0 1px 0 0 var(--aq-tarjeta-brillo);
+}
+
+.aq-tarjeta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(115% 60% at 8% -8%, var(--aq-tarjeta-luz) 0%, transparent 46%);
+  pointer-events: none;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .aq-tarjeta {
+    background: var(--aq-superficie-tarjeta);
+  }
+}
+
+/**
  * ─── Vidrio de verdad ───────────────────────────────────────────────────────
  *
  * Translucidez más desenfoque **no es vidrio**: es un rectángulo con opacidad.
@@ -836,6 +902,10 @@ input:not([type='checkbox'], [type='radio'], [type='hidden']) {
   --aq-texto-tenue:        var(--aq-neutro-400);
   --aq-anillo-foco: var(--aq-acento-400);
   --aq-gradiente-nombre: var(--aq-gradiente-cinta-clara);
+  --aq-tarjeta-fondo:  rgb(30 42 50 / 0.55);
+  --aq-tarjeta-borde:  rgb(150 225 220 / 0.14);
+  --aq-tarjeta-brillo: rgb(180 240 240 / 0.10);
+  --aq-tarjeta-luz:    rgb(120 220 230 / 0.07);
   --aq-vidrio-fondo: rgb(20 30 36 / 0.58);
   --aq-vidrio-fondo-panel: rgb(14 22 28 / 0.82);
 

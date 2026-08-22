@@ -36,7 +36,7 @@ export default async function PerfilPage() {
         <p className="mt-1 text-secundario">{usuario.email}</p>
       </header>
 
-      <section className="grid gap-3 rounded-lg border border-sutil bg-tarjeta p-5">
+      <section className="grid gap-3 aq-tarjeta p-5">
         <h2 className="aq-micro text-secundario">Qué puede hacer</h2>
 
         {/*
@@ -58,7 +58,7 @@ export default async function PerfilPage() {
         </p>
       </section>
 
-      <section className="grid gap-3 rounded-lg border border-sutil bg-tarjeta p-5">
+      <section className="grid gap-3 aq-tarjeta p-5">
         <h2 className="aq-micro text-secundario">Apariencia</h2>
         <SelectorTema actual={tema} />
         <p className="text-[13px] text-tenue">
@@ -66,7 +66,7 @@ export default async function PerfilPage() {
         </p>
       </section>
 
-      <section className="grid gap-3 rounded-lg border border-sutil bg-tarjeta p-5">
+      <section className="grid gap-3 aq-tarjeta p-5">
         <h2 className="aq-micro text-secundario">Seguridad</h2>
         <Link
           href="/change-password"

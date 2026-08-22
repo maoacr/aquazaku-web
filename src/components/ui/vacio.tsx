@@ -43,7 +43,7 @@ export function Vacio(props: PropsDeVacio) {
       // emergencia. `alert` interrumpe lo que el lector de pantalla esté
       // diciendo, y esto no lo amerita.
       role="status"
-      className="grid justify-items-center gap-3 rounded-lg border border-sutil bg-tarjeta px-6 py-14 text-center"
+      className="grid justify-items-center gap-3 aq-tarjeta px-6 py-14 text-center"
     >
       <Icono aria-hidden className={`size-8 ${TONO_DEL_ICONO[variante]}`} />
 

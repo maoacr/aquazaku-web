@@ -104,7 +104,7 @@ export function EntradaDeInventario({ productos }: { productos: ResumenDeStock[]
   const hoy = new Date().toISOString().slice(0, 10)
 
   return (
-    <form action={accion} className="grid gap-4 rounded-lg border border-sutil bg-tarjeta p-5">
+    <form action={accion} className="grid gap-4 aq-tarjeta p-5">
       <h2 className="text-[20px] font-semibold text-principal">Registrar entrada de inventario</h2>
       <p className="text-[14px] text-secundario">
         Crea un lote nuevo. El código y el vencimiento los genera el sistema — no se escriben.
@@ -172,7 +172,7 @@ export function AjusteDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
   const generacion = (campo: string) => limpiezaKey(estado, campo)
 
   return (
-    <form action={accion} className="grid gap-4 rounded-lg border border-sutil bg-tarjeta p-5">
+    <form action={accion} className="grid gap-4 aq-tarjeta p-5">
       <h2 className="text-[20px] font-semibold text-principal">Ajustar un lote</h2>
       <p className="text-[14px] text-secundario">
         El conteo físico siempre difiere. Positivo si sobran unidades, negativo si faltan.
@@ -216,7 +216,7 @@ export function DescarteDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
   const generacion = (campo: string) => limpiezaKey(estado, campo)
 
   return (
-    <form action={accion} className="grid gap-4 rounded-lg border border-sutil bg-tarjeta p-5">
+    <form action={accion} className="grid gap-4 aq-tarjeta p-5">
       <h2 className="text-[20px] font-semibold text-principal">Descartar unidades</h2>
       <p className="text-[14px] text-secundario">
         Selectivo por unidad: descartar no destruye el lote entero.

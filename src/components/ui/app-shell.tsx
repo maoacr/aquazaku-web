@@ -61,9 +61,12 @@ export function AppShell({
     <div className="aq-ambiente aq-armazon grid h-dvh">
       <CabeceraYMenu
         marca={<EnlaceDeMarca />}
-        // La del panel es otra instancia: se apoya sobre el fondo oscuro de
-        // marca, que no cambia con el tema, así que fuerza la cinta clara.
-        marcaDelPanel={<EnlaceDeMarca sobreOscuro />}
+        /*
+          Las dos usan el mismo gradiente. Antes la del panel forzaba la cinta
+          clara porque el menú era oscuro en los dos modos; ahora el menú es
+          vidrio sobre el agua y sigue al tema, así que el nombre también.
+        */
+        marcaDelPanel={<EnlaceDeMarca />}
         acciones={<AccionesDeSesion nombre={userName} />}
         menu={<MenuLateral modules={modules} />}
       />
@@ -111,7 +114,7 @@ function MenuLateral({ modules }: { modules: ReturnType<typeof computeVisibleMod
       // `overflow-y-auto` recorta lo que se salga de la caja, y el anillo sale
       // 5 px —2 de separación más 3 de grosor—, así que sin ese aire el primer y
       // el último ítem se quedan sin la mitad del anillo. Medido, no supuesto.
-      className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto py-[5px] pr-2"
+      className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 py-[5px]"
     >
       {/*
         Inicio va explícito y no solo en la marca. Confiar en que «el logo

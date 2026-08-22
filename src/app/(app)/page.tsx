@@ -109,10 +109,15 @@ export default async function DashboardPage() {
         */}
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {stock.map((p) => (
-            <li
-              key={p.productoId}
-              className="aq-tarjeta p-4"
-            >
+            <li key={p.productoId}>
+              {/*
+                La tarjeta es un ENLACE, y eso vino junto con la animación.
+                Levantarla al pasar el mouse enseña que se puede tocar; si no
+                llevara a ningún lado, esa promesa sería falsa. Y llevar sí
+                tiene sentido: desde el tablero, lo siguiente que se quiere ver
+                de un producto son sus lotes.
+              */}
+              <Link href={`/modulos/stock/${p.productoId}`} className="aq-tarjeta block p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-medium text-principal">{p.nombre}</p>
@@ -131,6 +136,7 @@ export default async function DashboardPage() {
                   <span className="aq-cifra">{p.vencido}</span> vencidas sin descartar
                 </p>
               ) : null}
+              </Link>
             </li>
           ))}
         </ul>

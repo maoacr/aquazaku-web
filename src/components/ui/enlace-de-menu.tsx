@@ -46,10 +46,10 @@ export function EnlaceDeMenu({
       // `page` y no `true`: le dice al lector de pantalla que este enlace es la
       // página actual, no que sea un control encendido.
       aria-current={activo ? 'page' : undefined}
-      className={`flex min-h-11 items-center gap-2.5 border-l-[3px] py-2 pl-3 pr-3 text-[14px] transition-colors motion-reduce:transition-none ${
+      className={`flex min-h-11 items-center gap-2.5 rounded-md px-3 py-2 text-[14px] transition-colors motion-reduce:transition-none ${
         activo
-          ? 'border-menu-barra bg-menu-activo font-semibold text-menu-texto'
-          : 'border-transparent text-menu-apagado hover:bg-menu-realce hover:text-menu-texto'
+          ? 'aq-menu-vidrio font-semibold text-principal'
+          : 'text-secundario hover:bg-menu-realce hover:text-principal'
       }`}
     >
       {icono}

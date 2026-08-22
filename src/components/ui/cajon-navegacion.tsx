@@ -125,7 +125,9 @@ export function CabeceraYMenu({
         style={{ gridArea: 'menu' }}
         // `-translate-x-full` en vez de `hidden`: un elemento con `display:none`
         // no se puede animar, y el cajón entra deslizándose.
-        className={`aq-panel-marca fixed inset-y-0 left-0 z-30 flex w-72 max-w-[85vw] flex-col py-5 transition-transform duration-200 ease-out motion-reduce:transition-none sm:relative sm:w-auto sm:max-w-none sm:translate-x-0 sm:shadow-none ${
+        // En teléfono es un cajón que ocupa el alto completo; en escritorio, una
+        // tarjeta con margen que flota sobre el agua como las demás.
+        className={`aq-panel-marca fixed inset-y-0 left-0 z-30 flex w-72 max-w-[85vw] flex-col rounded-none py-4 transition-transform duration-200 ease-out motion-reduce:transition-none sm:relative sm:m-3 sm:w-auto sm:max-w-none sm:translate-x-0 sm:rounded-xl ${
           abierto ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

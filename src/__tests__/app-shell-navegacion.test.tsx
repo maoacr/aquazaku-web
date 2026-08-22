@@ -15,7 +15,7 @@ import type { Role } from '@/lib/roles'
  */
 function pintar(roles: Role[] = ['admin']) {
   render(
-    <AppShell userRoles={roles} userName="Ana Gómez" tema="claro">
+    <AppShell userRoles={roles} userName="Ana Gómez">
       <p>contenido</p>
     </AppShell>,
   )
@@ -105,6 +105,63 @@ describe('el cajón se abre y se cierra', () => {
 
     const boton = screen.getByRole('button', { name: 'Abrir el menú' })
     expect(menu().id).toBe(boton.getAttribute('aria-controls'))
+  })
+})
+
+describe('los controles de sesión viven en la cabecera', () => {
+  /**
+   * Antes estaban al pie del menú lateral, que en un teléfono está detrás de un
+   * cajón: cambiar el tema exigía abrir el menú, bajar y cerrar.
+   */
+  it('el perfil, el tema y la salida están fuera del menú', () => {
+    pintar()
+
+    const nav = menu()
+    for (const nombre of [/perfil de/i, /cambiar a tema/i, /cerrar sesión/i]) {
+      const control = screen.getAllByLabelText(nombre)[0]!
+      expect(nav.contains(control)).toBe(false)
+    }
+  })
+
+  it('el perfil lleva a la pantalla de perfil', () => {
+    pintar()
+
+    expect(screen.getByLabelText(/perfil de Ana Gómez/i)).toHaveAttribute('href', '/perfil')
+  })
+
+  /**
+   * Se renderizan los DOS botones y el CSS muestra el que corresponde. Del lado
+   * del servidor no se puede saber qué prefiere el sistema operativo de quien
+   * mira, y preguntarlo con JavaScript traería de vuelta el destello.
+   */
+  it('ofrece los dos sentidos del tema, y el CSS elige cuál se ve', () => {
+    pintar()
+
+    const aOscuro = screen.getByLabelText('Cambiar a tema oscuro')
+    const aClaro = screen.getByLabelText('Cambiar a tema claro')
+
+    expect(aOscuro.className).toContain('aq-en-claro')
+    expect(aClaro.className).toContain('aq-en-oscuro')
+  })
+
+  it('cada botón manda el tema que promete', () => {
+    pintar()
+
+    expect(screen.getByLabelText('Cambiar a tema oscuro')).toHaveAttribute('value', 'oscuro')
+    expect(screen.getByLabelText('Cambiar a tema claro')).toHaveAttribute('value', 'claro')
+  })
+
+  it('salir es un botón de formulario, no un link', () => {
+    pintar()
+
+    // Un `GET` desde un link lo dejaría expuesto a que un prefetch lo dispare.
+    expect(screen.getByLabelText('Cerrar sesión').tagName).toBe('BUTTON')
+  })
+
+  it('el menú queda solo con navegación', () => {
+    pintar()
+
+    expect(within(menu()).queryByLabelText(/cerrar sesión/i)).toBeNull()
   })
 })
 

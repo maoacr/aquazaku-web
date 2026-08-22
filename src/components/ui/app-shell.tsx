@@ -2,13 +2,11 @@ import { Home } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { CabeceraYMenu } from '@/components/ui/cajon-navegacion'
-import { CerrarSesion } from '@/components/ui/cerrar-sesion'
+import { AccionesDeSesion } from '@/components/ui/acciones-de-sesion'
 import { Marca } from '@/components/ui/marca'
 import { Pie } from '@/components/ui/pie'
-import { SelectorTema } from '@/components/ui/selector-tema'
 import { computeVisibleModules } from '@/lib/modules'
 import type { Role } from '@/lib/roles'
-import type { Tema } from '@/lib/tema'
 
 /**
  * Armazón de la app: cabecera, menú, contenido y pie.
@@ -37,12 +35,10 @@ import type { Tema } from '@/lib/tema'
 export function AppShell({
   userRoles,
   userName,
-  tema,
   children,
 }: {
   userRoles: Role[]
   userName: string
-  tema: Tema
   children: ReactNode
 }) {
   const modules = computeVisibleModules(userRoles)
@@ -70,7 +66,8 @@ export function AppShell({
             <Marca compacta />
           </Link>
         }
-        menu={<MenuLateral modules={modules} userName={userName} tema={tema} />}
+        acciones={<AccionesDeSesion nombre={userName} />}
+        menu={<MenuLateral modules={modules} />}
       />
 
       <main
@@ -88,42 +85,27 @@ export function AppShell({
   )
 }
 
-/** Contenido del menú. Vive acá para que el cajón sea solo comportamiento. */
-function MenuLateral({
-  modules,
-  userName,
-  tema,
-}: {
-  modules: ReturnType<typeof computeVisibleModules>
-  userName: string
-  tema: Tema
-}) {
+/** Contenido del menú: solo navegación. Lo demás vive en la cabecera. */
+function MenuLateral({ modules }: { modules: ReturnType<typeof computeVisibleModules> }) {
   return (
-    <>
-      <ul className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
-        {/*
-          Inicio va explícito y no solo en la marca. Confiar en que «el logo
-          lleva al inicio» es una convención de quien vive en la web; alguien
-          que atiende un mostrador merece un link que lo diga.
-        */}
-        <li>
-          <Enlace href="/" icono={<Home aria-hidden className="size-4 shrink-0" />}>
-            Inicio
-          </Enlace>
+    <ul className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+      {/*
+        Inicio va explícito y no solo en la marca. Confiar en que «el logo
+        lleva al inicio» es una convención de quien vive en la web; alguien
+        que atiende un mostrador merece un link que lo diga.
+      */}
+      <li>
+        <Enlace href="/" icono={<Home aria-hidden className="size-4 shrink-0" />}>
+          Inicio
+        </Enlace>
+      </li>
+
+      {modules.map((modulo) => (
+        <li key={modulo.id}>
+          <Enlace href={modulo.href}>{modulo.label}</Enlace>
         </li>
-
-        {modules.map((modulo) => (
-          <li key={modulo.id}>
-            <Enlace href={modulo.href}>{modulo.label}</Enlace>
-          </li>
-        ))}
-      </ul>
-
-      <div className="mt-4 grid shrink-0 gap-4 border-t border-sutil pt-4">
-        <SelectorTema actual={tema} />
-        <CerrarSesion nombre={userName} />
-      </div>
-    </>
+      ))}
+    </ul>
   )
 }
 

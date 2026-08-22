@@ -144,6 +144,39 @@ body {
 }
 
 /**
+ * Mostrar según el tema que se está viendo.
+ *
+ * El toggle del header necesita saber si ahora mismo se ve claro u oscuro para
+ * ofrecer el opuesto. Del lado del servidor eso **no se puede saber** cuando el
+ * tema es `sistema`: la preferencia vive en el sistema operativo de quien mira.
+ *
+ * Preguntarlo con JavaScript al montar traería de vuelta el destello que la
+ * cookie evita —el icono equivocado por un instante—, así que se renderizan los
+ * dos botones y el CSS muestra el que corresponde. La misma cascada que ya
+ * decide los colores decide cuál se ve, sin una línea de JS.
+ */
+.aq-en-claro,
+.aq-en-oscuro {
+  display: none;
+}
+
+/* Sin atributo y sin preferencia declarada: los tokens base son claros. */
+:root:not([data-tema]) .aq-en-claro,
+[data-tema='claro'] .aq-en-claro,
+[data-tema='oscuro'] .aq-en-oscuro {
+  display: inline-flex;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema]) .aq-en-claro {
+    display: none;
+  }
+  :root:not([data-tema]) .aq-en-oscuro {
+    display: inline-flex;
+  }
+}
+
+/**
  * Etiqueta micro: 11px en mayúsculas con tracking.
  *
  * Es el único texto del sistema por debajo de 13px, y solo se permite en

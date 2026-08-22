@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { AppShell } from '@/components/ui/app-shell'
-import { leerTema } from '@/lib/tema'
 import { getServerUser } from '@/lib/api-server'
 
 /**
@@ -15,9 +14,7 @@ import { getServerUser } from '@/lib/api-server'
  * /login a alguien que SÍ tiene sesión lo dejaría en un loop de redirects.
  */
 export default async function AppLayout({ children }: LayoutProps<'/'>) {
-  // Las dos lecturas van en paralelo: la sesión viaja a `api/` y el tema sale
-  // de una cookie local, así que encadenarlas costaría un viaje de más.
-  const [user, tema] = await Promise.all([getServerUser(), leerTema()])
+  const user = await getServerUser()
 
   if (!user) {
     redirect('/login')
@@ -34,7 +31,7 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
   }
 
   return (
-    <AppShell userRoles={user.roles} userName={user.name} tema={tema}>
+    <AppShell userRoles={user.roles} userName={user.name}>
       {children}
     </AppShell>
   )

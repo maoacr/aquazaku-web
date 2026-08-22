@@ -27,7 +27,15 @@ import type { ReactNode } from 'react'
  * Un cajón necesita estado: animarse, cerrarse tocando afuera, responder a
  * `Escape` y devolver el foco. Eso es un componente.
  */
-export function CabeceraYMenu({ marca, menu }: { marca: ReactNode; menu: ReactNode }) {
+export function CabeceraYMenu({
+  marca,
+  acciones,
+  menu,
+}: {
+  marca: ReactNode
+  acciones: ReactNode
+  menu: ReactNode
+}) {
   const [abierto, setAbierto] = useState(false)
   const panelId = useId()
   const botonRef = useRef<HTMLButtonElement>(null)
@@ -67,6 +75,7 @@ export function CabeceraYMenu({ marca, menu }: { marca: ReactNode; menu: ReactNo
         </button>
 
         {marca}
+        {acciones}
 
         {/*
           La línea de marca repite la secuencia del isotipo: azul, aqua, verde.

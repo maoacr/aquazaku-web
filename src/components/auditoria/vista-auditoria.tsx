@@ -1,4 +1,5 @@
 import { Encabezados, Etiqueta, SinResultados, Tabla, Td, Th } from '@/components/ui/tabla'
+import { QuitarFiltros } from '@/components/ui/vacio'
 import { apiServerFetch } from '@/lib/api-server'
 import type { PaginaDeAuditoria, RegistroDeAuditoria } from '@/lib/api-types'
 
@@ -77,7 +78,16 @@ export async function VistaDeAuditoria({
         <tbody>
           {pagina.filas.length === 0 ? (
             <SinResultados columnas={5}>
-              No hay registros que coincidan con estos filtros.
+              {/*
+                R50 · Un vacío de filtro NUNCA sugiere crear. Acá ni siquiera
+                tendría sentido —la auditoría no se escribe a mano— pero lo que
+                sí faltaba era la salida: decir «no hay nada» sin ofrecer cómo
+                volver deja a la persona reescribiendo filtros a ciegas.
+              */}
+              <span className="grid justify-items-center gap-3">
+                No hay registros que coincidan con estos filtros.
+                <QuitarFiltros href={ruta} />
+              </span>
             </SinResultados>
           ) : (
             pagina.filas.map((fila) => <FilaDeRegistro key={fila.id} fila={fila} />)

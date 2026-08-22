@@ -36,21 +36,51 @@ export class ApiError extends Error {
     this.body = body
     this.path = context.path
     this.requestId = context.requestId
-    this.digest = digestDeStatus(status)
+    this.digest = digestDeStatus(status, context.requestId)
   }
 }
 
 /** Prefijo de los digests que emite `ApiError`, para reconocerlos en el boundary. */
 export const DIGEST_API = 'aquazaku-api'
 
-export function digestDeStatus(status: number): string {
-  return `${DIGEST_API}:${status}`
+/**
+ * El digest lleva DOS cosas, y por razones distintas.
+ *
+ * El **status** porque es lo único con lo que el error boundary puede decidir
+ * qué mostrar: Next borra `message` y `stack` en producción y solo conserva
+ * esto.
+ *
+ * El **requestId** porque sin él el código que se le da a soporte no identifica
+ * nada. `aquazaku-api:500` es el mismo string para todas las fallas del
+ * sistema: alguien lo reporta, soporte lo busca en los logs y encuentra
+ * cuatrocientas. Con el `requestId` —el mismo que viajó en `x-request-id` hacia
+ * api/— se encuentra **esa** petición y la otra mitad de la historia.
+ */
+export function digestDeStatus(status: number, requestId?: string): string {
+  return requestId ? `${DIGEST_API}:${status}:${requestId}` : `${DIGEST_API}:${status}`
 }
 
 /** Extrae el status desde el `digest`, que es lo único que llega al cliente. */
 export function statusDesdeDigest(digest: string | undefined): number | null {
   if (!digest?.startsWith(`${DIGEST_API}:`)) return null
 
-  const status = Number(digest.slice(DIGEST_API.length + 1))
+  // El digest es `aquazaku-api:<status>[:<requestId>]`. `split` y no `slice`:
+  // desde que el requestId viaja adentro, cortar por posición se lleva las dos
+  // cosas juntas y `Number` devuelve `NaN`.
+  const status = Number(digest.split(':')[1])
+
   return Number.isFinite(status) ? status : null
+}
+
+/**
+ * El identificador que se le muestra a quien reporta una falla.
+ *
+ * Es el `requestId` solo, sin el status: no dice «500» —que a la persona no le
+ * significa nada y R52 no quiere en pantalla— y sí permite encontrar la
+ * petición exacta en los logs de api/.
+ */
+export function codigoDeSoporte(digest: string | undefined): string | null {
+  if (!digest?.startsWith(`${DIGEST_API}:`)) return null
+
+  return digest.split(':')[2] ?? null
 }

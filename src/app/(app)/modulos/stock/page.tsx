@@ -1,6 +1,7 @@
 import { AvisoDeStock } from '@/components/stock/aviso-de-stock'
 import { EntradaDeInventario } from '@/components/stock/formularios'
 import { TablaDeStock } from '@/components/stock/tabla-stock'
+import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch, getServerUser } from '@/lib/api-server'
 import type { ResumenDeStock } from '@/lib/api-types'
 
@@ -17,6 +18,10 @@ export default async function StockPage() {
     getServerUser(),
   ])
 
+  // Después del `await`, no antes: la hora que interesa es cuándo se leyó la
+  // base, no cuándo empezó a renderizarse la pantalla.
+  const leidoEn = new Date()
+
   const puedeAjustar = usuario?.permisos.includes('stock:ajustar') ?? false
 
   return (
@@ -31,6 +36,8 @@ export default async function StockPage() {
       <AvisoDeStock productos={productos} />
 
       <TablaDeStock productos={productos} />
+
+      <SelloDeHora leidoEn={leidoEn} />
 
       {puedeAjustar ? <EntradaDeInventario productos={productos} /> : null}
     </div>

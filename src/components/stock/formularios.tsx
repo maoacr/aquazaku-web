@@ -39,9 +39,18 @@ function limpiezaKey(estado: EstadoDeFormulario, campo: string): string {
 const campo =
   'aq-campo'
 
-/** Alto mínimo 44px; los primarios, 56px. Regla táctil del sistema. */
-const botonPrimario =
-  'aq-boton aq-boton-primario aq-boton-grande'
+/**
+ * 44 px, como los campos que tiene al lado.
+ *
+ * Estos formularios estuvieron en 56 px, que es el alto de `aq-boton-grande`.
+ * Ese alto es para la pantalla que hace UNA sola cosa —entrar, cambiar la
+ * contraseña—: ahí el botón no compite con nada y suele tocarse con el pulgar.
+ *
+ * Acá compite. Es un formulario dentro de una vista que además tiene una tabla,
+ * un aviso y otro formulario, y un botón 12 px más alto que sus propios campos
+ * se lee como si la pantalla entera existiera para apretarlo.
+ */
+const botonPrimario = 'aq-boton aq-boton-primario'
 
 function Resultado({ estado }: { estado: EstadoDeFormulario }) {
   return (
@@ -248,7 +257,7 @@ export function DescarteDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
         <button
           type="submit"
           disabled={enviando}
-          className="aq-boton aq-boton-destructivo aq-boton-grande"
+          className="aq-boton aq-boton-destructivo"
         >
           {enviando ? 'Descartando…' : 'Registrar descarte'}
         </button>

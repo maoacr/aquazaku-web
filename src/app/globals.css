@@ -102,6 +102,18 @@
   --aq-campo-hueco:      rgb(20 60 80 / 0.08);
 
   /*
+   * El tilde de la ficha marcada, como máscara.
+   *
+   * Va acá y no dentro de la regla para que exista UNA sola vez: es la misma
+   * forma en la ficha normal y en la compacta, y duplicar el data-URI es
+   * duplicar algo que después se corrige en un solo lado.
+   *
+   * Es un trazo, no un relleno: la máscara toma la opacidad, y un `stroke`
+   * opaco sobre transparente recorta exactamente el tilde.
+   */
+  --aq-tilde: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
+
+  /*
    * ── La marca, muestreada del archivo original ─────────────────────────────
    *
    * Estos hex NO están elegidos: salen de contar píxeles sobre `gotas.png`, el
@@ -1182,6 +1194,128 @@ textarea.aq-campo {
 .aq-campo:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/**
+ * ── La ficha seleccionable ──────────────────────────────────────────────────
+ *
+ * Los roles se elegían con checkboxes NATIVOS de 16 px: cuadros blancos crudos
+ * del navegador, sin relación con nada del sistema, sobre el vidrio.
+ *
+ * El problema de fondo es táctil. La regla de los 44 px exime a `checkbox` y a
+ * `radio` —agrandar la caja los deforma— y esa exención dejó el control más
+ * chico de la app en la pantalla donde se decide quién puede hacer qué. 16 px
+ * en un teléfono se falla, y fallar acá es darle un rol a alguien sin querer.
+ *
+ * La solución no es agrandar la caja: es que el objetivo sea LA FICHA ENTERA.
+ * El `<label>` pasa a ser una superficie de 44 px que se toca en cualquier
+ * parte, y la caja adentro queda como el indicador visual.
+ *
+ * El input sigue siendo un `checkbox` nativo, solo que `sr-only`: el lector de
+ * pantalla sigue anunciando «casilla, admin, marcada», el formulario sigue
+ * enviando `roles`, y no hay una línea de JavaScript. Lo único que cambia es
+ * dónde se dibuja.
+ */
+.aq-ficha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 0.875rem;
+  border-radius: var(--aq-radio-pill);
+  border: 1px solid var(--aq-campo-canto);
+  background: var(--aq-campo-fondo);
+  color: var(--aq-texto-secundario);
+  font: var(--aq-cuerpo-chico);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    border-color 0.15s var(--aq-fluido),
+    background-color 0.15s var(--aq-fluido),
+    color 0.15s var(--aq-fluido);
+}
+
+.aq-ficha:hover {
+  border-color: var(--aq-campo-canto-vivo);
+  color: var(--aq-texto-principal);
+}
+
+/*
+ * Marcada, la ficha entera cambia — no solo la casilla. Es lo que permite leer
+ * de un vistazo qué roles tiene alguien sin recorrer cuatro cuadritos.
+ */
+.aq-ficha:has(input:checked) {
+  border-color: var(--aq-accion-primaria);
+  background: color-mix(in srgb, var(--aq-accion-primaria) 16%, transparent);
+  color: var(--aq-texto-principal);
+}
+
+/*
+ * El anillo de foco tiene que saltar del input a la ficha: el input mide 1 px
+ * y ahí el anillo global se dibuja donde no lo ve nadie. Es la misma trampa que
+ * dejó el foco invisible la primera vez, y por eso se resuelve acá y no
+ * apagando la regla global.
+ */
+.aq-ficha:has(input:focus-visible) {
+  outline: 3px solid var(--aq-anillo-foco);
+  outline-offset: 2px;
+}
+
+.aq-ficha-caja {
+  display: grid;
+  place-items: center;
+  inline-size: 18px;
+  block-size: 18px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--aq-campo-canto-vivo);
+  transition:
+    background-color 0.15s var(--aq-fluido),
+    border-color 0.15s var(--aq-fluido);
+}
+
+.aq-ficha:has(input:checked) .aq-ficha-caja {
+  background: var(--aq-accion-primaria);
+  border-color: var(--aq-accion-primaria);
+}
+
+/*
+ * El tilde va como MÁSCARA y no como imagen de fondo: así el color sale de un
+ * token y sigue al tema. Con un SVG de color fijo habría que mantener dos.
+ */
+.aq-ficha:has(input:checked) .aq-ficha-caja::after {
+  content: '';
+  inline-size: 12px;
+  block-size: 12px;
+  background: var(--aq-texto-invertido);
+  -webkit-mask: var(--aq-tilde) center / contain no-repeat;
+  mask: var(--aq-tilde) center / contain no-repeat;
+}
+
+/*
+ * La variante de tabla. Se angosta y baja a 36 px porque una fila con cuatro
+ * fichas de 44 px más un botón mide más que la fila de datos que acompaña — y
+ * ahí la tabla deja de leerse como una tabla.
+ *
+ * Sigue siendo mucho más grande que los 16 px del checkbox nativo que había.
+ */
+.aq-ficha-compacta {
+  min-height: 36px;
+  padding: 0 0.625rem;
+  gap: 0.375rem;
+  font: var(--aq-micro);
+  letter-spacing: 0.02em;
+}
+
+.aq-ficha-compacta .aq-ficha-caja {
+  inline-size: 15px;
+  block-size: 15px;
+  border-radius: 4px;
+}
+
+.aq-ficha-compacta:has(input:checked) .aq-ficha-caja::after {
+  inline-size: 10px;
+  block-size: 10px;
 }
 
 /**

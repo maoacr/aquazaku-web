@@ -59,17 +59,20 @@ function Fila({ usuario }: { usuario: UsuarioListado }) {
           {/* El formulario manda el conjunto COMPLETO de roles, no un diff: el
               endpoint es idempotente y reemplaza. Cada checkbox marcado viaja
               como un valor de `roles`. */}
-          <form action={guardarRoles} className="flex flex-wrap items-center gap-3">
+          <form action={guardarRoles} className="flex flex-wrap items-center gap-1.5">
             <input type="hidden" name="userId" value={usuario.id} />
             {ROLES_DISPONIBLES.map((rol) => (
-              <label key={rol} className="flex items-center gap-1.5 text-sm">
+              // La variante compacta: una fila con cuatro fichas de 44 px más
+              // el botón mide más que la fila de datos que acompaña.
+              <label key={rol} className="aq-ficha aq-ficha-compacta">
                 <input
                   type="checkbox"
                   name="roles"
                   value={rol}
                   defaultChecked={usuario.roles.includes(rol)}
-                  className="size-3.5"
+                  className="sr-only"
                 />
+                <span className="aq-ficha-caja" aria-hidden />
                 <span>{rol}</span>
               </label>
             ))}

@@ -248,6 +248,37 @@ describe('los formularios se construyen con las primitivas del sistema', () => {
     ).toEqual([])
   })
 
+  it('ninguna casilla se dibuja cruda', () => {
+    // La regla de los 44 px exime a `checkbox` y a `radio` porque agrandar la
+    // caja los deforma. Esa exención dejó el control más chico de la app —16 px
+    // nativos— en la pantalla donde se decide quién puede hacer qué.
+    //
+    // La salida es que el objetivo sea la FICHA entera, no la caja. Un checkbox
+    // con clase de tamaño es alguien volviendo a estilar la caja.
+    const culpables = componentes.filter(({ contenido }) =>
+      /type="checkbox"[\s\S]{0,200}?className="[^"]*\bsize-/.test(contenido),
+    )
+
+    expect(
+      culpables.map((c) => c.ruta),
+      'estilan la casilla en vez de usar `.aq-ficha`, que se toca entera',
+    ).toEqual([])
+  })
+
+  it('la ficha se toca entera y llega al mínimo táctil', () => {
+    const ficha = bloque(globales, '.aq-ficha')
+
+    expect(ficha).toMatch(/min-height:\s*44px/)
+    // Sin `cursor: pointer` una superficie de 44 px no se anuncia como tocable.
+    expect(ficha).toMatch(/cursor:\s*pointer/)
+  })
+
+  it('el foco salta del input a la ficha', () => {
+    // El input es `sr-only`: mide 1 px, y ahí el anillo global se dibuja donde
+    // no lo ve nadie. Se resuelve moviéndolo, NUNCA apagando la regla global.
+    expect(globales).toMatch(/\.aq-ficha:has\(input:focus-visible\)\s*\{[^}]*outline:/)
+  })
+
   it('el campo se ve HUNDIDO, que es lo que lo distingue de una tarjeta', () => {
     const campo = bloque(globales, '.aq-campo')
 

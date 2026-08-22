@@ -62,17 +62,18 @@ export function AltaDeUsuario() {
       </div>
 
       <fieldset className="grid gap-2.5">
-        <legend className="aq-etiqueta-campo">Roles</legend>
+        <legend className="aq-etiqueta-campo mb-1">Roles</legend>
         {/* Checkboxes y no un select: los roles se acumulan, no se eligen entre
             sí (RN-ACC-01). Un desplegable de opción única sugeriría lo
-            contrario. */}
-        <div className="flex flex-wrap gap-x-5 gap-y-2.5">
+            contrario.
+
+            Se dibujan como fichas: el objetivo táctil pasa a ser la ficha
+            entera y no el cuadrito de 16 px. Ver `.aq-ficha` en `globals.css`. */}
+        <div className="flex flex-wrap gap-2">
           {ROLES_DISPONIBLES.map((rol) => (
-            <label
-              key={rol}
-              className="flex items-center gap-2 text-[14px] text-principal"
-            >
-              <input type="checkbox" name="roles" value={rol} className="size-4 accent-accion" />
+            <label key={rol} className="aq-ficha">
+              <input type="checkbox" name="roles" value={rol} className="sr-only" />
+              <span className="aq-ficha-caja" aria-hidden />
               <span>{rol}</span>
             </label>
           ))}

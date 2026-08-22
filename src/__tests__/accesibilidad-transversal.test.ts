@@ -1,4 +1,4 @@
-import { readFileSync, globSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -73,10 +73,11 @@ describe('R55 · el foco siempre se ve', () => {
    * componente apague el foco por su cuenta con `outline-none` de Tailwind.
    */
   it('ningún componente apaga el foco por su cuenta', () => {
-    const componentes = globSync('src/{components,app}/**/*.tsx', {
-      cwd: process.cwd(),
-      ignore: ['**/*.test.tsx'],
-    })
+    const componentes = ['src/components', 'src/app'].flatMap((carpeta) =>
+      readdirSync(join(process.cwd(), carpeta), { recursive: true, encoding: 'utf8' })
+        .filter((nombre) => nombre.endsWith('.tsx') && !nombre.endsWith('.test.tsx'))
+        .map((nombre) => join(carpeta, nombre)),
+    )
 
     expect(componentes.length).toBeGreaterThan(10)
 

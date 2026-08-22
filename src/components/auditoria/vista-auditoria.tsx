@@ -145,7 +145,7 @@ function FilaDeRegistro({ fila }: { fila: RegistroDeAuditoria }) {
         ) : null}
       </Td>
 
-      <Td className="whitespace-nowrap font-mono text-sm">{fila.action}</Td>
+      <Td className="aq-cifra whitespace-nowrap text-sm">{fila.action}</Td>
 
       <Td>
         {/*

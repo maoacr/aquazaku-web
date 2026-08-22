@@ -26,7 +26,7 @@ export function TablaDeProductos({ productos }: { productos: Producto[] }) {
         ) : (
           productos.map((p) => (
             <tr key={p.id}>
-              <Td className="font-mono text-sm">{p.codigo}</Td>
+              <Td className="aq-cifra text-sm">{p.codigo}</Td>
               <Td>{p.nombre}</Td>
               <Td className="whitespace-nowrap text-secundario">
                 {p.presentacion === 'paca'
@@ -34,9 +34,9 @@ export function TablaDeProductos({ productos }: { productos: Producto[] }) {
                   : `${p.contenidoMl / 1000} L`}
                 <span className="ml-2 text-sm">({litros(p.litros)} L)</span>
               </Td>
-              <Td className="whitespace-nowrap tabular-nums">{pesos(p.precioResidencial)}</Td>
-              <Td className="whitespace-nowrap tabular-nums">{pesos(p.precioComercial)}</Td>
-              <Td className="whitespace-nowrap tabular-nums text-secundario">
+              <Td className="aq-cifra whitespace-nowrap">{pesos(p.precioResidencial)}</Td>
+              <Td className="aq-cifra whitespace-nowrap">{pesos(p.precioComercial)}</Td>
+              <Td className="aq-cifra whitespace-nowrap text-secundario">
                 {pesos(p.precioMinimo)}
               </Td>
               <Td>

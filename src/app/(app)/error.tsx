@@ -64,7 +64,7 @@ export default function ErrorDeApp({
       {codigo ? (
         <p className="text-sm text-tenue">
           Si vuelve a pasar, pasale este código a soporte:{' '}
-          <code className="font-mono text-secundario">{codigo}</code>
+          <code className="aq-cifra text-secundario">{codigo}</code>
         </p>
       ) : null}
 

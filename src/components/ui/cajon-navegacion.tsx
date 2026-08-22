@@ -1,6 +1,8 @@
 'use client'
 
 import { Menu, X } from 'lucide-react'
+import type { Role } from '@/lib/roles'
+import { NavegacionInferior } from './navegacion-inferior'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
@@ -32,11 +34,28 @@ export function CabeceraYMenu({
   marcaDelPanel,
   acciones,
   menu,
+  roles,
+  creditos,
 }: {
   marca: ReactNode
   marcaDelPanel: ReactNode
   acciones: ReactNode
   menu: ReactNode
+  /**
+   * Los roles de quien entró.
+   *
+   * La barra inferior los necesita para resolver sus propios módulos. No se le
+   * pasan los módulos ya armados porque `icono` es un componente, y una función
+   * no cruza la frontera servidor/cliente.
+   */
+  roles: Role[]
+  /**
+   * Los créditos del pie.
+   *
+   * En teléfono el pie lo ocupa la barra de navegación, así que esto se muda al
+   * fondo del cajón — que es donde alguien va a buscar «de quién es esto».
+   */
+  creditos: ReactNode
 }) {
   const [abierto, setAbierto] = useState(false)
   const panelId = useId()
@@ -77,8 +96,13 @@ export function CabeceraYMenu({
           y las tarjetas. Con 16 px acá y 24 px abajo, el borde derecho de los
           iconos quedaba 8 px afuera del de las tarjetas — poco para nombrarlo y
           suficiente para que la pantalla se sienta desalineada.
+
+          El `py-3` hace lo mismo en vertical: 12 px, que es el margen superior
+          del panel del menú. Con `py-2` los iconos arrancaban 4 px más arriba
+          que el borde del panel — y esos 4 px son la diferencia entre que la
+          fila de arriba se lea como una sola cosa o como dos piezas sueltas.
         */
-        className="relative flex items-center gap-1 px-4 py-2 sm:px-6"
+        className="relative flex items-center gap-1 px-4 py-3 sm:px-6"
       >
         <button
           ref={botonRef}
@@ -126,6 +150,12 @@ export function CabeceraYMenu({
         }`}
       />
 
+      {/*
+        La barra inferior vive acá y no en el armazón porque «Más» tiene que
+        abrir el cajón, y el estado del cajón es de este componente.
+      */}
+      <NavegacionInferior roles={roles} onAbrirCajon={() => setAbierto(true)} />
+
       <nav
         id={panelId}
         aria-label="Módulos"
@@ -151,6 +181,14 @@ export function CabeceraYMenu({
         <div onClick={() => setAbierto(false)} className="contents">
           {menu}
         </div>
+
+        {/*
+          Los créditos, solo en teléfono. Ahí abajo el pie lo ocupa la barra de
+          navegación, así que este es el único lugar donde alguien puede ver de
+          quién es el sistema. En escritorio el pie sigue existiendo y repetirlo
+          acá sería decirlo dos veces en la misma pantalla.
+        */}
+        <div className="mt-auto px-2 pt-4 sm:hidden">{creditos}</div>
       </nav>
     </>
   )

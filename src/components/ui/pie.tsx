@@ -1,28 +1,19 @@
 /**
- * Pie del sistema. Visible siempre, en cualquier pantalla.
+ * Los créditos del sistema: derechos reservados y autoría.
  *
- * Está en el armazón y no dentro del contenido: el `<main>` es lo único que
- * scrollea, así que el pie no se va con el scroll ni hay que llegar al final de
- * una tabla de mil filas para verlo.
+ * Se usan en dos lugares y en ninguno a la vez. En escritorio y tablet van en el
+ * pie —una franja propia del armazón—; en teléfono el pie lo ocupa la barra de
+ * navegación, así que se mudan al fondo del cajón.
+ *
+ * El texto vive acá, en un solo lugar, para que las dos versiones no puedan
+ * divergir. Ya pasó con la marca: dos instancias con estilos distintos que había
+ * que acordarse de tocar juntas.
  */
-export function Pie() {
+export function Creditos() {
   const anio = new Date().getFullYear()
 
   return (
-    <footer
-      style={{ gridArea: 'pie' }}
-      /*
-        Misma lámina que el menú, y mismo ritmo de márgenes, para que el pie sea
-        parte del ecosistema y no una barra pegada abajo.
-
-        Los márgenes horizontales son los mismos que el padding del contenido
-        —24 px en escritorio— así que los bordes del pie caen exactamente donde
-        caen los de las tarjetas. Antes estaba a 12 px y quedaba 12 px más ancho
-        que todo lo demás: la clase de desalineación que no se sabe nombrar pero
-        se ve.
-      */
-      className="aq-panel-marca mx-4 mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl px-4 py-2.5 text-[13px] text-secundario sm:mx-6 sm:px-5"
-    >
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[13px] text-secundario">
       <p>© {anio} Aquazaku. Todos los derechos reservados.</p>
 
       <p>
@@ -37,6 +28,36 @@ export function Pie() {
           @maoacr
         </a>
       </p>
+    </div>
+  )
+}
+
+/**
+ * El pie del armazón. **Solo en tablet y escritorio.**
+ *
+ * Está en el armazón y no dentro del contenido: el `<main>` es lo único que
+ * scrollea, así que el pie no se va con el scroll ni hay que llegar al final de
+ * una tabla de mil filas para verlo.
+ *
+ * En teléfono no existe: esa fila del grid la ocupa la barra de navegación, que
+ * es lo que hace falta ahí abajo. Los créditos no desaparecen — se mudan al
+ * fondo del cajón.
+ */
+export function Pie() {
+  return (
+    <footer
+      style={{ gridArea: 'pie' }}
+      /*
+        Misma lámina que el menú, y mismo ritmo de márgenes, para que el pie sea
+        parte del ecosistema y no una barra pegada abajo.
+
+        Los márgenes horizontales son los mismos que el padding del contenido
+        —24 px en escritorio— así que los bordes del pie caen exactamente donde
+        caen los de las tarjetas.
+      */
+      className="aq-panel-marca mb-3 hidden rounded-xl px-5 py-2.5 sm:mx-6 sm:block"
+    >
+      <Creditos />
     </footer>
   )
 }

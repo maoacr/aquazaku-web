@@ -134,10 +134,14 @@ describe('el menú muestra lo que cada rol puede ver', () => {
   it('sin roles queda solo Inicio: un menú vacío no rompe el armazón', () => {
     pintar([])
 
-    // Dos enlaces: la marca que corona el panel y la entrada de Inicio. Ningún
-    // módulo, que es el punto — alguien sin roles entra al sistema y no ve nada
-    // que no pueda usar.
-    expect(within(menu()).getAllByRole('link')).toHaveLength(2)
+    // Tres enlaces: la marca que corona el panel, la entrada de Inicio y el
+    // crédito a @maoacr que vive al fondo del cajón en teléfono. Ningún módulo,
+    // que es el punto — alguien sin roles entra al sistema y no ve nada que no
+    // pueda usar.
+    const enlaces = within(menu()).getAllByRole('link')
+
+    expect(enlaces).toHaveLength(3)
+    expect(enlaces.filter((e) => /modulos/.test(e.getAttribute('href') ?? ''))).toHaveLength(0)
   })
 })
 
@@ -237,21 +241,35 @@ describe('los controles de sesión viven en la cabecera', () => {
 })
 
 describe('el pie está siempre', () => {
+  /**
+   * Los créditos se pintan DOS veces, y es a propósito.
+   *
+   * En tablet y escritorio van en el pie. En teléfono esa fila del grid la ocupa
+   * la barra de navegación, así que se mudan al fondo del cajón — que es donde
+   * alguien va a buscar de quién es el sistema.
+   *
+   * Como el servidor no sabe el ancho de la pantalla, se pintan las dos y el CSS
+   * muestra una. `display: none` saca la otra del árbol de accesibilidad.
+   */
   it('acredita a quien lo hizo, con link a su sitio', () => {
     pintar()
 
-    const enlace = screen.getByRole('link', { name: '@maoacr' })
-    expect(enlace).toHaveAttribute('href', 'https://maoacr.com')
-    // Sin `noopener`, el sitio destino puede manipular esta pestaña.
-    expect(enlace).toHaveAttribute('rel', expect.stringContaining('noopener'))
+    const enlaces = screen.getAllByRole('link', { name: '@maoacr' })
+
+    expect(enlaces).toHaveLength(2)
+    for (const enlace of enlaces) {
+      expect(enlace).toHaveAttribute('href', 'https://maoacr.com')
+      // Sin `noopener`, el sitio destino puede manipular esta pestaña.
+      expect(enlace).toHaveAttribute('rel', expect.stringContaining('noopener'))
+    }
   })
 
   it('lleva el año en curso, no uno escrito a mano', () => {
     pintar()
 
     expect(
-      screen.getByText(new RegExp(`© ${new Date().getFullYear()} Aquazaku`)),
-    ).toBeInTheDocument()
+      screen.getAllByText(new RegExp(`© ${new Date().getFullYear()} Aquazaku`)),
+    ).toHaveLength(2)
   })
 
   it('vive en el armazón, no dentro del contenido que scrollea', () => {

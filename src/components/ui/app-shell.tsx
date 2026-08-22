@@ -5,7 +5,7 @@ import { CabeceraYMenu } from '@/components/ui/cajon-navegacion'
 import { EnlaceDeMenu } from '@/components/ui/enlace-de-menu'
 import { AccionesDeSesion } from '@/components/ui/acciones-de-sesion'
 import { Marca } from '@/components/ui/marca'
-import { Pie } from '@/components/ui/pie'
+import { Creditos, Pie } from '@/components/ui/pie'
 import { computeVisibleModules } from '@/lib/modules'
 import type { Role } from '@/lib/roles'
 
@@ -69,6 +69,8 @@ export function AppShell({
         marcaDelPanel={<EnlaceDeMarca />}
         acciones={<AccionesDeSesion nombre={userName} />}
         menu={<MenuLateral modules={modules} />}
+        roles={userRoles}
+        creditos={<Creditos />}
       />
 
       <main

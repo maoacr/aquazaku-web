@@ -78,7 +78,7 @@ export function AppShell({
         // `min-h-0` es lo que permite que un hijo de grid se encoja. Sin él el
         // contenido empuja al contenedor y el scroll se escapa al documento,
         // arrastrando el menú y el pie con él.
-        className="min-h-0 overflow-y-auto p-4 sm:p-6"
+        className="min-h-0 overflow-y-auto"
       >
         {children}
       </main>

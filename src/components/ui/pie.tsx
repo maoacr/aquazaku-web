@@ -56,14 +56,15 @@ export function Pie() {
     <footer
       style={{ gridArea: 'pie' }}
       /*
-        Misma lámina que el menú, y mismo ritmo de márgenes, para que el pie sea
-        parte del ecosistema y no una barra pegada abajo.
+        Misma lámina que el menú, para que el pie sea parte del ecosistema y no
+        una barra pegada abajo.
 
-        Los márgenes horizontales son los mismos que el padding del contenido
-        —24 px en escritorio— así que los bordes del pie caen exactamente donde
-        caen los de las tarjetas.
+        NO lleva márgenes propios: la separación con el borde de la pantalla la
+        pone el canal del armazón. Los tenía —24 px a los lados y 12 abajo— y
+        eran la razón de que el pie no cerrara con el menú ni con el contenido.
+        El único padding que queda es el interno, que sí es suyo.
       */
-      className="aq-panel-marca mb-3 hidden rounded-xl px-5 py-2.5 sm:mx-6 sm:block"
+      className="aq-panel-marca hidden rounded-xl px-5 py-2.5 sm:block"
     >
       <Creditos />
     </footer>

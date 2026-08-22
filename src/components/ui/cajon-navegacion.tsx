@@ -91,12 +91,12 @@ export function CabeceraYMenu({
           como fila, el contenido arrancaba 68 px más abajo que el menú y la
           pantalla se leía partida en dos.
 
-          El padding horizontal es el MISMO que el del contenido: los iconos
-          caen en el canal de los títulos y las tarjetas. Con 16 px acá y 24 px
-          abajo, el borde derecho quedaba 8 px afuera del de las tarjetas — poco
-          para nombrarlo y suficiente para sentir la pantalla desalineada.
+          Y no lleva padding propio: la distancia al borde la pone el canal del
+          armazón, igual que para el menú, el contenido y el pie. Cuando cada
+          pieza traía el suyo, los iconos caían en un canal distinto al de los
+          títulos y las tarjetas.
         */
-        className="aq-cabecera relative flex items-center gap-1 px-4 py-3 sm:px-6 sm:py-6"
+        className="aq-cabecera relative flex items-center gap-1"
       >
         <button
           ref={botonRef}
@@ -156,9 +156,12 @@ export function CabeceraYMenu({
         style={{ gridArea: 'menu' }}
         // `-translate-x-full` en vez de `hidden`: un elemento con `display:none`
         // no se puede animar, y el cajón entra deslizándose.
-        // En teléfono es un cajón que ocupa el alto completo; en escritorio, una
-        // tarjeta con margen que flota sobre el agua como las demás.
-        className={`aq-panel-marca fixed inset-y-0 left-0 z-30 flex w-72 max-w-[85vw] flex-col rounded-none py-4 transition-transform duration-200 ease-out motion-reduce:transition-none sm:relative sm:m-3 sm:w-auto sm:max-w-none sm:translate-x-0 sm:rounded-xl ${
+        // En teléfono es un cajón que ocupa el alto completo —por eso `fixed` y
+        // `rounded-none`—; en escritorio, una tarjeta que flota sobre el agua
+        // como las demás. Su separación del borde la pone el canal del armazón:
+        // el `sm:m-3` que tenía acá era el valor correcto, pero solo suyo, y por
+        // eso el contenido terminó al doble de distancia.
+        className={`aq-panel-marca fixed inset-y-0 left-0 z-30 flex w-72 max-w-[85vw] flex-col rounded-none py-4 transition-transform duration-200 ease-out motion-reduce:transition-none sm:relative sm:w-auto sm:max-w-none sm:translate-x-0 sm:rounded-xl ${
           abierto ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

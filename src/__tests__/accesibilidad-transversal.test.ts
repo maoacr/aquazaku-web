@@ -343,6 +343,37 @@ describe('el armazón deja que la cabecera flote', () => {
   it('los controles de la cabecera sí reciben clics', () => {
     expect(bloque(globales, '.aq-cabecera > *')).toMatch(/pointer-events:\s*auto/)
   })
+
+  /**
+   * El canal es UNO, y lo pone el armazón.
+   *
+   * Había tres valores para la misma distancia: el menú a 12 px, el contenido a
+   * 24 y el pie con 24 a los lados y 12 abajo. Nadie eligió eso — cada pieza
+   * traía su clase de Tailwind y ninguna sabía de las otras.
+   */
+  it('el armazón declara el canal y lo aplica él', () => {
+    const armazonCss = bloque(globales, '.aq-armazon')
+
+    expect(armazonCss).toMatch(/--aq-canal:/)
+    expect(armazonCss).toMatch(/padding:\s*var\(--aq-canal\)/)
+    expect(armazonCss, 'sin `gap` el menú y el contenido se tocan').toMatch(
+      /gap:\s*var\(--aq-canal\)/,
+    )
+  })
+
+  it('ninguna pieza del armazón se pone su propio margen', () => {
+    const piezas = [
+      ['src/components/ui/app-shell.tsx', /className="[^"]*\bp-\d/],
+      ['src/components/ui/pie.tsx', /className="[^"]*\bm[xyblrt]?-\d/],
+      ['src/components/ui/navegacion-inferior.tsx', /className="[^"]*\bm[xyblrt]?-\d/],
+    ] as const
+
+    const culpables = piezas
+      .filter(([ruta, patron]) => patron.test(readFileSync(join(process.cwd(), ruta), 'utf8')))
+      .map(([ruta]) => ruta)
+
+    expect(culpables, 'reponen a mano la distancia que ya pone `--aq-canal`').toEqual([])
+  })
 })
 
 /** Los `.tsx` de `src/`, con su ruta relativa para que el error sea accionable. */

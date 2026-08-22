@@ -569,7 +569,28 @@ body {
 .aq-armazon {
   grid-template-areas: 'cabecera' 'contenido' 'pie';
   grid-template-rows: auto 1fr auto;
+
+  /*
+   * ── El canal ──────────────────────────────────────────────────────────────
+   *
+   * La ÚNICA distancia entre una pieza del armazón y el borde de la pantalla.
+   *
+   * Había tres valores para la misma cosa: el panel del menú a 12 px, el
+   * contenido a 24 y el pie con 24 a los lados y 12 abajo. Nadie eligió eso —
+   * cada pieza traía su propia clase de Tailwind y ninguna sabía de las otras.
+   * El resultado es que el contenido se ve al doble de separado del borde que
+   * el menú, y el pie no cierra con ninguno de los dos.
+   *
+   * Vive acá y no en las clases de cada componente justamente por eso: es un
+   * valor del ARMAZÓN, y repartido en cuatro archivos vuelve a divergir a la
+   * primera pantalla que alguien agregue.
+   */
+  --aq-canal: 0.75rem;
+
+  padding: var(--aq-canal);
+  gap: var(--aq-canal);
 }
+
 
 /*
  * El área de la cabecera vive en CSS y no en un `style` inline.

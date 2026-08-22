@@ -64,7 +64,7 @@ export function NavegacionInferior({
         `pb-[env(safe-area-inset-bottom)]`: en un iPhone con barra de gestos, sin
         esto la última fila de iconos queda debajo de ella y no se puede tocar.
       */
-      className="aq-panel-marca mx-3 mb-3 flex items-stretch rounded-xl px-1 pb-[env(safe-area-inset-bottom)] sm:hidden"
+      className="aq-panel-marca flex items-stretch rounded-xl px-1 pb-[env(safe-area-inset-bottom)] sm:hidden"
     >
       <Ranura href="/" etiqueta="Inicio" activo={esElModuloActivo(ruta, '/')}>
         <Home aria-hidden className="size-5 shrink-0" />

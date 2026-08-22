@@ -18,7 +18,7 @@ export function ForgotPasswordForm() {
   if (estado.enviado) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Revisá tu correo</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Revise su correo</h1>
         <p role="status" className="text-sm text-secundario">
           Si ese email tiene una cuenta, le mandamos un link para crear una contraseña nueva.
           El link vence, así que usalo pronto.

@@ -37,7 +37,7 @@ export default async function PerfilPage() {
       </header>
 
       <section className="grid gap-3 rounded-lg border border-sutil bg-tarjeta p-5 shadow-elev-1">
-        <h2 className="aq-micro text-secundario">Qué podés hacer</h2>
+        <h2 className="aq-micro text-secundario">Qué puede hacer</h2>
 
         {/*
           Los roles se suman, no se eligen: quien tiene dos ve los módulos de
@@ -62,7 +62,7 @@ export default async function PerfilPage() {
         <h2 className="aq-micro text-secundario">Apariencia</h2>
         <SelectorTema actual={tema} />
         <p className="text-[13px] text-tenue">
-          «Sistema» sigue lo que tengas configurado en tu computadora o teléfono.
+          «Sistema» sigue lo que tenga configurado en su computador o teléfono.
         </p>
       </section>
 
@@ -76,7 +76,7 @@ export default async function PerfilPage() {
           Cambiar mi contraseña
         </Link>
         <p className="text-[13px] text-tenue">
-          Cambiarla cierra todas tus sesiones abiertas, también en otros dispositivos.
+          Cambiarla cierra todas sus sesiones abiertas, también en otros dispositivos.
         </p>
       </section>
     </div>

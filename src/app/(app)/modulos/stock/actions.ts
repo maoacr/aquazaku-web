@@ -49,7 +49,7 @@ async function mensajeDeError(res: Response, generico: string): Promise<string> 
   if (code === 'CAUSA_REQUERIDA' && mensaje) return mensaje
   if (code === 'LOTE_NO_ENCONTRADO') return 'Ese lote ya no existe.'
   if (code === 'PRODUCTO_NO_ENCONTRADO') return 'Ese producto ya no existe.'
-  if (res.status === 403) return 'No tenés permiso para hacer esto.'
+  if (res.status === 403) return 'No tiene permiso para hacer esto.'
 
   return generico
 }
@@ -74,11 +74,11 @@ export async function registrarEntradaAction(
   const fechaEmpaque = String(formData.get('fechaEmpaque') ?? '')
   const motivo = String(formData.get('motivo') ?? '')
 
-  if (!productoId) return { error: 'Elegí un producto.' }
+  if (!productoId) return { error: 'Elija un producto.' }
   if (!Number.isInteger(cantidad) || cantidad < 1) {
     return { error: 'La cantidad tiene que ser un número entero mayor que cero.' }
   }
-  if (!fechaEmpaque) return { error: 'Poné la fecha de empaque.' }
+  if (!fechaEmpaque) return { error: 'Indique la fecha de empaque.' }
   if (motivoInsuficiente(motivo)) {
     return {
       error: `El motivo necesita al menos ${LARGO_MINIMO_MOTIVO} caracteres: tiene que servir para entender el registro dentro de tres meses.`,
@@ -111,7 +111,7 @@ export async function ajustarLoteAction(
 
   if (!loteId) return { error: 'Falta el lote.' }
   if (!Number.isInteger(cantidad) || cantidad === 0) {
-    return { error: 'Un ajuste de cero no corrige nada. Poné cuántas unidades sobran o faltan.' }
+    return { error: 'Un ajuste de cero no corrige nada. Indique cuántas unidades sobran o faltan.' }
   }
   if (motivoInsuficiente(motivo)) {
     return {
@@ -144,9 +144,9 @@ export async function descartarAction(
 
   if (!loteId) return { error: 'Falta el lote.' }
   if (!Number.isInteger(cantidad) || cantidad < 1) {
-    return { error: 'Poné cuántas unidades se descartan.' }
+    return { error: 'Indique cuántas unidades se descartan.' }
   }
-  if (!causa) return { error: 'Elegí la causa: sin ella el descarte no dice quién responde.' }
+  if (!causa) return { error: 'Elija la causa: sin ella el descarte no dice quién responde.' }
 
   // Las otras tres causas ya dicen qué pasó; "otro" no dice nada.
   if (causa === 'otro' && motivoInsuficiente(observaciones)) {

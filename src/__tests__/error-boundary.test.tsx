@@ -7,7 +7,7 @@ import { ApiError } from '@/lib/errors'
  * Qué ve alguien sin permiso.
  *
  * Este boundary es la mitad de `web/` del contrato de RN-ACC-02: `api/` prohíbe
- * con 403, y acá se decide si eso se ve como "no tenés acceso" o como una
+ * con 403, y acá se decide si eso se ve como "no tiene acceso" o como una
  * pantalla rota genérica.
  *
  * Se testea renderizando el componente porque el camino real —entrar a
@@ -26,7 +26,7 @@ describe('<ErrorDeApp /> — la UI oculta, la API prohíbe (RN-ACC-02)', () => {
   it('un 403 se explica como falta de permiso, no como pantalla rota', () => {
     render(<ErrorDeApp error={errorConStatus(403)} reset={vi.fn()} />)
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/no ten[ée]s acceso/i)
+    expect(screen.getByRole('alert')).toHaveTextContent(/no tiene acceso/i)
     expect(screen.queryByText(/se rompi[óo] de nuestro lado/i)).toBeNull()
   })
 

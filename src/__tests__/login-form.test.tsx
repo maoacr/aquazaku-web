@@ -32,7 +32,7 @@ describe('<LoginForm />', () => {
   it('ofrece la salida a recuperar contraseña', () => {
     render(<LoginForm />)
 
-    expect(screen.getByRole('link', { name: /olvidaste tu contraseña/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /olvid[óo] su contraseña/i })).toHaveAttribute(
       'href',
       '/forgot-password',
     )

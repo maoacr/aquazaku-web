@@ -23,7 +23,7 @@ export async function forgotPasswordAction(
   const email = String(formData.get('email') ?? '').trim()
 
   if (!email) {
-    return { error: 'Escribí tu email.' }
+    return { error: 'Escriba su email.' }
   }
 
   const res = await apiServerFetchRaw(REQUEST_RESET_PATH, {

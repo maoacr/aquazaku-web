@@ -38,7 +38,7 @@ export function SelloDeHora({ leidoEn }: { leidoEn: Date }) {
       <time dateTime={leidoEn.toISOString()} className="text-secundario">
         {formatearHora(leidoEn)}
       </time>
-      . El inventario lo mueven varias personas: recargá para ver el último.
+      . El inventario lo mueven varias personas: recargue para ver el último.
     </p>
   )
 }

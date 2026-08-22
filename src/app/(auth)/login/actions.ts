@@ -26,7 +26,7 @@ export async function loginAction(_previo: LoginState, formData: FormData): Prom
   // Se corta acá para no gastar un intento del rate limit en un formulario
   // que ni siquiera está completo.
   if (!email || !password) {
-    return { error: 'Completá tu email y tu contraseña.' }
+    return { error: 'Complete su email y su contraseña.' }
   }
 
   const res = await apiServerFetchRaw(SIGN_IN_PATH, {
@@ -45,7 +45,7 @@ export async function loginAction(_previo: LoginState, formData: FormData): Prom
     // RN-ACC-05: la contraseña puede estar bien y el usuario seguir sin poder
     // entrar. Reintentar no lo arregla, así que merece su propio mensaje.
     if (code === 'USER_INACTIVE') {
-      return { error: 'Tu usuario está desactivado. Hablá con un administrador.' }
+      return { error: 'Su usuario está desactivado. Hable con un administrador.' }
     }
 
     // Un mensaje único para email inexistente y contraseña incorrecta: si
@@ -54,7 +54,7 @@ export async function loginAction(_previo: LoginState, formData: FormData): Prom
       return { error: 'Credenciales inválidas.' }
     }
 
-    return { error: 'No pudimos procesar el ingreso. Probá de nuevo en un momento.' }
+    return { error: 'No pudimos procesar el ingreso. Intente de nuevo en un momento.' }
   }
 
   // Primero la cookie, después el redirect. Al revés, api/ habría creado la

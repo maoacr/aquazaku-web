@@ -34,7 +34,7 @@ async function mensajeDeError(res: Response, generico: string): Promise<string> 
   if (code === 'PRODUCTO_NO_ENCONTRADO') return 'Ese producto ya no existe.'
   if (code === 'PRODUCTO_YA_INACTIVO') return 'El producto ya estaba desactivado.'
   if (code === 'PRODUCTO_YA_ACTIVO') return 'El producto ya estaba activo.'
-  if (res.status === 403) return 'No tenés permiso para hacer esto.'
+  if (res.status === 403) return 'No tiene permiso para hacer esto.'
 
   return generico
 }
@@ -53,9 +53,9 @@ export async function crearProductoAction(
   const contenidoMl = Number(formData.get('contenidoMl') ?? 0)
   const unidades = Number(formData.get('unidades') ?? 0)
 
-  if (!nombre) return { error: 'Poné un nombre.' }
+  if (!nombre) return { error: 'Escriba un nombre.' }
   if (presentacion !== 'paca' && presentacion !== 'botellon') {
-    return { error: 'Elegí una presentación.' }
+    return { error: 'Elija una presentación.' }
   }
   if (!Number.isInteger(contenidoMl) || contenidoMl < 1) {
     return { error: 'El contenido va en mililitros enteros, mayor que cero.' }

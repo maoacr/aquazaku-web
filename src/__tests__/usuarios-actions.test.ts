@@ -42,7 +42,7 @@ describe('crearUsuarioAction()', () => {
   it('no gasta un viaje a api/ si faltan campos', async () => {
     const estado = await crearUsuarioAction({}, form({ email: 'a@b.com' }))
 
-    expect(estado.error).toMatch(/Completá/)
+    expect(estado.error).toMatch(/Complete/)
     expect(apiServerFetchRaw).not.toHaveBeenCalled()
   })
 

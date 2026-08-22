@@ -117,7 +117,7 @@ export function EntradaDeInventario({ productos }: { productos: ResumenDeStock[]
           <span className="text-[13px] font-semibold text-principal">Producto</span>
           <select name="productoId" required defaultValue="" className={campo}>
             <option value="" disabled>
-              Elegí uno
+              Elija uno
             </option>
             {productos.map((p) => (
               <option key={p.productoId} value={p.productoId}>
@@ -282,7 +282,7 @@ function CausaYObservaciones() {
           className={campo}
         >
           <option value="" disabled>
-            Elegí una
+            Elija una
           </option>
           <option value="falla_produccion">Falla de producción</option>
           <option value="mal_manejo_cliente">Mal manejo del cliente</option>
@@ -321,7 +321,7 @@ function SelectorDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
       <span className="text-[13px] font-semibold text-principal">Lote</span>
       <select name="loteId" required defaultValue="" className={campo}>
         <option value="" disabled>
-          Elegí uno
+          Elija uno
         </option>
         {lotes.map((l) => (
           <option key={l.id} value={l.id}>

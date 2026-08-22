@@ -56,7 +56,7 @@ export function LoginForm() {
       </button>
 
       <Link href="/forgot-password" className="text-sm text-secundario underline">
-        ¿Olvidaste tu contraseña?
+        ¿Olvidó su contraseña?
       </Link>
     </form>
   )

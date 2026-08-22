@@ -9,7 +9,7 @@ export default function ModulosPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Módulos</h1>
-      <p className="mt-2 text-sm text-tenue">Elegí un módulo del menú lateral.</p>
+      <p className="mt-2 text-sm text-tenue">Elija un módulo del menú lateral.</p>
     </div>
   )
 }

@@ -130,7 +130,7 @@ describe('<ChangePasswordForm />', () => {
   it('avisa que se van a cerrar todas las sesiones', () => {
     render(<ChangePasswordForm />)
 
-    expect(screen.getByText(/se cierran todas tus sesiones/i)).toBeVisible()
+    expect(screen.getByText(/se cierran todas sus sesiones/i)).toBeVisible()
   })
 
   it('no habla de primer ingreso por defecto', () => {

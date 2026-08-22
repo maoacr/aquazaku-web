@@ -26,7 +26,7 @@ export async function changePasswordAction(
   const confirmacion = String(formData.get('confirmacion') ?? '')
 
   if (!currentPassword) {
-    return { error: 'Escribí tu contraseña actual.' }
+    return { error: 'Escriba su contraseña actual.' }
   }
 
   if (currentPassword === password) {
@@ -51,7 +51,7 @@ export async function changePasswordAction(
       return { error: 'La contraseña actual no es correcta.' }
     }
 
-    return { error: 'No pudimos cambiar la contraseña. Probá de nuevo en un momento.' }
+    return { error: 'No pudimos cambiar la contraseña. Intente de nuevo en un momento.' }
   }
 
   // Cambiar la contraseña cierra TODAS las sesiones del usuario, incluida esta

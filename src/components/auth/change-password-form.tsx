@@ -19,7 +19,7 @@ export function ChangePasswordForm({ primerIngreso = false }: { primerIngreso?: 
 
       {primerIngreso && (
         <p role="status" className="text-sm text-secundario">
-          Es tu primer ingreso: elegí una contraseña propia antes de seguir.
+          Es su primer ingreso: elija una contraseña propia antes de seguir.
         </p>
       )}
 
@@ -41,7 +41,7 @@ export function ChangePasswordForm({ primerIngreso = false }: { primerIngreso?: 
 
       {/* Avisar antes, no después: cambiarla cierra todas las sesiones. */}
       <p className="text-sm text-tenue">
-        Al cambiarla se cierran todas tus sesiones y vas a tener que entrar de nuevo.
+        Al cambiarla se cierran todas sus sesiones y tendrá que entrar de nuevo.
       </p>
 
       <button

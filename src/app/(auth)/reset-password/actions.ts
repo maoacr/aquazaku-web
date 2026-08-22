@@ -19,7 +19,7 @@ export async function resetPasswordAction(
   const confirmacion = String(formData.get('confirmacion') ?? '')
 
   if (!token) {
-    return { error: 'El link de recuperación está incompleto. Pedí uno nuevo.' }
+    return { error: 'El link de recuperación está incompleto. Pida uno nuevo.' }
   }
 
   const invalida = validarPasswordNueva(password, confirmacion)
@@ -39,7 +39,7 @@ export async function resetPasswordAction(
     // El caso más común no es un ataque: es alguien que abrió el correo dos
     // días después. El token vive en `verifications` con vencimiento y uso único.
     return {
-      error: 'El link de recuperación venció o ya se usó. Pedí uno nuevo desde “Olvidé mi contraseña”.',
+      error: 'El link de recuperación venció o ya se usó. Pida uno nuevo desde “Olvidé mi contraseña”.',
     }
   }
 

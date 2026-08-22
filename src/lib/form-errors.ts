@@ -46,8 +46,8 @@ export async function cuerpoDeError(res: Response): Promise<CuerpoDeError> {
  */
 export function mensajeRateLimit(reintentarEn?: number): string {
   return reintentarEn
-    ? `Demasiados intentos. Probá de nuevo en ${reintentarEn} segundos.`
-    : 'Demasiados intentos. Esperá un momento antes de volver a probar.'
+    ? `Demasiados intentos. Intente de nuevo en ${reintentarEn} segundos.`
+    : 'Demasiados intentos. Espere un momento antes de intentar de nuevo.'
 }
 
 /**

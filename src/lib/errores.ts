@@ -57,7 +57,7 @@ export type Accion = 'reintentar' | 'entrar' | 'volver' | 'esperar'
 const POR_STATUS: Record<number, Omit<MensajeDeError, 'detalle'> & { detalle: string }> = {
   400: {
     titulo: 'Faltan datos o están mal escritos',
-    detalle: 'Revisá los campos marcados y volvé a intentar.',
+    detalle: 'Revise los campos marcados e intente de nuevo.',
     accion: 'volver',
     seEjecuto: false,
   },
@@ -68,9 +68,9 @@ const POR_STATUS: Record<number, Omit<MensajeDeError, 'detalle'> & { detalle: st
     seEjecuto: false,
   },
   403: {
-    titulo: 'No tenés acceso a esto',
+    titulo: 'No tiene acceso a esto',
     detalle:
-      'Tu usuario no tiene permiso para esta acción. Si creés que debería tenerlo, pedile a un administrador que revise tus roles.',
+      'Su usuario no tiene permiso para esta acción. Si cree que debería tenerlo, pídale a un administrador que revise sus roles.',
     accion: 'volver',
     seEjecuto: false,
   },
@@ -82,7 +82,7 @@ const POR_STATUS: Record<number, Omit<MensajeDeError, 'detalle'> & { detalle: st
   },
   409: {
     titulo: 'Alguien lo cambió antes',
-    detalle: 'Volvé a cargar la pantalla para ver cómo quedó y decidí desde ahí.',
+    detalle: 'Vuelva a cargar la pantalla para ver cómo quedó y decida desde ahí.',
     accion: 'reintentar',
     seEjecuto: false,
   },
@@ -94,13 +94,13 @@ const POR_STATUS: Record<number, Omit<MensajeDeError, 'detalle'> & { detalle: st
   },
   429: {
     titulo: 'Demasiados intentos seguidos',
-    detalle: 'Esperá un momento y volvé a probar.',
+    detalle: 'Espere un momento e intente de nuevo.',
     accion: 'esperar',
     seEjecuto: false,
   },
   500: {
     titulo: 'Algo se rompió de nuestro lado',
-    detalle: 'No es culpa tuya. Probá de nuevo en un momento.',
+    detalle: 'No es culpa suya. Intente de nuevo en un momento.',
     accion: 'reintentar',
     seEjecuto: false,
   },
@@ -117,7 +117,7 @@ const POR_STATUS: Record<number, Omit<MensajeDeError, 'detalle'> & { detalle: st
 const SIN_CONEXION: MensajeDeError = {
   titulo: 'No pudimos conectarnos',
   detalle:
-    'No se perdió nada: lo que estabas haciendo no se registró, así que podés volver a intentarlo sin que quede duplicado. Si sigue sin andar, avisá a la planta.',
+    'No se perdió nada: lo que estaba haciendo no se registró, así que puede intentarlo de nuevo sin que quede duplicado. Si sigue sin funcionar, avise a la planta.',
   accion: 'reintentar',
   seEjecuto: false,
 }

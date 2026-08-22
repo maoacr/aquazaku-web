@@ -35,7 +35,7 @@ async function mensajeDeError(res: Response, generico: string): Promise<string> 
   if (code === 'ULTIMO_ADMIN' && mensaje) return mensaje
   if (code === 'EMAIL_EN_USO') return 'Ya existe un usuario con ese email.'
   if (code === 'USUARIO_NO_ENCONTRADO') return 'Ese usuario ya no existe.'
-  if (res.status === 403) return 'No tenés permiso para hacer esto.'
+  if (res.status === 403) return 'No tiene permiso para hacer esto.'
 
   return generico
 }
@@ -50,7 +50,7 @@ export async function crearUsuarioAction(
   const roles = formData.getAll('roles').map(String) as Role[]
 
   if (!email || !name || !password) {
-    return { error: 'Completá email, nombre y contraseña.' }
+    return { error: 'Complete el email, el nombre y la contraseña.' }
   }
 
   const res = await apiServerFetchRaw('/users', {

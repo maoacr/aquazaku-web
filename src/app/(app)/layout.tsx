@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { Sidebar } from '@/components/ui/sidebar'
+import { leerTema } from '@/lib/tema'
 import { getServerUser } from '@/lib/api-server'
 
 /**
@@ -14,7 +15,9 @@ import { getServerUser } from '@/lib/api-server'
  * /login a alguien que SÍ tiene sesión lo dejaría en un loop de redirects.
  */
 export default async function AppLayout({ children }: LayoutProps<'/'>) {
-  const user = await getServerUser()
+  // Las dos lecturas van en paralelo: la sesión viaja a `api/` y el tema sale
+  // de una cookie local, así que encadenarlas costaría un viaje de más.
+  const [user, tema] = await Promise.all([getServerUser(), leerTema()])
 
   if (!user) {
     redirect('/login')
@@ -32,7 +35,7 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
 
   return (
     <div className="flex flex-1">
-      <Sidebar userRoles={user.roles} userName={user.name} />
+      <Sidebar userRoles={user.roles} userName={user.name} tema={tema} />
       <main className="flex-1 p-6">{children}</main>
     </div>
   )

@@ -9,6 +9,18 @@ import type { Role } from '@/lib/roles'
 vi.mock('@/lib/api-server', () => ({ getServerUser: vi.fn() }))
 vi.mock('next/navigation', () => ({ redirect: vi.fn() }))
 
+/**
+ * `leerTema` va a la cookie, y `cookies()` solo existe dentro de una petición.
+ *
+ * Este archivo llama al layout como función, sin request alrededor, así que el
+ * tema se mockea. No es lo que estos tests verifican —el tema tiene los
+ * suyos— y sin el mock reventarían por algo que no están probando.
+ */
+vi.mock('@/lib/tema', async (original) => ({
+  ...(await original<typeof import('@/lib/tema')>()),
+  leerTema: vi.fn(async () => 'claro' as const),
+}))
+
 const { getServerUser } = await import('@/lib/api-server')
 const { redirect } = await import('next/navigation')
 

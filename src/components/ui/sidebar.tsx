@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import { CerrarSesion } from '@/components/ui/cerrar-sesion'
+import { SelectorTema } from '@/components/ui/selector-tema'
 import { computeVisibleModules } from '@/lib/modules'
 import type { Role } from '@/lib/roles'
+import type { Tema } from '@/lib/tema'
 
 /**
  * Menú lateral de la app autenticada.
@@ -13,7 +15,15 @@ import type { Role } from '@/lib/roles'
  * Recordá que esto es cosmética (RN-ACC-02): esconder un link no protege nada.
  * La barrera real la pone `requirePermission()` en cada endpoint de api/.
  */
-export function Sidebar({ userRoles, userName }: { userRoles: Role[]; userName: string }) {
+export function Sidebar({
+  userRoles,
+  userName,
+  tema,
+}: {
+  userRoles: Role[]
+  userName: string
+  tema: Tema
+}) {
   const modules = computeVisibleModules(userRoles)
 
   return (
@@ -34,7 +44,11 @@ export function Sidebar({ userRoles, userName }: { userRoles: Role[]; userName: 
         ))}
       </nav>
 
-      <CerrarSesion nombre={userName} />
+      {/* `mt-auto` empuja lo de abajo al pie sin que el nav tenga que crecer. */}
+      <div className="mt-auto grid gap-4 pt-4">
+        <SelectorTema actual={tema} />
+        <CerrarSesion nombre={userName} />
+      </div>
     </aside>
   )
 }

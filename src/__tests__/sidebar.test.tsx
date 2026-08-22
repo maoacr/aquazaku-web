@@ -14,14 +14,14 @@ describe('<Sidebar />', () => {
   }
 
   it('muestra los módulos de admin', () => {
-    render(<Sidebar userRoles={['admin']} userName="Persona de prueba" />)
+    render(<Sidebar userRoles={['admin']} userName="Persona de prueba" tema="claro" />)
 
     expect(within(nav()).getByRole('link', { name: 'Usuarios' })).toBeInTheDocument()
     expect(within(nav()).getByRole('link', { name: 'Auditoría' })).toBeInTheDocument()
   })
 
   it('apunta cada link al href del módulo', () => {
-    render(<Sidebar userRoles={['admin']} userName="Persona de prueba" />)
+    render(<Sidebar userRoles={['admin']} userName="Persona de prueba" tema="claro" />)
 
     expect(within(nav()).getByRole('link', { name: 'Usuarios' })).toHaveAttribute(
       'href',
@@ -30,7 +30,7 @@ describe('<Sidebar />', () => {
   })
 
   it('manda al contador a su propia ruta de auditoría', () => {
-    render(<Sidebar userRoles={['contador']} userName="Persona de prueba" />)
+    render(<Sidebar userRoles={['contador']} userName="Persona de prueba" tema="claro" />)
 
     expect(within(nav()).getByRole('link', { name: 'Auditoría' })).toHaveAttribute(
       'href',
@@ -42,7 +42,7 @@ describe('<Sidebar />', () => {
   // pantalla: los cuatro roles leen el catálogo (RN-CAT-06), porque un `pos`
   // que no ve precios no puede vender.
   it.each(['pos', 'seller'] as const)('%s ve catálogo y stock', (rol) => {
-    render(<Sidebar userRoles={[rol]} userName="Persona de prueba" />)
+    render(<Sidebar userRoles={[rol]} userName="Persona de prueba" tema="claro" />)
 
     const hrefs = within(nav())
       .getAllByRole('link')
@@ -52,7 +52,7 @@ describe('<Sidebar />', () => {
   })
 
   it('no muestra el link de gestión: esa pantalla es solo de admin', () => {
-    render(<Sidebar userRoles={['pos']} userName="Persona de prueba" />)
+    render(<Sidebar userRoles={['pos']} userName="Persona de prueba" tema="claro" />)
 
     expect(within(nav()).queryByRole('link', { name: /gestion/i })).toBeNull()
   })
@@ -60,7 +60,7 @@ describe('<Sidebar />', () => {
   // RN-ACC-01: sin switch-role, un admin que además es contador ve las dos
   // puertas a la vez. Si acá apareciera una sola, el multi-rol estaría roto.
   it('muestra la unión de módulos para un usuario multi-rol', () => {
-    render(<Sidebar userRoles={['admin', 'contador']} userName="Persona de prueba" />)
+    render(<Sidebar userRoles={['admin', 'contador']} userName="Persona de prueba" tema="claro" />)
 
     const hrefs = within(nav())
       .getAllByRole('link')
@@ -76,7 +76,7 @@ describe('<Sidebar />', () => {
   })
 
   it('siempre rotula la marca', () => {
-    render(<Sidebar userRoles={[]} userName="Persona de prueba" />)
+    render(<Sidebar userRoles={[]} userName="Persona de prueba" tema="claro" />)
 
     expect(screen.getByText('Aquazaku')).toBeVisible()
   })
@@ -84,7 +84,7 @@ describe('<Sidebar />', () => {
 
 describe('cierre de sesión', () => {
   it('el shell ofrece salir: sin esto no habría forma de cerrar sesión', () => {
-    render(<Sidebar userRoles={['admin']} userName="Mao Jefe" />)
+    render(<Sidebar userRoles={['admin']} userName="Mao Jefe" tema="claro" />)
 
     // `api/` expone el endpoint desde Task 6, pero el shell no lo usaba: el
     // usuario quedaba adentro hasta que le venciera la cookie.
@@ -92,7 +92,7 @@ describe('cierre de sesión', () => {
   })
 
   it('muestra quién está usando el sistema', () => {
-    render(<Sidebar userRoles={['pos']} userName="Yeimy Rodríguez" />)
+    render(<Sidebar userRoles={['pos']} userName="Yeimy Rodríguez" tema="claro" />)
 
     expect(screen.getByText('Yeimy Rodríguez')).toBeInTheDocument()
   })

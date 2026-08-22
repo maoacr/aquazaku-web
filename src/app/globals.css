@@ -123,3 +123,56 @@ body {
   letter-spacing: var(--aq-micro-tracking);
   text-transform: uppercase;
 }
+
+/**
+ * Modo `sistema`: seguir al sistema operativo.
+ *
+ * `:root:not([data-tema])` es la parte que hace que funcione, y también la que
+ * obliga a que `claro` explícito escriba `data-tema="claro"`.
+ *
+ * Si `claro` no escribiera atributo, esta consulta lo alcanzaría: alguien que
+ * eligió claro con el sistema en oscuro vería la app oscura. Su elección
+ * perdería contra el sistema, que es al revés de lo que significa elegir.
+ *
+ * `[data-tema="claro"]` no necesita reglas propias —los tokens base ya son
+ * claros— pero el atributo tiene que existir para que `:not()` falle.
+ *
+ * ── Este bloque está GENERADO, no escrito a mano ────────────────────────────
+ *
+ * Repite las declaraciones de `[data-tema="oscuro"]` porque CSS no tiene forma
+ * de reusar un bloque bajo otro selector. Un test verifica que las dos listas
+ * declaren exactamente las mismas propiedades: si alguien agrega un token al
+ * bloque oscuro y se olvida de acá, el modo sistema queda a medio pintar y
+ * nadie lo nota hasta que un usuario con el sistema en oscuro abre la app.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema]) {
+  --aq-superficie-fondo:   var(--aq-neutro-950);
+  --aq-superficie-tarjeta: var(--aq-neutro-900);
+  --aq-superficie-elevada: var(--aq-neutro-800);
+  --aq-borde-sutil:        var(--aq-neutro-800);
+  --aq-borde-fuerte:       var(--aq-neutro-600);
+  --aq-texto-principal:    var(--aq-neutro-100);
+  --aq-texto-secundario:   var(--aq-neutro-400);
+  --aq-texto-tenue:        var(--aq-neutro-500);
+  --aq-texto-invertido:    var(--aq-neutro-950);
+  --aq-accion-primaria:       #4EA9DA;
+  --aq-accion-primaria-hover: #86C6EA;
+  --aq-accion-destructiva:    #E4574A;
+  --aq-agua-activo:           #5CD9CC;
+  --aq-dato-estimado:         var(--aq-neutro-600);
+  --aq-elev-1: none;
+  --aq-elev-2: none;
+  --aq-elev-3: none;
+  --aq-elev-4: none;
+  --aq-estado-exito-fondo:  #14603F;
+  --aq-estado-exito-texto:  var(--aq-exito-300);
+  --aq-estado-exito-borde:  var(--aq-exito-700);
+  --aq-estado-alerta-fondo: var(--aq-advertencia-900);
+  --aq-estado-alerta-texto: var(--aq-advertencia-300);
+  --aq-estado-alerta-borde: var(--aq-advertencia-700);
+  --aq-estado-error-fondo:  var(--aq-error-900);
+  --aq-estado-error-texto:  var(--aq-error-300);
+  --aq-estado-error-borde:  var(--aq-error-700);
+  }
+}

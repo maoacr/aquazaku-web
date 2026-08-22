@@ -569,297 +569,6 @@ body {
 }
 
 /**
- * ─── La lámina de vidrio ────────────────────────────────────────────────────
- *
- * Tres capas en un solo elemento, y las tres hacen falta:
- *
- *   1. la lámina translúcida con `backdrop-filter`, que desenfoca y satura lo
- *      que hay detrás — el `saturate` es lo que evita que el vidrio se vea
- *      sucio, porque el desenfoque solo apaga el color;
- *   2. el canto, un borde de 1 px del color que atrapa la luz;
- *   3. el reflejo interno sobre el borde de arriba, con `inset`, que es lo que
- *      hace que la lámina parezca tener espesor y no ser una capa de opacidad.
- *
- * `-webkit-backdrop-filter` va sí o sí: Safari todavía lo pide con prefijo, y
- * sin él en un iPhone la lámina queda opaca y tapa lo de atrás.
- *
- * Si el navegador no soporta `backdrop-filter`, el `@supports` de abajo sube la
- * opacidad del fondo. Sin eso se lee el texto de atrás a través del panel.
- */
-.aq-vidrio {
-  background: var(--aq-vidrio-fondo);
-  -webkit-backdrop-filter: var(--aq-vidrio-desenfoque);
-  backdrop-filter: var(--aq-vidrio-desenfoque);
-  border: 1px solid var(--aq-vidrio-borde);
-  box-shadow:
-    inset 0 1px 0 0 var(--aq-vidrio-brillo),
-    var(--aq-elev-2);
-}
-
-/**
- * ─── El panel de marca del menú ─────────────────────────────────────────────
- *
- * El fondo cuenta el recorrido del agua, y encima van dos capas que le dan
- * cuerpo de líquido en vez de plano pintado:
- *
- *   `::before` · un resplandor aqua muy abierto en la parte baja, donde el
- *                gradiente ya está en verde. Sugiere luz atravesando agua.
- *   `::after`  · la onda de la marca, en la base, al 7 %. Es la misma forma que
- *                llevan las gotas del isotipo — repetirla acá ata el menú a la
- *                marca sin poner un logo más.
- *
- * Los dos van `pointer-events: none` y detrás del contenido: son ambiente.
- */
-/**
- * ─── El menú es una lámina de vidrio sobre el agua ──────────────────────────
- *
- * No tiene fondo propio: deja pasar el agua de la app, igual que las tarjetas.
- * Esa es toda la diferencia con la versión anterior — antes traía su propio
- * gradiente y competía con el del contenido.
- *
- * OJO: no declara `position`. Esta regla va sin capa, así que le ganaría a la
- * utilidad `fixed` de Tailwind y en teléfono el cajón dejaría de flotar — se
- * metería en el grid con un `grid-area` que en móvil no existe. Ya pasó una vez.
- * El posicionamiento lo pone quien usa la clase.
- */
-.aq-panel-marca {
-  isolation: isolate;
-  background: var(--aq-panel-lamina);
-  border-radius: var(--aq-radio-xl);
-  -webkit-backdrop-filter: blur(24px) saturate(170%);
-  backdrop-filter: blur(24px) saturate(170%);
-  border: 1px solid var(--aq-panel-canto);
-  box-shadow:
-    inset 0 1px 0 0 var(--aq-panel-brillo),
-    0 12px 32px -16px var(--aq-tarjeta-sombra);
-}
-
-
-/**
- * ─── La tarjeta de datos ────────────────────────────────────────────────────
- *
- * Vidrio, pero contenido. Lleva las mismas tres capas que el panel de acceso
- * —lámina, canto y reflejo— con la mano mucho más liviana, porque acá abajo hay
- * números que alguien tiene que leer de un vistazo desde el mostrador.
- *
- * El reflejo entra por arriba a la izquierda y se apaga antes de la mitad: cae
- * sobre el título, nunca sobre la cifra. Un brillo cruzando un «110» lo vuelve
- * decorado en vez de dato.
- *
- * Sin `backdrop-filter` el navegador sube la lámina a opaca (`@supports` abajo).
- * Vale la pena: translúcido sin desenfoque deja leer el texto de atrás
- * atravesando la tarjeta, que es peor que no tener vidrio.
- */
-.aq-tarjeta {
-  position: relative;
-  isolation: isolate;
-  transition:
-    transform var(--aq-fluido-medio) var(--aq-fluido),
-    box-shadow var(--aq-fluido-medio) var(--aq-fluido),
-    background-color var(--aq-fluido-medio) var(--aq-fluido);
-  border-radius: var(--aq-radio-lg);
-  background: var(--aq-tarjeta-fondo);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-  /* El borde lo dibuja el `::after` con degradado: uno plano es plástico. */
-  border: 0;
-  box-shadow:
-    inset 0 1px 0 0 var(--aq-tarjeta-brillo),
-    inset 0 -1px 0 0 var(--aq-tarjeta-fondo-canto),
-    0 10px 28px -12px var(--aq-tarjeta-sombra),
-    0 2px 4px -2px var(--aq-tarjeta-contacto);
-}
-
-/* El reflejo: entra por arriba a la izquierda y se apaga antes de la cifra. */
-.aq-tarjeta::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background:
-    radial-gradient(120% 65% at 6% -10%, var(--aq-tarjeta-luz) 0%, transparent 48%),
-    linear-gradient(150deg, var(--aq-tarjeta-sheen) 0%, transparent 38%);
-  pointer-events: none;
-}
-
-/*
- * El canto, en degradado: encendido arriba a la izquierda y apagado en la
- * diagonal opuesta. Mismo truco que el panel de acceso — se pinta el degradado
- * y se le recorta el centro con dos máscaras que se excluyen, así queda solo el
- * marco de 1 px.
- */
-.aq-tarjeta::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(
-    145deg,
-    var(--aq-tarjeta-canto-luz) 0%,
-    var(--aq-tarjeta-canto-sombra) 42%,
-    var(--aq-tarjeta-canto-sombra) 64%,
-    var(--aq-tarjeta-canto-luz) 100%
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-/**
- * El hover SOLO cuando la tarjeta se puede tocar, y el selector lo garantiza.
- *
- * Una tarjeta que se levanta al pasar el mouse enseña que se puede hacer clic.
- * Si no lleva a ningún lado, esa promesa es falsa — y las promesas falsas de
- * interfaz se pagan en confianza: la próxima vez tampoco se prueba la que sí
- * funciona.
- *
- * Por eso el estado vive en `a.aq-tarjeta` y `button.aq-tarjeta`. Una tarjeta
- * de solo lectura no puede tenerlo ni por accidente.
- *
- * Lo que se mueve: sube 2 px, el canto se enciende y la sombra se abre. Es lo
- * que pasa cuando acercás una pieza de vidrio a la luz.
- */
-a.aq-tarjeta:hover,
-button.aq-tarjeta:hover {
-  transform: translateY(-2px);
-  background: var(--aq-tarjeta-fondo-hover);
-  box-shadow:
-    inset 0 1px 0 0 var(--aq-tarjeta-brillo),
-    inset 0 -1px 0 0 var(--aq-tarjeta-fondo-canto),
-    0 18px 40px -14px var(--aq-tarjeta-sombra),
-    0 3px 6px -2px var(--aq-tarjeta-contacto);
-}
-
-a.aq-tarjeta:hover::after,
-button.aq-tarjeta:hover::after {
-  opacity: 1;
-}
-
-/* Al presionar vuelve a apoyarse: el vidrio no se hunde, toca. */
-a.aq-tarjeta:active,
-button.aq-tarjeta:active {
-  transform: translateY(0);
-  transition-duration: var(--aq-fluido-rapido);
-}
-
-.aq-tarjeta::after {
-  opacity: 0.85;
-  transition: opacity var(--aq-fluido-medio) var(--aq-fluido);
-}
-
-/*
- * Quien pidió menos movimiento igual necesita saber que algo respondió: se
- * apaga el desplazamiento, no el cambio de estado.
- */
-@media (prefers-reduced-motion: reduce) {
-  .aq-tarjeta,
-  .aq-tarjeta::after {
-    transition-duration: 0.01ms;
-  }
-
-  a.aq-tarjeta:hover,
-  button.aq-tarjeta:hover {
-    transform: none;
-  }
-}
-
-@supports not (backdrop-filter: blur(1px)) {
-  .aq-tarjeta {
-    background: var(--aq-superficie-tarjeta);
-  }
-}
-
-/**
- * ─── Vidrio de verdad ───────────────────────────────────────────────────────
- *
- * Translucidez más desenfoque **no es vidrio**: es un rectángulo con opacidad.
- * Lo que hace que el ojo lea "vidrio" son tres cosas que una lámina plana no
- * tiene, y las tres están acá:
- *
- * **1 · El canto refracta.** Un borde de un solo color es plástico. El vidrio
- * tiene el canto encendido donde le pega la luz —arriba a la izquierda— y
- * apagado en la diagonal opuesta. Eso es un borde con degradado, que en CSS no
- * existe: se falsifica pintando el degradado en un `::after` y recortándole el
- * centro con dos máscaras que se excluyen entre sí. Queda solo el marco.
- *
- * **2 · Hay un reflejo especular.** Una mancha de luz ancha y suave que entra
- * por la esquina superior. No es un degradado de fondo a fondo: es un óvalo
- * corrido fuera del panel, del que solo se ve la caída.
- *
- * **3 · La pieza tiene espesor.** Dos sombras, no una. Una amplia y difusa que
- * la separa del fondo, y otra corta y cerrada justo debajo —la de contacto—,
- * que es la que dice a qué distancia está. Y hacia adentro, una línea clara
- * arriba y una oscura abajo: el grosor del canto visto desde arriba.
- */
-.aq-vidrio-panel {
-  position: relative;
-  isolation: isolate;
-  background: var(--aq-vidrio-fondo-panel);
-  border: 0;
-  box-shadow:
-    inset 0 1px 0 0 var(--aq-vidrio-brillo-alto),
-    inset 0 -1px 0 0 var(--aq-vidrio-brillo-bajo),
-    0 24px 48px -16px var(--aq-vidrio-sombra-lejos),
-    0 3px 8px -2px var(--aq-vidrio-sombra-cerca);
-}
-
-/* 2 · el reflejo */
-.aq-vidrio-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: radial-gradient(130% 85% at 12% -12%, var(--aq-vidrio-reflejo) 0%, transparent 58%);
-  pointer-events: none;
-}
-
-/* 1 · el canto */
-.aq-vidrio-panel::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(
-    145deg,
-    var(--aq-vidrio-canto-luz) 0%,
-    var(--aq-vidrio-canto-sombra) 38%,
-    var(--aq-vidrio-canto-sombra) 62%,
-    var(--aq-vidrio-canto-luz) 100%
-  );
-  /*
-   * Las dos máscaras: una cubre solo la caja de contenido y la otra la caja
-   * entera. `exclude` deja lo que está en una y no en la otra — o sea el
-   * `padding` de 1px, que es el marco. Safari todavía pide el prefijo.
-   */
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-@supports not (backdrop-filter: blur(1px)) {
-  .aq-vidrio,
-  .aq-vidrio-panel {
-    background: var(--aq-superficie-tarjeta);
-  }
-}
-
-/**
  * El resplandor de marca del fondo. Fijo respecto de la ventana para que no se
  * mueva con el scroll: es luz de ambiente, no contenido.
  */
@@ -896,6 +605,244 @@ button.aq-tarjeta:active {
   -webkit-mask: var(--aq-onda-marca) bottom / 100% 100% no-repeat;
   mask: var(--aq-onda-marca) bottom / 100% 100% no-repeat;
   pointer-events: none;
+}
+
+/**
+ * ═══ El vidrio del sistema ══════════════════════════════════════════════════
+ *
+ * Una sola definición compartida por las cuatro piezas, y variantes que solo
+ * cambian tokens. Antes eran
+ * cinco bloques repitiendo las mismas declaraciones, y cada arreglo había que
+ * hacerlo cinco veces.
+ *
+ * ── Las tres capas, que son lo que hace que se lea como vidrio ─────────────
+ *
+ *   1 · el **canto** refracta: encendido donde pega la luz, apagado en la
+ *       diagonal opuesta. Un borde con degradado no existe en CSS, así que se
+ *       pinta en el `::after` y se le recorta el centro con dos máscaras que se
+ *       excluyen — queda solo el marco de 1 px;
+ *   2 · el **reflejo**, un óvalo de luz corrido fuera de la pieza;
+ *   3 · el **espesor**: dos sombras, una difusa que la separa del fondo y otra
+ *       corta de contacto que dice a qué distancia está.
+ *
+ * ── Por qué NO hay `backdrop-filter` acá ──────────────────────────────────
+ *
+ * Lo había, y costaba **17 fps** — medido: 43,1 contra 60, con el peor frame
+ * pasando de 17,7 ms a 50,9. Seis capas de desenfoque cubriendo el 31 % de la
+ * pantalla en un tablero con cuatro productos.
+ *
+ * Y no mostraba nada. Detrás de estas piezas está el agua, que es un gradiente
+ * suave — o sea **ya borroso**. Desenfocar algo borroso da lo mismo borroso:
+ * las capturas con y sin salieron idénticas.
+ *
+ * El desenfoque solo aporta cuando detrás pasa contenido con detalle. Eso pasa
+ * en un lugar: el cajón del menú en teléfono, que se abre sobre la pantalla que
+ * se está leyendo. Ahí sí está, y solo ahí.
+ */
+.aq-tarjeta,
+.aq-panel-marca,
+.aq-menu-vidrio,
+.aq-vidrio-panel {
+  isolation: isolate;
+  border-radius: var(--aq-lamina-radio, var(--aq-radio-lg));
+  background: var(--aq-lamina-fondo, var(--aq-tarjeta-fondo));
+  border: 0;
+  box-shadow:
+    inset 0 1px 0 0 var(--aq-lamina-brillo, var(--aq-tarjeta-brillo)),
+    inset 0 -1px 0 0 var(--aq-lamina-canto-bajo, var(--aq-tarjeta-fondo-canto)),
+    0 10px 28px -12px var(--aq-lamina-sombra, var(--aq-tarjeta-sombra)),
+    0 2px 4px -2px var(--aq-lamina-contacto, var(--aq-tarjeta-contacto));
+}
+
+/*
+ * ── `position` va aparte, y `.aq-panel-marca` NO está en la lista ──────────
+ *
+ * Los pseudo-elementos necesitan un ancestro posicionado. La tentación es poner
+ * `position: relative` en la regla base de arriba — y esa regla va **sin capa**,
+ * así que le gana a la utilidad `fixed` de Tailwind.
+ *
+ * El menú es `fixed` en teléfono. Con `relative` ganando, el cajón deja de
+ * flotar: se mete en el grid como un ítem más, con un `grid-area` que en móvil
+ * no existe, y el armazón se llena de filas y columnas implícitas.
+ *
+ * Ya pasó **tres veces** —el toggle de tema con `display`, el panel con
+ * `position`, y otra vez al consolidar estas reglas—. El menú lo declara por su
+ * cuenta: `fixed` en teléfono, `sm:relative` en escritorio, que también sirve de
+ * ancestro posicionado.
+ */
+.aq-tarjeta,
+.aq-menu-vidrio,
+.aq-vidrio-panel {
+  position: relative;
+}
+
+/* 2 · el reflejo */
+.aq-tarjeta::before,
+.aq-panel-marca::before,
+.aq-menu-vidrio::before,
+.aq-vidrio-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    radial-gradient(120% 65% at 6% -10%, var(--aq-lamina-luz, var(--aq-tarjeta-luz)) 0%, transparent 48%),
+    linear-gradient(150deg, var(--aq-lamina-sheen, var(--aq-tarjeta-sheen)) 0%, transparent 38%);
+  pointer-events: none;
+}
+
+/* 1 · el canto */
+.aq-tarjeta::after,
+.aq-panel-marca::after,
+.aq-menu-vidrio::after,
+.aq-vidrio-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  opacity: 0.85;
+  background: linear-gradient(
+    145deg,
+    var(--aq-lamina-canto-luz, var(--aq-tarjeta-canto-luz)) 0%,
+    var(--aq-lamina-canto-sombra, var(--aq-tarjeta-canto-sombra)) 42%,
+    var(--aq-lamina-canto-sombra, var(--aq-tarjeta-canto-sombra)) 64%,
+    var(--aq-lamina-canto-luz, var(--aq-tarjeta-canto-luz)) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  transition: opacity var(--aq-fluido-medio) var(--aq-fluido);
+}
+
+/* ── Las variantes: solo declaran sus tokens ────────────────────────────── */
+
+/*
+ * La tarjeta de datos no aparece acá: usa los valores por defecto de arriba.
+ */
+
+/** El panel del menú y el pie: más cuerpo, radio mayor. */
+.aq-panel-marca {
+  --aq-lamina-fondo: var(--aq-panel-lamina);
+  --aq-lamina-radio: var(--aq-radio-xl);
+  --aq-lamina-brillo: var(--aq-panel-brillo);
+  --aq-lamina-canto-luz: var(--aq-panel-canto);
+}
+
+/** El módulo activo del menú: pieza chica, canto más presente. */
+.aq-menu-vidrio {
+  --aq-lamina-fondo: var(--aq-menu-activo-lamina);
+  --aq-lamina-radio: var(--aq-radio-md);
+  --aq-lamina-brillo: var(--aq-menu-activo-brillo);
+  --aq-lamina-luz: var(--aq-menu-activo-reflejo);
+  --aq-lamina-canto-luz: var(--aq-menu-activo-canto);
+}
+
+/** El panel de acceso: la pieza más marcada del sistema. */
+.aq-vidrio-panel {
+  --aq-lamina-fondo: var(--aq-vidrio-fondo-panel);
+  --aq-lamina-radio: 1rem;
+  --aq-lamina-brillo: var(--aq-vidrio-brillo-alto);
+  --aq-lamina-canto-bajo: var(--aq-vidrio-brillo-bajo);
+  --aq-lamina-luz: var(--aq-vidrio-reflejo);
+  --aq-lamina-canto-luz: var(--aq-vidrio-canto-luz);
+  --aq-lamina-canto-sombra: var(--aq-vidrio-canto-sombra);
+  --aq-lamina-sombra: var(--aq-vidrio-sombra-lejos);
+  --aq-lamina-contacto: var(--aq-vidrio-sombra-cerca);
+}
+
+/**
+ * El ÚNICO desenfoque del sistema: el cajón en teléfono.
+ *
+ * Ahí sí hay contenido con detalle detrás —la pantalla que se estaba leyendo— y
+ * el desenfoque es lo que separa el cajón de ella. En escritorio el menú no tapa
+ * nada, así que no lo lleva.
+ */
+@media (max-width: 39.99rem) {
+  .aq-panel-marca {
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    backdrop-filter: blur(20px) saturate(170%);
+  }
+}
+
+/* ── Movimiento ─────────────────────────────────────────────────────────── */
+
+/**
+ * Solo `transform` y `opacity`, que el compositor resuelve sin repintar.
+ *
+ * La versión anterior animaba `box-shadow` y `background-color`: las dos obligan
+ * a repintar la pieza en cada frame. Ahora la sombra del hover vive en el mismo
+ * `box-shadow` de reposo con más alcance, y lo que se mueve es la elevación.
+ */
+.aq-tarjeta,
+.aq-panel-marca,
+.aq-menu-vidrio,
+.aq-vidrio-panel {
+  transition: transform var(--aq-fluido-medio) var(--aq-fluido);
+}
+
+/**
+ * El hover SOLO donde la pieza se puede tocar, y el selector lo garantiza.
+ *
+ * Una tarjeta que se levanta enseña que se puede hacer clic. Si no lleva a
+ * ningún lado, esa promesa es falsa — y las promesas falsas de interfaz se pagan
+ * en confianza. Una pieza de solo lectura no puede tener el estado ni por
+ * accidente.
+ */
+a.aq-tarjeta:hover,
+button.aq-tarjeta:hover {
+  transform: translateY(-2px);
+}
+
+a.aq-tarjeta:hover::after,
+button.aq-tarjeta:hover::after {
+  opacity: 1;
+}
+
+a.aq-tarjeta:active,
+button.aq-tarjeta:active {
+  transform: translateY(0);
+  transition-duration: var(--aq-fluido-rapido);
+}
+
+/** Los enlaces del menú acompañan al cursor. */
+.aq-panel-marca a {
+  transition: color var(--aq-fluido-rapido) var(--aq-fluido);
+}
+
+.aq-panel-marca a:hover {
+  transform: translateX(2px);
+}
+
+.aq-panel-marca a:active {
+  transform: translateX(0);
+}
+
+/**
+ * Quien pidió menos movimiento igual necesita saber que algo respondió: se apaga
+ * el desplazamiento, no el cambio de estado.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .aq-tarjeta,
+  .aq-panel-marca,
+  .aq-menu-vidrio,
+  .aq-tarjeta::after,
+  .aq-panel-marca a {
+    transition-duration: 0.01ms;
+  }
+
+  a.aq-tarjeta:hover,
+  button.aq-tarjeta:hover,
+  .aq-panel-marca a:hover {
+    transform: none;
+  }
 }
 
 /**

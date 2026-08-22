@@ -120,6 +120,66 @@ describe('R54 · los controles se pueden tocar', () => {
   })
 })
 
+/**
+ * Este defecto apareció TRES veces, así que deja de ser casualidad.
+ *
+ * Las clases del sistema van sin capa, así que le ganan a las utilidades de
+ * Tailwind, que viven en `@layer utilities`. Eso es lo que se quiere para
+ * colores y sombras. Para `position` y `display` es una trampa: el menú es
+ * `fixed` en teléfono, y una clase que declare `position: relative` se lo saca.
+ *
+ * Cuando eso pasa, el cajón deja de flotar y se mete en el grid con un
+ * `grid-area` que en móvil no existe: el armazón se llena de filas implícitas y
+ * la pantalla se desarma. No falla ruidosamente — se ve raro y hay que ir a
+ * buscarlo.
+ */
+describe('las clases del sistema no le sacan el posicionamiento a nadie', () => {
+  it('`.aq-panel-marca` no declara `position`', () => {
+    for (const bloque of bloquesDe(globales, '.aq-panel-marca')) {
+      expect(bloque, `declara position: ${bloque}`).not.toMatch(/(^|[;{\s])position\s*:/)
+    }
+  })
+
+  it('tampoco declara `display`, por la misma razón', () => {
+    for (const bloque of bloquesDe(globales, '.aq-panel-marca')) {
+      expect(bloque).not.toMatch(/(^|[;{\s])display\s*:/)
+    }
+  })
+
+  /**
+   * El menú tiene que seguir siendo `fixed` en el CSS del componente. Si alguien
+   * se lo saca, los tests de arriba pasan y el cajón igual se rompe.
+   */
+  it('el menú sigue declarando su propio posicionamiento', () => {
+    const cajon = readFileSync(join(process.cwd(), 'src/components/ui/cajon-navegacion.tsx'), 'utf8')
+
+    expect(cajon).toMatch(/aq-panel-marca[^"`]*\bfixed\b/)
+    expect(cajon).toMatch(/sm:relative/)
+  })
+})
+
+/**
+ * Los cuerpos de las reglas cuyo selector es EXACTAMENTE el que se pide.
+ *
+ * Un `matchAll` sobre el texto crudo no sirve: los comentarios que **mencionan**
+ * la clase entran como si fueran reglas, y ahí el test empieza a reportar
+ * defectos que no existen. Por eso primero se sacan los comentarios y después se
+ * compara selector por selector — `.aq-panel-marca a` y `.aq-panel-marca::after`
+ * son otras reglas, y pueden declarar lo que quieran.
+ */
+function bloquesDe(css: string, selector: string): string[] {
+  const sinComentarios = css.replace(/\/\*[\s\S]*?\*\//g, '')
+  const cuerpos: string[] = []
+
+  for (const regla of sinComentarios.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selectores = (regla[1] ?? '').split(',').map((s) => s.trim())
+
+    if (selectores.includes(selector)) cuerpos.push(regla[2] ?? '')
+  }
+
+  return cuerpos
+}
+
 describe('la tipografía no baja del piso del sistema', () => {
   /**
    * La escala del sistema no tiene 12 px: el piso de cuerpo es `cuerpo-chico`

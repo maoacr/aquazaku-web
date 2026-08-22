@@ -135,7 +135,15 @@ function FilaDeRegistro({ fila }: { fila: RegistroDeAuditoria }) {
       <Td className="whitespace-nowrap font-mono text-xs">{fila.action}</Td>
 
       <Td>
-        <Etiqueta tono={fila.result === 'ok' ? 'neutro' : 'alerta'}>
+        {/*
+          Permitido va en el verde reservado: la acción estaba autorizada y el
+          sistema la dejó pasar, que es literalmente «todo en orden».
+
+          Denegado va en rojo y no en ámbar: no es una advertencia, es alguien
+          que intentó algo que no podía. Es la fila que hay que poder encontrar
+          de un vistazo en una tabla larga.
+        */}
+        <Etiqueta tono={fila.result === 'ok' ? 'ok' : 'alerta'}>
           {fila.result === 'ok' ? 'Permitido' : 'Denegado'}
         </Etiqueta>
       </Td>

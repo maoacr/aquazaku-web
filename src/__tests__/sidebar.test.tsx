@@ -9,8 +9,18 @@ import { Sidebar } from '@/components/ui/sidebar'
  * retiró junto con la landing provisoria al llegar el dashboard.
  */
 describe('<Sidebar />', () => {
-  function nav() {
-    return screen.getByRole('navigation', { name: 'Módulos' })
+  /**
+   * El menú se renderiza DOS veces: un cajón para el teléfono y una columna
+   * para escritorio. Cuál se ve lo decide `display`, que es determinista —
+   * a diferencia del intento anterior, que dependía de que el navegador
+   * revelara el contenido de un `<details>` cerrado y no funcionaba.
+   *
+   * En jsdom no hay media queries, así que las dos existen y hay que elegir.
+   * Los casos de contenido usan la de escritorio: da lo mismo cuál, porque
+   * las dos renderizan el mismo componente.
+   */
+  function nav(cual: 'escritorio' | 'mobile' = 'escritorio') {
+    return within(screen.getByTestId(`menu-${cual}`)).getByRole('navigation', { name: 'Módulos' })
   }
 
   it('muestra los módulos de admin', () => {
@@ -75,10 +85,55 @@ describe('<Sidebar />', () => {
     ])
   })
 
-  it('siempre rotula la marca', () => {
+  /**
+   * Este test decía «siempre rotula la marca» y usaba `toBeVisible()`.
+   *
+   * Dejó de ser cierto cuando el menú pasó a ser colapsable, y **está bien**:
+   * en un teléfono el panel arranca cerrado y su contenido no se ve hasta que
+   * alguien lo abre. Eso es lo que hace un menú colapsable.
+   *
+   * Lo que sí tiene que valer siempre es que la marca **esté en el documento**:
+   * un lector de pantalla la encuentra, y en escritorio el CSS la muestra.
+   */
+  it('la marca está siempre en el documento', () => {
     render(<Sidebar userRoles={[]} userName="Persona de prueba" tema="claro" />)
 
-    expect(screen.getByText('Aquazaku')).toBeVisible()
+    expect(within(screen.getByTestId('menu-escritorio')).getByText('Aquazaku')).toBeInTheDocument()
+  })
+
+  it('las dos instancias muestran los mismos módulos', () => {
+    render(<Sidebar userRoles={['admin']} userName="Persona de prueba" tema="claro" />)
+
+    const enEscritorio = within(nav('escritorio')).getAllByRole('link').map((l) => l.textContent)
+    const enMobile = within(nav('mobile')).getAllByRole('link').map((l) => l.textContent)
+
+    // Si divergen, alguien editó una copia y no la otra.
+    expect(enMobile).toEqual(enEscritorio)
+  })
+
+  it('solo la de escritorio se ve en pantalla ancha, y al revés', () => {
+    render(<Sidebar userRoles={['admin']} userName="Persona de prueba" tema="claro" />)
+
+    // jsdom no aplica media queries, así que se verifica la intención en las
+    // clases: es lo único comprobable sin un navegador.
+    expect(screen.getByTestId('menu-escritorio').className).toContain('hidden')
+    expect(screen.getByTestId('menu-escritorio').className).toContain('sm:flex')
+    expect(screen.getByTestId('menu-lateral').className).toContain('sm:hidden')
+  })
+
+  it('el menú se puede abrir y cerrar sin JavaScript', () => {
+    render(<Sidebar userRoles={['admin']} userName="Persona de prueba" tema="claro" />)
+
+    // `<details>` trae gratis el teclado y el anuncio a lectores de pantalla.
+    const menu = screen.getByTestId('menu-lateral')
+    expect(menu.tagName).toBe('DETAILS')
+    expect(menu.querySelector('summary')).not.toBeNull()
+  })
+
+  it('el botón de abrir dice qué hace', () => {
+    render(<Sidebar userRoles={['admin']} userName="Persona de prueba" tema="claro" />)
+
+    expect(screen.getByLabelText('Abrir el menú')).toBeInTheDocument()
   })
 })
 
@@ -88,12 +143,16 @@ describe('cierre de sesión', () => {
 
     // `api/` expone el endpoint desde Task 6, pero el shell no lo usaba: el
     // usuario quedaba adentro hasta que le venciera la cookie.
-    expect(screen.getByRole('button', { name: /cerrar sesión/i })).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('menu-escritorio')).getByRole('button', { name: /cerrar sesión/i }),
+    ).toBeInTheDocument()
   })
 
   it('muestra quién está usando el sistema', () => {
     render(<Sidebar userRoles={['pos']} userName="Yeimy Rodríguez" tema="claro" />)
 
-    expect(screen.getByText('Yeimy Rodríguez')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('menu-escritorio')).getByText('Yeimy Rodríguez'),
+    ).toBeInTheDocument()
   })
 })

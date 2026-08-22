@@ -50,7 +50,15 @@ export function AltaDeProducto() {
 
         <label className="grid gap-1 text-sm">
           <span>Contenido unitario (ml)</span>
-          <input name="contenidoMl" type="number" min={1} step={1} required className={campo} />
+          <input
+            name="contenidoMl"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            required
+            className={campo}
+          />
         </label>
 
         <label className="grid gap-1 text-sm">
@@ -59,6 +67,7 @@ export function AltaDeProducto() {
           <input
             name="unidades"
             type="number"
+            inputMode="numeric"
             min={1}
             step={1}
             defaultValue={1}

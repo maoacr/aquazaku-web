@@ -60,9 +60,19 @@ export function SinResultados({ columnas, children }: { columnas: number; childr
  * usuario con daltonismo no puede distinguir activo de inactivo por el punto.
  */
 export function Etiqueta({ tono, children }: { tono: 'ok' | 'alerta' | 'neutro'; children: ReactNode }) {
+  /*
+   * Los tres tonos salen de los tokens semánticos, no de la paleta de Tailwind.
+   * Un `emerald-950` escrito acá no cambia con el tema y no comparte
+   * significado con el resto del sistema: es un verde que se PARECE al de la
+   * marca, y esa diferencia se nota cuando conviven en la misma pantalla.
+   *
+   * `ok` usa el verde RESERVADO. La regla dura del sistema de diseño es que ese
+   * verde solo significa «todo en orden» — y acá lo significa: la acción estaba
+   * autorizada y el sistema la dejó pasar.
+   */
   const estilos = {
-    ok: 'bg-emerald-950 text-emerald-300 ring-emerald-900',
-    alerta: 'bg-red-950 text-red-300 ring-red-900',
+    ok: 'bg-exito-fondo text-exito-texto ring-exito-borde',
+    alerta: 'bg-error-fondo text-error-texto ring-error-borde',
     neutro: 'bg-elevada text-secundario ring-sutil',
   } as const
 

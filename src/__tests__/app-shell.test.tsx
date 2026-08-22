@@ -1,7 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AppLayout from '@/app/(app)/layout'
-import DashboardPage from '@/app/(app)/page'
 import ModulosPage from '@/app/(app)/modulos/page'
 import type { ServerUser } from '@/lib/api-server'
 import type { Role } from '@/lib/roles'
@@ -82,10 +81,11 @@ describe('<AppLayout />', () => {
 
     render(await AppLayout(layoutProps(<p>contenido</p>)))
 
-    expect(screen.getByRole('link', { name: 'Auditoría' })).toHaveAttribute(
-      'href',
-      '/contador/auditoria',
-    )
+    // El menú se renderiza dos veces —cajón de teléfono y columna de
+    // escritorio— y en jsdom no hay media queries que oculten una.
+    expect(
+      within(screen.getByTestId('menu-escritorio')).getByRole('link', { name: 'Auditoría' }),
+    ).toHaveAttribute('href', '/contador/auditoria')
     expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument()
   })
 
@@ -130,13 +130,14 @@ describe('<AppLayout />', () => {
   })
 })
 
-describe('<DashboardPage />', () => {
-  it('se anuncia como dashboard', () => {
-    render(<DashboardPage />)
-
-    expect(screen.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
-  })
-})
+/**
+ * El dashboard dejó de ser un título con una línea de bienvenida: ahora trae
+ * datos y contesta «qué está esperando que alguien haga algo».
+ *
+ * Sus casos viven en `dashboard.test.tsx`, que puede mockear las lecturas. Acá
+ * quedaría a medio probar y obligaría a este archivo —que verifica el guard de
+ * sesión— a saber de stock.
+ */
 
 describe('<ModulosPage />', () => {
   it('explica que hay que elegir un módulo del menú', () => {

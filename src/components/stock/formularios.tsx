@@ -125,7 +125,16 @@ export function EntradaDeInventario({ productos }: { productos: ResumenDeStock[]
 
         <label className="grid gap-1.5">
           <span className="text-[13px] font-semibold text-principal">Unidades</span>
-          <input name="cantidad" type="number" min={1} step={1} required className={`${campo} aq-cifra`} />
+          <input
+            name="cantidad"
+            type="number"
+            // Sin esto, un teléfono abre el teclado alfabético para escribir un número.
+            inputMode="numeric"
+            min={1}
+            step={1}
+            required
+            className={`${campo} aq-cifra`}
+          />
         </label>
 
         <label className="grid gap-1.5">
@@ -172,6 +181,7 @@ export function AjusteDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
           <input
             name="cantidad"
             type="number"
+            inputMode="numeric"
             step={1}
             required
             placeholder="-8"
@@ -212,7 +222,16 @@ export function DescarteDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
 
         <label className="grid gap-1.5">
           <span className="text-[13px] font-semibold text-principal">Unidades</span>
-          <input name="cantidad" type="number" min={1} step={1} required className={`${campo} aq-cifra`} />
+          <input
+            name="cantidad"
+            type="number"
+            // Sin esto, un teléfono abre el teclado alfabético para escribir un número.
+            inputMode="numeric"
+            min={1}
+            step={1}
+            required
+            className={`${campo} aq-cifra`}
+          />
         </label>
 
         <CausaYObservaciones />

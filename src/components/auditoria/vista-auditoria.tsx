@@ -88,7 +88,10 @@ export async function VistaDeAuditoria({
       {siguiente ? (
         <a
           href={siguiente}
-          className="justify-self-start rounded border border-fuerte px-4 py-2 text-sm"
+          // Enlace con forma de botón: es una acción suelta, así que lleva el
+          // objetivo táctil mínimo (R54). La regla global no toca los enlaces
+          // porque uno dentro de una oración no puede medir 44 px.
+          className="inline-flex min-h-11 items-center justify-self-start rounded border border-fuerte px-4 text-sm"
         >
           Cargar más ↓
         </a>
@@ -96,7 +99,7 @@ export async function VistaDeAuditoria({
         // Solo se dice cuando hay algo que terminar de ver: en una tabla vacía
         // el mensaje sobra.
         pagina.filas.length > 0 && (
-          <p className="text-xs text-secundario">No hay más registros.</p>
+          <p className="text-sm text-secundario">No hay más registros.</p>
         )
       )}
     </div>
@@ -117,7 +120,7 @@ function FilaDeRegistro({ fila }: { fila: RegistroDeAuditoria }) {
         {fila.userName ? (
           <>
             <span>{fila.userName}</span>
-            <p className="text-xs text-tenue">{fila.userEmail}</p>
+            <p className="text-sm text-tenue">{fila.userEmail}</p>
           </>
         ) : fila.userId ? (
           // El registro sobrevivió al borrado del usuario: `audit_log` no tiene
@@ -128,11 +131,11 @@ function FilaDeRegistro({ fila }: { fila: RegistroDeAuditoria }) {
           <span className="text-tenue italic">(sin sesión)</span>
         )}
         {fila.rolEjercido && fila.rolEjercido.length > 0 ? (
-          <p className="text-xs text-secundario">{fila.rolEjercido.join(', ')}</p>
+          <p className="text-sm text-secundario">{fila.rolEjercido.join(', ')}</p>
         ) : null}
       </Td>
 
-      <Td className="whitespace-nowrap font-mono text-xs">{fila.action}</Td>
+      <Td className="whitespace-nowrap font-mono text-sm">{fila.action}</Td>
 
       <Td>
         {/*
@@ -150,11 +153,11 @@ function FilaDeRegistro({ fila }: { fila: RegistroDeAuditoria }) {
 
       <Td className="max-w-md">
         {fila.payload ? (
-          <code className="block truncate text-xs text-secundario">
+          <code className="block truncate text-sm text-secundario">
             {JSON.stringify(fila.payload)}
           </code>
         ) : null}
-        {fila.ip ? <p className="text-xs text-secundario">{fila.ip}</p> : null}
+        {fila.ip ? <p className="text-sm text-secundario">{fila.ip}</p> : null}
       </Td>
     </tr>
   )
@@ -174,7 +177,7 @@ function Filtros({ filtros, ruta }: { filtros: FiltrosDeAuditoria; ruta: string 
       method="get"
       className="grid gap-3 rounded-lg border border-sutil p-4 sm:grid-cols-5"
     >
-      <label className="grid gap-1 text-xs">
+      <label className="grid gap-1 text-sm">
         <span className="text-secundario">Acción</span>
         <input
           name="action"
@@ -184,7 +187,7 @@ function Filtros({ filtros, ruta }: { filtros: FiltrosDeAuditoria; ruta: string 
         />
       </label>
 
-      <label className="grid gap-1 text-xs">
+      <label className="grid gap-1 text-sm">
         <span className="text-secundario">Módulo</span>
         <input
           name="resource"
@@ -194,7 +197,7 @@ function Filtros({ filtros, ruta }: { filtros: FiltrosDeAuditoria; ruta: string 
         />
       </label>
 
-      <label className="grid gap-1 text-xs">
+      <label className="grid gap-1 text-sm">
         <span className="text-secundario">Resultado</span>
         <select
           name="result"
@@ -208,7 +211,7 @@ function Filtros({ filtros, ruta }: { filtros: FiltrosDeAuditoria; ruta: string 
         </select>
       </label>
 
-      <label className="grid gap-1 text-xs">
+      <label className="grid gap-1 text-sm">
         <span className="text-secundario">Desde</span>
         <input
           name="desde"
@@ -218,7 +221,7 @@ function Filtros({ filtros, ruta }: { filtros: FiltrosDeAuditoria; ruta: string 
         />
       </label>
 
-      <label className="grid gap-1 text-xs">
+      <label className="grid gap-1 text-sm">
         <span className="text-secundario">Hasta</span>
         <input
           name="hasta"
@@ -237,7 +240,10 @@ function Filtros({ filtros, ruta }: { filtros: FiltrosDeAuditoria; ruta: string 
         </button>
         {/* Un link y no un reset: `reset` devuelve los campos a sus valores
             iniciales, que son justamente los filtros aplicados. */}
-        <a href={ruta} className="rounded border border-fuerte px-4 py-2 text-sm">
+        <a
+          href={ruta}
+          className="inline-flex min-h-11 items-center rounded border border-fuerte px-4 text-sm"
+        >
           Limpiar
         </a>
       </div>

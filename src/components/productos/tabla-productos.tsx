@@ -26,13 +26,13 @@ export function TablaDeProductos({ productos }: { productos: Producto[] }) {
         ) : (
           productos.map((p) => (
             <tr key={p.id}>
-              <Td className="font-mono text-xs">{p.codigo}</Td>
+              <Td className="font-mono text-sm">{p.codigo}</Td>
               <Td>{p.nombre}</Td>
               <Td className="whitespace-nowrap text-secundario">
                 {p.presentacion === 'paca'
                   ? `${p.unidades} × ${p.contenidoMl} ml`
                   : `${p.contenidoMl / 1000} L`}
-                <span className="ml-2 text-xs">({litros(p.litros)} L)</span>
+                <span className="ml-2 text-sm">({litros(p.litros)} L)</span>
               </Td>
               <Td className="whitespace-nowrap tabular-nums">{pesos(p.precioResidencial)}</Td>
               <Td className="whitespace-nowrap tabular-nums">{pesos(p.precioComercial)}</Td>

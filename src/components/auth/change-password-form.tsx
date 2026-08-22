@@ -40,7 +40,7 @@ export function ChangePasswordForm({ primerIngreso = false }: { primerIngreso?: 
       <PasswordFields describedBy={estado.error ? 'change-error' : undefined} />
 
       {/* Avisar antes, no después: cambiarla cierra todas las sesiones. */}
-      <p className="text-xs text-tenue">
+      <p className="text-sm text-tenue">
         Al cambiarla se cierran todas tus sesiones y vas a tener que entrar de nuevo.
       </p>
 

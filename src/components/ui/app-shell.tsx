@@ -63,7 +63,12 @@ export function AppShell({
         marca={
           /* La marca vuelve al inicio: es la convención de la web y el atajo
              que todo el mundo prueba primero. */
-          <Link href="/" className="rounded-md px-1 py-1" aria-label="Ir al inicio">
+          <Link
+            href="/"
+            // Medía 36 px de alto. Es el atajo al tablero, un objetivo suelto.
+            className="inline-flex min-h-11 items-center rounded-md px-1"
+            aria-label="Ir al inicio"
+          >
             <Marca compacta />
           </Link>
         }
@@ -89,7 +94,13 @@ export function AppShell({
 /** Contenido del menú: solo navegación. Lo demás vive en la cabecera. */
 function MenuLateral({ modules }: { modules: ReturnType<typeof computeVisibleModules> }) {
   return (
-    <ul className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+    <ul
+      // El `p-[5px]` no es estético: es el lugar que necesita el anillo de foco.
+      // `overflow-y-auto` recorta lo que se salga de la caja, y el anillo sale
+      // 5 px —2 de separación más 3 de grosor—, así que sin ese aire el primer y
+      // el último ítem se quedan sin la mitad del anillo. Medido, no supuesto.
+      className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-[5px]"
+    >
       {/*
         Inicio va explícito y no solo en la marca. Confiar en que «el logo
         lleva al inicio» es una convención de quien vive en la web; alguien

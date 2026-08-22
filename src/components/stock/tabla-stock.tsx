@@ -77,7 +77,10 @@ export function TablaDeStock({ productos }: { productos: ResumenDeStock[] }) {
                 <td className="px-4 py-3 text-right">
                   <Link
                     href={`/modulos/stock/${p.productoId}`}
-                    className="rounded-sm text-[14px] font-medium text-accion underline-offset-4 hover:underline"
+                    // `inline-flex` + `min-h-11`: es una acción suelta en la
+                    // fila, no un enlace dentro de una oración, así que lleva el
+                    // objetivo táctil mínimo del sistema (R54). Medía 19 px.
+                    className="inline-flex min-h-11 items-center rounded-sm text-[14px] font-medium text-accion underline-offset-4 hover:underline"
                   >
                     Ver lotes
                   </Link>

@@ -132,7 +132,7 @@ export function CamposDePrecio({ producto }: { producto?: {
       <label className="grid gap-1 text-sm">
         <span>
           Precio mínimo
-          <span className="ml-1 text-xs text-tenue">(piso absoluto)</span>
+          <span className="ml-1 text-sm text-tenue">(piso absoluto)</span>
         </span>
         <input
           name="precioMinimo"

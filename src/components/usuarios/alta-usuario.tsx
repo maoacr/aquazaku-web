@@ -86,7 +86,7 @@ export function AltaDeUsuario() {
             </label>
           ))}
         </div>
-        <p className="text-xs text-tenue">
+        <p className="text-sm text-tenue">
           Se puede crear sin roles: entra al sistema y no ve ningún módulo.
         </p>
       </fieldset>

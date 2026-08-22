@@ -47,6 +47,19 @@
   --aq-texto-secundario: var(--aq-neutro-700);
   --aq-texto-tenue:      var(--aq-neutro-600);
 
+  /*
+   * El anillo de foco también tiene que cambiar de paso entre modos.
+   *
+   * La copia del sistema lo deja en el aqua claro (acento-400) para los dos, y
+   * medido contra las superficies reales eso da 1,62:1 sobre el fondo claro:
+   * WCAG 2.2 pide 3:1 para un indicador de foco. En claro es casi invisible, y
+   * el punto de venta se opera con teclado.
+   *
+   * Se baja a acento-700, que da 4,87:1 sobre el fondo y 5,15:1 sobre una
+   * tarjeta. Misma familia de color: el foco conserva su identidad entre modos.
+   */
+  --aq-anillo-foco: var(--aq-acento-700);
+
   --aq-estado-exito-base:   var(--aq-exito-500);
   --aq-estado-exito-fondo:  var(--aq-exito-50);
   --aq-estado-exito-borde:  var(--aq-exito-300);
@@ -79,6 +92,9 @@
   /* Ídem en oscuro: `tenue` en neutro-500 daba 4,04:1 sobre una tarjeta. */
   --aq-texto-secundario: var(--aq-neutro-300);
   --aq-texto-tenue:      var(--aq-neutro-400);
+
+  /* En oscuro el aqua claro sí funciona: 10,57:1 sobre el fondo. */
+  --aq-anillo-foco: var(--aq-acento-400);
 
   --aq-estado-exito-fondo:  var(--aq-exito-900);
   --aq-estado-exito-texto:  var(--aq-exito-300);
@@ -239,6 +255,72 @@ body {
 }
 
 /**
+ * ─── El anillo de foco ──────────────────────────────────────────────────────
+ *
+ * Pisa la regla de `tokens.css`, que resuelve el anillo con `box-shadow` y dos
+ * capas: 2px del color de la tarjeta para abrir un hueco, y 3px del anillo
+ * afuera. Eso tiene dos problemas.
+ *
+ * **El hueco está fijo en `tarjeta`.** Un control que vive sobre el fondo de la
+ * página —o sobre una superficie elevada— se rodea de un halo del color
+ * equivocado. El hueco deja de leerse como hueco.
+ *
+ * **Y `box-shadow` es la misma propiedad que usan las elevaciones.** Un
+ * `shadow-elev-1` de Tailwind compite por ella, y quién gana depende del orden
+ * en que salió el CSS. Es el mismo defecto que tenía el toggle de tema.
+ *
+ * `outline` con `outline-offset` resuelve los dos de una: el hueco es
+ * **transparente**, así que muestra la superficie real sea cual sea, y `outline`
+ * es una propiedad propia que ninguna utilidad de sombra puede pisar. Además
+ * sigue el `border-radius` del control.
+ *
+ * `:is()` y no `:where()`: `:where()` aporta especificidad cero, así que
+ * cualquier utilidad de una clase le ganaría. Con `:is()` la regla vale 0,1,1 y
+ * se sostiene sola.
+ *
+ * El `box-shadow: none` anula la capa que venía de `tokens.css`. Un control con
+ * elevación pierde la sombra mientras tiene el foco — que es exactamente lo que
+ * ya hacía la regla anterior, así que no cambia nada respecto de hoy.
+ */
+:is(button, a, input, select, textarea, [tabindex]):focus-visible,
+.aq-foco:focus-visible {
+  outline: 3px solid var(--aq-anillo-foco);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/**
+ * ─── El objetivo táctil mínimo (R54) ────────────────────────────────────────
+ *
+ * 44 px de alto en todo control, y no archivo por archivo.
+ *
+ * Hay campos de formulario en once archivos y **no existe una primitiva
+ * compartida**: cada módulo escribe sus propias clases. Poner el mínimo en cada
+ * uno funcionaría hoy y fallaría en la próxima pantalla que alguien escriba, que
+ * es exactamente como llegamos a tener `select` e `input` en 42 px — dos píxeles
+ * cortos, invisibles a la vista y molestos con el pulgar.
+ *
+ * Una regla sola sobre los elementos cubre lo que hay y lo que venga. Los
+ * botones ya declaran su alto (44 o 56); esto no los cambia, los respalda.
+ *
+ * `min-height` y no `height`: un `textarea` de varias líneas tiene que poder
+ * crecer.
+ *
+ * Las casillas y los radios quedan afuera a propósito: estirarlos deforma el
+ * control en vez de agrandar el objetivo. El objetivo de una casilla lo da su
+ * `<label>`, que es lo que conviene hacer grande.
+ *
+ * Los enlaces tampoco entran acá. Un enlace dentro de una oración —"Hecho con 💚
+ * por @maoacr"— no puede medir 44 px sin romper el renglón, y WCAG 2.2 los exime
+ * justamente por eso. El enlace que ES una acción suelta sí lleva el mínimo, y
+ * lo declara en su lugar.
+ */
+:is(button, select, textarea, [role='button']),
+input:not([type='checkbox'], [type='radio'], [type='hidden']) {
+  min-height: 44px;
+}
+
+/**
  * ─── La regla del par fondo/texto ───────────────────────────────────────────
  *
  * Cada estado del sistema trae CUATRO tokens, y no son intercambiables:
@@ -311,6 +393,7 @@ body {
   --aq-texto-principal:    var(--aq-neutro-100);
   --aq-texto-secundario:   var(--aq-neutro-300);
   --aq-texto-tenue:        var(--aq-neutro-400);
+  --aq-anillo-foco: var(--aq-acento-400);
   --aq-texto-invertido:    var(--aq-neutro-950);
   --aq-accion-primaria:       #4EA9DA;
   --aq-accion-primaria-hover: #86C6EA;

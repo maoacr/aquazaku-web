@@ -28,7 +28,7 @@ export function Tabla({ children }: { children: ReactNode }) {
 
 export function Encabezados({ children }: { children: ReactNode }) {
   return (
-    <thead className="bg-fondo text-left text-xs uppercase tracking-wide text-secundario">
+    <thead className="aq-micro bg-fondo text-left text-secundario">
       <tr>{children}</tr>
     </thead>
   )
@@ -78,7 +78,7 @@ export function Etiqueta({ tono, children }: { tono: 'ok' | 'alerta' | 'neutro';
 
   return (
     <span
-      className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${estilos[tono]}`}
+      className={`aq-micro inline-flex items-center rounded px-2 py-0.5 ring-1 ring-inset ${estilos[tono]}`}
     >
       {children}
     </span>

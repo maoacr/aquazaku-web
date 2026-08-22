@@ -34,7 +34,7 @@ export function GestionDeProducto({ producto }: { producto: Producto }) {
       <header className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <h3 className="font-medium">{producto.nombre}</h3>
-          <p className="font-mono text-xs text-tenue">{producto.codigo}</p>
+          <p className="font-mono text-sm text-tenue">{producto.codigo}</p>
         </div>
         {producto.activo ? (
           <Etiqueta tono="ok">activo</Etiqueta>

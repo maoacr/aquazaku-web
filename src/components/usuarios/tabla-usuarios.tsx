@@ -47,7 +47,7 @@ function Fila({ usuario }: { usuario: UsuarioListado }) {
         <Td>
           <span className="font-medium">{usuario.name}</span>
           {usuario.mustChangePassword ? (
-            <p className="mt-0.5 text-xs text-tenue">Pendiente de cambiar contraseña</p>
+            <p className="mt-0.5 text-sm text-tenue">Pendiente de cambiar contraseña</p>
           ) : null}
         </Td>
         <Td>{usuario.email}</Td>
@@ -62,7 +62,7 @@ function Fila({ usuario }: { usuario: UsuarioListado }) {
           <form action={guardarRoles} className="flex flex-wrap items-center gap-3">
             <input type="hidden" name="userId" value={usuario.id} />
             {ROLES_DISPONIBLES.map((rol) => (
-              <label key={rol} className="flex items-center gap-1.5 text-xs">
+              <label key={rol} className="flex items-center gap-1.5 text-sm">
                 <input
                   type="checkbox"
                   name="roles"
@@ -76,7 +76,7 @@ function Fila({ usuario }: { usuario: UsuarioListado }) {
             <button
               type="submit"
               disabled={guardandoRoles}
-              className="rounded border border-fuerte px-2 py-1 text-xs disabled:opacity-50"
+              className="rounded border border-fuerte px-2 py-1 text-sm disabled:opacity-50"
             >
               {guardandoRoles ? 'Guardando…' : 'Guardar roles'}
             </button>
@@ -90,7 +90,7 @@ function Fila({ usuario }: { usuario: UsuarioListado }) {
             <button
               type="submit"
               disabled={cambiandoEstado}
-              className="whitespace-nowrap rounded border border-fuerte px-2 py-1 text-xs disabled:opacity-50"
+              className="whitespace-nowrap rounded border border-fuerte px-2 py-1 text-sm disabled:opacity-50"
             >
               {cambiandoEstado ? '…' : activo ? 'Desactivar' : 'Reactivar'}
             </button>
@@ -108,7 +108,7 @@ function Fila({ usuario }: { usuario: UsuarioListado }) {
           <td colSpan={4} className="px-3 pb-2">
             <p
               role={esError ? 'alert' : 'status'}
-              className={`text-xs ${esError ? 'text-error-texto' : 'text-exito-texto'}`}
+              className={`text-sm ${esError ? 'text-error-texto' : 'text-exito-texto'}`}
             >
               {mensaje}
             </p>

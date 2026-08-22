@@ -81,10 +81,10 @@ describe('<AppLayout />', () => {
 
     render(await AppLayout(layoutProps(<p>contenido</p>)))
 
-    // El menú se renderiza dos veces —cajón de teléfono y columna de
-    // escritorio— y en jsdom no hay media queries que oculten una.
     expect(
-      within(screen.getByTestId('menu-escritorio')).getByRole('link', { name: 'Auditoría' }),
+      within(screen.getByRole('navigation', { name: 'Módulos' })).getByRole('link', {
+        name: 'Auditoría',
+      }),
     ).toHaveAttribute('href', '/contador/auditoria')
     expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument()
   })

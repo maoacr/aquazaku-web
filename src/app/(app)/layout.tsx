@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { Sidebar } from '@/components/ui/sidebar'
+import { AppShell } from '@/components/ui/app-shell'
 import { leerTema } from '@/lib/tema'
 import { getServerUser } from '@/lib/api-server'
 
@@ -34,22 +34,8 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
   }
 
   return (
-    /*
-     * ── El armazón ocupa exactamente la pantalla ──────────────────────────
-     *
-     * `h-dvh` y no `h-screen`: en iOS, `100vh` incluye la barra de direcciones,
-     * así que el pie del menú queda debajo del borde visible y hay que
-     * scrollear la página entera para llegar al botón de salir.
-     *
-     * `min-h-0` en el `<main>` es lo que hace que el scroll viva ahí adentro.
-     * Sin él, un hijo de flex no se encoge por debajo de su contenido: el
-     * `<main>` crece, empuja al contenedor, y el scroll se escapa al documento
-     * — arrastrando el menú lateral con él.
-     */
-    <div className="flex h-dvh overflow-hidden">
-      <Sidebar userRoles={user.roles} userName={user.name} tema={tema} />
-
-      <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
-    </div>
+    <AppShell userRoles={user.roles} userName={user.name} tema={tema}>
+      {children}
+    </AppShell>
   )
 }

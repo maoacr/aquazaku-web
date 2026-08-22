@@ -48,7 +48,10 @@ export function SelectorTema({ actual }: { actual: Tema }) {
                 }`}
               >
                 <Icono aria-hidden className="size-4 shrink-0" />
-                <span className="sr-only sm:not-sr-only">{etiqueta}</span>
+                {/* La etiqueta se muestra siempre. Tres iconos sin texto —sol, luna,
+                    monitor— obligan a adivinar cuál es cuál, y en el cajón de
+                    288 px o en la columna de 256 px sobra lugar para decirlo. */}
+                <span>{etiqueta}</span>
               </button>
             )
           })}

@@ -113,6 +113,37 @@ body {
 }
 
 /**
+ * Armazón de la app.
+ *
+ *   teléfono              escritorio
+ *   ┌──────────┐          ┌──────┬──────────┐
+ *   │ cabecera │          │   cabecera      │
+ *   ├──────────┤          ├──────┼──────────┤
+ *   │ contenido│          │ menú │ contenido│
+ *   ├──────────┤          ├──────┴──────────┤
+ *   │   pie    │          │      pie        │
+ *   └──────────┘          └─────────────────┘
+ *
+ * Las áreas van en CSS y no en clases de utilidad porque `grid-template-areas`
+ * necesita strings con espacios: escrito como clase queda ilegible, y es
+ * justamente el lugar donde se entiende el armazón de un vistazo.
+ *
+ * `auto 1fr auto` hace que solo la fila del medio ceda: el pie queda pegado
+ * abajo y visible siempre, sin `position: fixed` ni reservar espacio a mano.
+ */
+.aq-armazon {
+  grid-template-areas: 'cabecera' 'contenido' 'pie';
+  grid-template-rows: auto 1fr auto;
+}
+
+@media (min-width: 40rem) {
+  .aq-armazon {
+    grid-template-areas: 'cabecera cabecera' 'menu contenido' 'pie pie';
+    grid-template-columns: 16rem 1fr;
+  }
+}
+
+/**
  * Etiqueta micro: 11px en mayúsculas con tracking.
  *
  * Es el único texto del sistema por debajo de 13px, y solo se permite en

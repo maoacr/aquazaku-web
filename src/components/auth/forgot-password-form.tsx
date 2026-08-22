@@ -18,7 +18,7 @@ export function ForgotPasswordForm() {
   if (estado.enviado) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Revise su correo</h1>
+        <h1 className="aq-titulo-seccion text-principal">Revise su correo</h1>
         <p role="status" className="text-sm text-secundario">
           Si ese email tiene una cuenta, le mandamos un link para crear una contraseña nueva.
           El link vence, así que usalo pronto.
@@ -32,7 +32,7 @@ export function ForgotPasswordForm() {
 
   return (
     <form action={enviar} className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight">Recuperar contraseña</h1>
+      <h1 className="aq-titulo-seccion text-principal">Recuperar contraseña</h1>
 
       <FormError id="forgot-error">{estado.error}</FormError>
 
@@ -44,14 +44,14 @@ export function ForgotPasswordForm() {
           required
           autoComplete="email"
           aria-describedby={estado.error ? 'forgot-error' : undefined}
-          className="rounded border border-fuerte p-2"
+          className="aq-campo"
         />
       </label>
 
       <button
         type="submit"
         disabled={pendiente}
-        className="h-14 rounded-md bg-accion px-5 font-semibold text-invertido hover:bg-accion-hover disabled:opacity-50"
+        className="aq-boton aq-boton-primario aq-boton-grande"
       >
         {pendiente ? 'Enviando…' : 'Enviarme el link'}
       </button>

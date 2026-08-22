@@ -76,7 +76,7 @@ function Fila({ usuario }: { usuario: UsuarioListado }) {
             <button
               type="submit"
               disabled={guardandoRoles}
-              className="rounded border border-fuerte px-2 py-1 text-sm disabled:opacity-50"
+              className="aq-boton aq-boton-secundario aq-boton-compacto"
             >
               {guardandoRoles ? 'Guardando…' : 'Guardar roles'}
             </button>
@@ -90,7 +90,7 @@ function Fila({ usuario }: { usuario: UsuarioListado }) {
             <button
               type="submit"
               disabled={cambiandoEstado}
-              className="whitespace-nowrap rounded border border-fuerte px-2 py-1 text-sm disabled:opacity-50"
+              className="aq-boton aq-boton-secundario aq-boton-compacto"
             >
               {cambiandoEstado ? '…' : activo ? 'Desactivar' : 'Reactivar'}
             </button>

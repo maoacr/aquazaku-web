@@ -6,7 +6,7 @@ import { FormError } from '@/components/auth/form-error'
 
 const INICIAL: EstadoDeFormulario = {}
 
-const campo = 'rounded border border-fuerte bg-transparent px-2 py-1.5'
+const campo = 'aq-campo'
 
 /**
  * Alta de producto.
@@ -83,7 +83,7 @@ export function AltaDeProducto() {
         <button
           type="submit"
           disabled={enviando}
-          className="rounded bg-accion px-3 py-1.5 text-sm font-medium text-invertido disabled:opacity-50"
+          className="aq-boton aq-boton-primario aq-boton-compacto"
         >
           {enviando ? 'Creando…' : 'Crear producto'}
         </button>

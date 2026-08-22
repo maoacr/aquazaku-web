@@ -28,7 +28,7 @@ export default async function ProductosPage() {
     <div className="grid gap-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Productos</h1>
+          <h1 className="aq-titulo-pantalla text-principal">Productos</h1>
           <p className="mt-1 text-sm text-tenue">
             Qué se vende, con su equivalencia en litros y sus precios por tipo de cliente.
           </p>
@@ -37,7 +37,7 @@ export default async function ProductosPage() {
         {puedeGestionar ? (
           <Link
             href="/modulos/productos/gestion"
-            className="rounded bg-accion px-3 py-1.5 text-sm font-medium text-invertido"
+            className="aq-boton aq-boton-primario aq-boton-compacto"
           >
             Gestionar catálogo
           </Link>

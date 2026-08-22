@@ -27,7 +27,7 @@ export default async function StockPage() {
   return (
     <div className="grid gap-6">
       <header>
-        <h1 className="text-[32px] font-semibold leading-10 tracking-tight text-principal">Stock</h1>
+        <h1 className="aq-titulo-pantalla text-principal">Stock</h1>
         <p className="mt-1 text-secundario">
           Cuánto hay de cada producto, cuánto se puede vender y cuánto está esperando descarte.
         </p>

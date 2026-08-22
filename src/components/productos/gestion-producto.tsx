@@ -73,7 +73,7 @@ export function GestionDeProducto({ producto }: { producto: Producto }) {
           <button
             type="submit"
             disabled={guardando}
-            className="rounded bg-accion px-3 py-1.5 text-sm font-medium text-invertido disabled:opacity-50"
+            className="aq-boton aq-boton-primario aq-boton-compacto"
           >
             {guardando ? 'Guardando…' : 'Guardar precios'}
           </button>

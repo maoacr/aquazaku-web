@@ -38,7 +38,7 @@ export default async function LotesDeProductoPage({
         >
           ← Volver al stock
         </Link>
-        <h1 className="mt-2 text-[32px] font-semibold leading-10 tracking-tight text-principal">
+        <h1 className="mt-2 aq-titulo-pantalla text-principal">
           {producto?.nombre ?? 'Lotes'}
         </h1>
         <p className="mt-1 text-secundario">

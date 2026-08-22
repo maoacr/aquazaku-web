@@ -44,7 +44,7 @@ export default function ErrorDeApp({
 
   return (
     <div role="alert" className="grid max-w-prose gap-3">
-      <h1 className="text-2xl font-semibold tracking-tight text-principal">{mensaje.titulo}</h1>
+      <h1 className="aq-titulo-pantalla text-principal">{mensaje.titulo}</h1>
 
       <p className="text-sm text-secundario">{mensaje.detalle}</p>
 
@@ -72,7 +72,7 @@ export default function ErrorDeApp({
       {mensaje.accion === 'entrar' ? (
         <Link
           href="/login"
-          className="mt-2 inline-flex min-h-11 w-fit items-center rounded-md bg-accion px-5 font-medium text-invertido hover:bg-accion-hover"
+          className="aq-boton aq-boton-primario mt-2 w-fit"
         >
           {TEXTO_DE_ACCION[mensaje.accion]}
         </Link>
@@ -80,7 +80,7 @@ export default function ErrorDeApp({
         <button
           type="button"
           onClick={reset}
-          className="mt-2 inline-flex min-h-11 w-fit items-center rounded-md bg-accion px-5 font-medium text-invertido hover:bg-accion-hover"
+          className="aq-boton aq-boton-primario mt-2 w-fit"
         >
           {TEXTO_DE_ACCION[mensaje.accion]}
         </button>

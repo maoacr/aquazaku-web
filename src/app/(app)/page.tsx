@@ -67,10 +67,8 @@ export default async function DashboardPage() {
   return (
     <div className="grid gap-6">
       <header>
-        <h1 className="text-[28px] font-semibold leading-9 tracking-tight text-principal sm:text-[32px] sm:leading-10">
-          Hola, {primerNombre(usuario?.name)}
-        </h1>
-        <p className="mt-1 text-secundario">
+        <h1 className="aq-titulo-pantalla text-principal">Hola, {primerNombre(usuario?.name)}</h1>
+        <p className="aq-bajada mt-1.5 text-secundario">
           {pendientes.length === 0
             ? 'No hay nada esperando. El stock está al día.'
             : 'Esto es lo que está esperando que alguien haga algo.'}
@@ -100,7 +98,12 @@ export default async function DashboardPage() {
       ) : null}
 
       <section className="grid gap-3">
-        <h2 className="aq-micro text-secundario">Inventario</h2>
+        {/*
+          `tenue` y no `secundario`: es un rótulo que dice dónde empieza una
+          sección, no información. Compartía color con el subtítulo de la
+          pantalla, con el código del producto y con los créditos del pie.
+        */}
+        <h2 className="aq-micro text-tenue">Inventario</h2>
 
         {/*
           En un teléfono, una tabla de cuatro columnas obliga a scrollear en
@@ -118,17 +121,26 @@ export default async function DashboardPage() {
                 de un producto son sus lotes.
               */}
               <Link href={`/modulos/stock/${p.productoId}`} className="aq-tarjeta block p-4">
+              {/*
+                Los cuatro datos de la tarjeta tenían DOS colores entre todos:
+                nombre y cifra en `principal`, y código, icono y unidad los tres
+                en `secundario`. Ahora cada uno cae en el nivel que le toca —
+                nombre y cifra adelante, código atrás, y el icono en su propia
+                capa, que es lo que un glifo decorativo tiene que ser.
+              */}
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-principal">{p.nombre}</p>
-                  <p className="aq-cifra text-[13px] text-secundario">{p.codigo}</p>
+                  <p className="aq-titulo-tarjeta truncate text-principal">{p.nombre}</p>
+                  <p className="aq-cifra mt-0.5 text-[13px] text-tenue">{p.codigo}</p>
                 </div>
-                <Boxes aria-hidden className="size-5 shrink-0 text-secundario" />
+                <Boxes aria-hidden className="size-5 shrink-0 text-icono" />
               </div>
 
               <p className="mt-3 flex items-baseline gap-2">
-                <span className="aq-cifra text-2xl font-semibold text-principal">{p.vendible}</span>
-                <span className="text-[13px] text-secundario">para vender</span>
+                <span className="aq-cifra text-[32px] font-semibold leading-none text-principal">
+                  {p.vendible}
+                </span>
+                <span className="text-[13px] text-tenue">para vender</span>
               </p>
 
               {p.vencido > 0 ? (

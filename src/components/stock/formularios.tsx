@@ -37,11 +37,11 @@ function limpiezaKey(estado: EstadoDeFormulario, campo: string): string {
 }
 
 const campo =
-  'rounded-md border border-fuerte bg-tarjeta px-3 py-2 text-principal placeholder:text-tenue'
+  'aq-campo'
 
 /** Alto mínimo 44px; los primarios, 56px. Regla táctil del sistema. */
 const botonPrimario =
-  'h-14 rounded-md bg-accion px-5 font-semibold text-invertido hover:bg-accion-hover disabled:opacity-50'
+  'aq-boton aq-boton-primario aq-boton-grande'
 
 function Resultado({ estado }: { estado: EstadoDeFormulario }) {
   return (
@@ -248,7 +248,7 @@ export function DescarteDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
         <button
           type="submit"
           disabled={enviando}
-          className="h-14 rounded-md bg-destructiva px-5 font-semibold text-invertido disabled:opacity-50"
+          className="aq-boton aq-boton-destructivo aq-boton-grande"
         >
           {enviando ? 'Descartando…' : 'Registrar descarte'}
         </button>

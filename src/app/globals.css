@@ -28,24 +28,78 @@
  */
 :root {
   /*
-   * ── La jerarquía de texto corrida un paso ─────────────────────────────────
+   * ── La jerarquía de texto: separada por TONO, no solo por luminosidad ─────
    *
-   * La copia del sistema de diseño trae `secundario` en neutro-600 y `tenue` en
-   * neutro-500. Medido contra las superficies reales, `tenue` NO llega a AA:
-   * 3,65:1 sobre el fondo y 3,86:1 sobre una tarjeta, contra los 4,5:1 que pide
-   * WCAG para texto normal.
+   * Antes estos tres niveles salían de la escala de neutros corrida un paso,
+   * para llegar a AA. Llegaban, y aun así la pantalla se leía plana. Medido en
+   * el tablero: SEIS roles distintos —subtítulo, rótulo de sección, código de
+   * producto, icono de perfil, icono de tarjeta y créditos— renderizaban el
+   * MISMO `rgb(195,207,214)`. La pantalla entera eran dos colores, y `tenue` no
+   * aparecía en ninguna parte.
    *
-   * Y no es un problema de uso: `text-tenue` sostiene contenido real en veinte
-   * lugares —el email en la tabla de auditoría, "(cuenta eliminada)", el link de
-   * recuperar contraseña—. Nada de eso es decorativo, así que el que tiene que
-   * moverse es el token.
+   * Tres grises que solo cambian de luminosidad se distinguen en una tabla de
+   * tokens y no en una pantalla: el ojo compara con lo que tiene al lado, y al
+   * lado hay agua de fondo. Con un tinte de tono, cada nivel se separa aunque
+   * caiga solo.
    *
-   * Correr los dos un paso conserva los tres niveles bien separados y los deja a
-   * todos por encima de 4,5:1 en las tres superficies. `globals.contraste.test.ts`
-   * lo verifica en claro y en oscuro.
+   * Los tres tiran al azul de la marca (`#0A8CBE`), con más saturación a medida
+   * que el nivel se aleja: `principal` es casi neutro, `tenue` es el más azul.
+   * El aqua y el verde NO se usan acá — están reservados a «agua» y a «cuadra».
+   *
+   * Son hex directos y no pasos de la escala de neutros: son valores diseñados
+   * para este trabajo, y colgarlos de la escala fue justamente lo que empujó a
+   * elegir por luminosidad. `globals.contraste.test.ts` verifica los cuatro
+   * sobre las tres superficies, en claro y en oscuro.
    */
-  --aq-texto-secundario: var(--aq-neutro-700);
-  --aq-texto-tenue:      var(--aq-neutro-600);
+  --aq-texto-principal:  #132029;
+  --aq-texto-secundario: #3B5163;
+  --aq-texto-tenue:      #576E80;
+
+  /*
+   * Los glifos que son TEXTURA, no información: el icono decorativo en la
+   * esquina de una tarjeta, la marca de agua de una sección.
+   *
+   * Existe porque los iconos venían robándose `secundario` —el mismo valor que
+   * la prosa— y competían con el texto que acompañan. Un icono decorativo es
+   * una capa detrás, no un dato.
+   *
+   * No le aplica el 4,5:1 de texto: no transporta significado, y lo que dice
+   * está escrito al lado. Igual se mantiene sobre 3:1 para que no desaparezca.
+   * El icono que SÍ es un control —los de la cabecera, los del menú— usa los
+   * tokens de texto, porque ahí el glifo es la única etiqueta que hay.
+   */
+  --aq-icono-decorativo: #7A93A3;
+
+  /*
+   * El enlace que no tiene que gritar: la autoría del pie, un «ver más» al
+   * costado de un dato.
+   *
+   * `--aq-accion-primaria` es el azul de los botones y de las acciones que
+   * mueven algo. Usarlo para los créditos le daba a un link decorativo el mismo
+   * peso visual que a «Guardar», y encima competía con el agua del fondo.
+   *
+   * Este es el celeste de la marca —el `#8CF0FA` de la gota— que en oscuro se
+   * apoya sobre el agua honda sin pelearse con ella. En claro no puede ser el
+   * mismo: `#8CF0FA` sobre una superficie clara da 1,2:1. Se usa el mismo tono
+   * bajado hasta AA.
+   */
+  --aq-accion-suave: #0A6E93;
+
+  /*
+   * El campo es la operación INVERSA a la tarjeta.
+   *
+   * Todo en esta app flota sobre el agua: menú, tarjetas, pie. El campo es el
+   * único lugar donde se escribe, y tiene que leerse hundido — si flotara como
+   * lo demás, no habría nada que distinga «acá se lee» de «acá se escribe».
+   *
+   * Por eso el fondo va más apagado que la lámina que lo contiene y la sombra
+   * es interna. En claro eso es un blanco más frío que la tarjeta; en oscuro,
+   * un hueco más profundo que el agua.
+   */
+  --aq-campo-fondo:      rgb(255 255 255 / 0.72);
+  --aq-campo-canto:      rgb(110 155 175 / 0.38);
+  --aq-campo-canto-vivo: rgb(10 140 190 / 0.6);
+  --aq-campo-hueco:      rgb(20 60 80 / 0.08);
 
   /*
    * ── La marca, muestreada del archivo original ─────────────────────────────
@@ -332,9 +386,18 @@
 }
 
 [data-tema='oscuro'] {
-  /* Ídem en oscuro: `tenue` en neutro-500 daba 4,04:1 sobre una tarjeta. */
-  --aq-texto-secundario: var(--aq-neutro-300);
-  --aq-texto-tenue:      var(--aq-neutro-400);
+  /* La misma escala tintada, invertida. Ver el bloque `:root`. */
+  --aq-texto-principal:  #EFF6F9;
+  --aq-texto-secundario: #AEC6D4;
+  --aq-texto-tenue:      #8FABBB;
+  --aq-icono-decorativo: #6E8B9C;
+  --aq-accion-suave:     #8CF0FA;
+
+  /* El campo hundido, en agua profunda. Ver el bloque `:root`. */
+  --aq-campo-fondo:      rgb(4 14 20 / 0.42);
+  --aq-campo-canto:      rgb(140 200 220 / 0.22);
+  --aq-campo-canto-vivo: rgb(140 240 250 / 0.55);
+  --aq-campo-hueco:      rgb(0 0 0 / 0.35);
 
   /* En oscuro el aqua claro sí funciona: 10,57:1 sobre el fondo. */
   --aq-anillo-foco: var(--aq-acento-400);
@@ -412,6 +475,12 @@
   --color-secundario: var(--aq-texto-secundario);
   --color-tenue: var(--aq-texto-tenue);
   --color-invertido: var(--aq-texto-invertido);
+
+  /* Glifo decorativo: textura, no dato. Nunca para un icono que es el control. */
+  --color-icono: var(--aq-icono-decorativo);
+
+  /* El enlace que no compite: autoría, créditos, un «ver más» al margen. */
+  --color-accion-suave: var(--aq-accion-suave);
 
   --color-accion: var(--aq-accion-primaria);
   --color-accion-hover: var(--aq-accion-primaria-hover);
@@ -491,6 +560,21 @@ body {
 }
 
 /*
+ * El área de la cabecera vive en CSS y no en un `style` inline.
+ *
+ * Estaba inline, y un `style` le gana a cualquier clase: en escritorio la
+ * cabecera se quedaba en su fila por más que la hoja de estilos dijera otra
+ * cosa. La regla que cambia con el ancho tiene que poder ganar, y para eso las
+ * dos tienen que estar en el mismo lugar.
+ *
+ * En teléfono SÍ es una fila: ahí la cabecera lleva el botón del menú y la
+ * marca, y montarla sobre el contenido taparía la primera línea de la pantalla.
+ */
+.aq-cabecera {
+  grid-area: cabecera;
+}
+
+/*
  * En escritorio el menú ocupa TODA la altura y la cabecera empieza después.
  *
  * Antes la cabecera cruzaba de lado a lado y el menú colgaba debajo. Con un
@@ -506,8 +590,39 @@ body {
  */
 @media (min-width: 40rem) {
   .aq-armazon {
-    grid-template-areas: 'menu cabecera' 'menu contenido' 'menu pie';
+    /*
+     * La cabecera DEJA DE SER UNA FILA. El contenido ocupa desde el borde de
+     * arriba y la cabecera se le monta encima — por eso `contenido` aparece en
+     * la primera fila y `cabecera` no aparece en ninguna.
+     *
+     * Con la cabecera como fila, el `<main>` empezaba 68 px por debajo del
+     * borde del panel del menú: la fila de arriba se leía como dos piezas
+     * sueltas en vez de un solo plano. Ahora el título de la pantalla y el
+     * borde superior del menú arrancan a la misma altura.
+     */
+    grid-template-areas: 'menu contenido' 'menu pie';
     grid-template-columns: 16rem 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  /*
+   * Los tres controles se van al ángulo superior derecho del contenido.
+   *
+   * `justify-self: end` los encoge a su ancho: la cabecera deja de ser una
+   * banda invisible de lado a lado que se come los clics de la primera línea
+   * del contenido. `pointer-events` termina de asegurarlo — el hueco entre los
+   * iconos no intercepta nada, los iconos sí.
+   */
+  .aq-cabecera {
+    grid-area: contenido;
+    z-index: 1;
+    align-self: start;
+    justify-self: end;
+    pointer-events: none;
+  }
+
+  .aq-cabecera > * {
+    pointer-events: auto;
   }
 }
 
@@ -975,6 +1090,223 @@ input:not([type='checkbox'], [type='radio'], [type='hidden']) {
 }
 
 /**
+ * ── La escala tipográfica, por fin usable ───────────────────────────────────
+ *
+ * Los tokens `--aq-titulo-*` existían desde el primer día y NINGUNA pantalla
+ * los usaba: el tablero escribía `text-[28px] font-semibold leading-9
+ * tracking-tight sm:text-[32px] sm:leading-10`, y cada pantalla elegía su
+ * propio tamaño a mano. Con seis pantallas eso ya no es una escala, son seis
+ * opiniones.
+ *
+ * La razón de que nadie los usara es que no había forma de hacerlo: un token
+ * `font:` no se puede escribir como clase de Tailwind. Estas tres clases son
+ * ese puente, y con el salto a móvil incluido — que es lo que cada pantalla
+ * venía reimplementando con un `sm:` distinto.
+ *
+ * `font:` es shorthand y RESETEA lo que no nombra, así que el tracking va
+ * después: al revés se pierde.
+ */
+.aq-titulo-pantalla {
+  font: var(--aq-m-titulo);
+  letter-spacing: -0.02em;
+}
+
+.aq-titulo-seccion {
+  font: var(--aq-m-seccion);
+  letter-spacing: -0.01em;
+}
+
+.aq-titulo-tarjeta {
+  font: var(--aq-titulo-tarjeta);
+  letter-spacing: -0.01em;
+}
+
+@media (min-width: 40rem) {
+  .aq-titulo-pantalla {
+    font: var(--aq-titulo-pantalla);
+    letter-spacing: -0.02em;
+  }
+
+  .aq-titulo-seccion {
+    font: var(--aq-titulo-seccion);
+    letter-spacing: -0.01em;
+  }
+}
+
+/**
+ * ── El campo de formulario ──────────────────────────────────────────────────
+ *
+ * Diez archivos escribían `rounded border border-fuerte bg-transparent px-2
+ * py-1.5` a mano, copiado. Por eso los formularios de auditoría y de usuarios
+ * se veían de otro sistema: no había con qué construirlos.
+ *
+ * `bg-transparent` es el defecto que más se notaba. Sobre el agua, un campo sin
+ * fondo no se lee como un campo — se lee como un borde dibujado encima del
+ * gradiente. Un campo tiene que verse HUNDIDO: es el único lugar de la pantalla
+ * donde se escribe, y todo lo demás flota.
+ *
+ * De ahí las dos sombras internas: una superior que hace el hueco, y el fondo
+ * más oscuro que la lámina que lo contiene. Es la operación inversa a la de la
+ * tarjeta, y a propósito.
+ *
+ * No lleva `:focus` propio: el anillo global de `:focus-visible` ya lo cubre, y
+ * competir con él fue lo que dejó el foco invisible la primera vez.
+ */
+.aq-campo {
+  width: 100%;
+  border-radius: var(--aq-radio-md);
+  border: 1px solid var(--aq-campo-canto);
+  background: var(--aq-campo-fondo);
+  box-shadow: inset 0 1px 2px 0 var(--aq-campo-hueco);
+  padding: 0 0.75rem;
+  color: var(--aq-texto-principal);
+  font: var(--aq-cuerpo-chico);
+  transition:
+    border-color 0.15s var(--aq-fluido),
+    box-shadow 0.15s var(--aq-fluido);
+}
+
+/* `select` no acepta padding vertical de forma pareja entre navegadores. */
+textarea.aq-campo {
+  padding: 0.5rem 0.75rem;
+}
+
+.aq-campo::placeholder {
+  color: var(--aq-texto-tenue);
+}
+
+.aq-campo:hover:not(:disabled) {
+  border-color: var(--aq-campo-canto-vivo);
+}
+
+.aq-campo:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/**
+ * La etiqueta del campo.
+ *
+ * `tenue` y no `secundario`: la etiqueta dice qué va en el campo, y una vez
+ * lleno el que importa es el valor. Con las dos al mismo tono, un formulario de
+ * cinco campos son diez líneas del mismo color y no se distingue lo que se
+ * escribió de lo que estaba impreso.
+ */
+.aq-etiqueta-campo {
+  display: grid;
+  gap: 0.375rem;
+  font: var(--aq-etiqueta);
+  color: var(--aq-texto-tenue);
+}
+
+/**
+ * ── Los botones ─────────────────────────────────────────────────────────────
+ *
+ * Mismo problema: cada pantalla escribía el suyo, y salían de tres tamaños
+ * distintos —`px-4 py-2`, `h-14`, `min-h-11 px-4`—. El alto de un botón no es
+ * una decisión de pantalla.
+ *
+ * 44 px es el mínimo táctil que ya exige la regla global; acá se declara para
+ * que sea el alto REAL y no un mínimo al que llega por accidente el padding.
+ */
+.aq-boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: var(--aq-radio-md);
+  font: var(--aq-etiqueta);
+  white-space: nowrap;
+  transition:
+    background-color 0.15s var(--aq-fluido),
+    border-color 0.15s var(--aq-fluido),
+    opacity 0.15s var(--aq-fluido);
+}
+
+.aq-boton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.aq-boton-primario {
+  background: var(--aq-accion-primaria);
+  color: var(--aq-texto-invertido);
+  border: 1px solid transparent;
+}
+
+.aq-boton-primario:hover:not(:disabled) {
+  background: var(--aq-accion-primaria-hover);
+}
+
+/*
+ * El secundario NO es un primario en gris: es un contorno sobre el agua. Con
+ * relleno propio competía con el primario y la pareja «Filtrar / Limpiar»
+ * quedaba con dos botones del mismo peso, que es no tener jerarquía.
+ */
+.aq-boton-secundario {
+  background: transparent;
+  color: var(--aq-texto-secundario);
+  border: 1px solid var(--aq-campo-canto);
+}
+
+.aq-boton-secundario:hover:not(:disabled) {
+  border-color: var(--aq-campo-canto-vivo);
+  color: var(--aq-texto-principal);
+}
+
+/*
+ * Descartar, desactivar, anular. Va en rojo y no en el azul de acción porque no
+ * es «la acción principal de la pantalla»: es la que hay que pensar dos veces.
+ */
+.aq-boton-destructivo {
+  background: var(--aq-accion-destructiva);
+  color: var(--aq-texto-invertido);
+  border: 1px solid transparent;
+}
+
+/*
+ * El botón de una pantalla que hace UNA sola cosa: entrar, cambiar la
+ * contraseña, confirmar. 56 px porque ahí no compite con nada y suele tocarse
+ * con el pulgar.
+ */
+.aq-boton-grande {
+  min-height: 56px;
+  padding: 0 1.5rem;
+  font: var(--aq-cuerpo);
+  font-weight: 600;
+}
+
+/*
+ * La acción que vive DENTRO de una fila de tabla. Solo se angosta: el alto
+ * sigue siendo 44 px, porque el dedo no se achica porque el botón esté en una
+ * celda.
+ */
+.aq-boton-compacto {
+  padding: 0 0.75rem;
+  font: var(--aq-cuerpo-chico);
+  font-weight: 500;
+}
+
+/**
+ * El texto de apoyo que acompaña a un título de pantalla.
+ *
+ * 18px y no 16: es la única línea de prosa de la pantalla y venía del mismo
+ * tamaño que el cuerpo de una tabla. Un subtítulo que mide igual que todo lo
+ * demás no es un subtítulo, es otro renglón.
+ */
+.aq-bajada {
+  font: var(--aq-m-cuerpo);
+}
+
+@media (min-width: 40rem) {
+  .aq-bajada {
+    font: var(--aq-cuerpo-grande);
+  }
+}
+
+/**
  * Modo `sistema`: seguir al sistema operativo.
  *
  * `:root:not([data-tema])` es la parte que hace que funcione, y también la que
@@ -1002,9 +1334,17 @@ input:not([type='checkbox'], [type='radio'], [type='hidden']) {
   --aq-superficie-elevada: var(--aq-neutro-800);
   --aq-borde-sutil:        var(--aq-neutro-800);
   --aq-borde-fuerte:       var(--aq-neutro-600);
-  --aq-texto-principal:    var(--aq-neutro-100);
-  --aq-texto-secundario:   var(--aq-neutro-300);
-  --aq-texto-tenue:        var(--aq-neutro-400);
+  --aq-texto-principal:  #EFF6F9;
+  --aq-texto-secundario: #AEC6D4;
+  --aq-texto-tenue:      #8FABBB;
+  --aq-icono-decorativo: #6E8B9C;
+  --aq-accion-suave:     #8CF0FA;
+
+  /* El campo hundido, en agua profunda. Ver el bloque `:root`. */
+  --aq-campo-fondo:      rgb(4 14 20 / 0.42);
+  --aq-campo-canto:      rgb(140 200 220 / 0.22);
+  --aq-campo-canto-vivo: rgb(140 240 250 / 0.55);
+  --aq-campo-hueco:      rgb(0 0 0 / 0.35);
   --aq-anillo-foco: var(--aq-acento-400);
   --aq-gradiente-nombre: var(--aq-gradiente-cinta-clara);
   --aq-tarjeta-fondo:        rgb(22 34 42 / 0.52);

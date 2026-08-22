@@ -111,7 +111,7 @@ export function QuitarFiltros({ href }: { href: string }) {
       href={href}
       // Enlace con forma de botón: es una acción suelta, lleva el objetivo
       // táctil mínimo (R54).
-      className="inline-flex min-h-11 items-center rounded-md border border-fuerte px-4 text-sm font-medium text-principal hover:bg-fondo"
+      className="aq-boton aq-boton-secundario"
     >
       Quitar los filtros
     </a>

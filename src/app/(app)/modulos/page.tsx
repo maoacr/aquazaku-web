@@ -8,7 +8,7 @@
 export default function ModulosPage() {
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Módulos</h1>
+      <h1 className="aq-titulo-pantalla text-principal">Módulos</h1>
       <p className="mt-2 text-sm text-tenue">Elija un módulo del menú lateral.</p>
     </div>
   )

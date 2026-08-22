@@ -11,7 +11,7 @@ export function LoginForm() {
 
   return (
     <form action={enviar} className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight">Iniciar sesión</h1>
+      <h1 className="aq-titulo-seccion text-principal">Iniciar sesión</h1>
 
       {/* `role="alert"` hace que un lector de pantalla lo anuncie apenas
           aparece, sin que el usuario tenga que ir a buscarlo. */}
@@ -29,7 +29,7 @@ export function LoginForm() {
           required
           autoComplete="email"
           aria-describedby={estado.error ? 'login-error' : undefined}
-          className="rounded border border-fuerte p-2"
+          className="aq-campo"
         />
       </label>
 
@@ -41,7 +41,7 @@ export function LoginForm() {
           required
           autoComplete="current-password"
           aria-describedby={estado.error ? 'login-error' : undefined}
-          className="rounded border border-fuerte p-2"
+          className="aq-campo"
         />
       </label>
 
@@ -50,7 +50,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pendiente}
-        className="h-14 rounded-md bg-accion px-5 font-semibold text-invertido hover:bg-accion-hover disabled:opacity-50"
+        className="aq-boton aq-boton-primario aq-boton-grande"
       >
         {pendiente ? 'Entrando…' : 'Entrar'}
       </button>

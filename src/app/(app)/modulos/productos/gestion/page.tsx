@@ -26,7 +26,7 @@ export default async function GestionDeCatalogoPage() {
         >
           ← Volver al catálogo
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">Gestionar catálogo</h1>
+        <h1 className="mt-2 aq-titulo-pantalla text-principal">Gestionar catálogo</h1>
         <p className="mt-1 text-sm text-tenue">
           Todo cambio de precio queda registrado en la auditoría, con el valor anterior y el nuevo.
         </p>

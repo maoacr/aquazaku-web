@@ -59,7 +59,7 @@ export async function VistaDeAuditoria({
   return (
     <div className="grid gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Auditoría</h1>
+        <h1 className="aq-titulo-pantalla text-principal">Auditoría</h1>
         <p className="mt-1 text-sm text-tenue">
           Registro inmutable de las acciones sensibles del sistema.
         </p>
@@ -101,7 +101,7 @@ export async function VistaDeAuditoria({
           // Enlace con forma de botón: es una acción suelta, así que lleva el
           // objetivo táctil mínimo (R54). La regla global no toca los enlaces
           // porque uno dentro de una oración no puede medir 44 px.
-          className="inline-flex min-h-11 items-center justify-self-start rounded border border-fuerte px-4 text-sm"
+          className="aq-boton aq-boton-secundario justify-self-start"
         >
           Cargar más ↓
         </a>
@@ -182,78 +182,64 @@ function FilaDeRegistro({ fila }: { fila: RegistroDeAuditoria }) {
  */
 function Filtros({ filtros, ruta }: { filtros: FiltrosDeAuditoria; ruta: string }) {
   return (
-    <form
-      action={ruta}
-      method="get"
-      className="grid gap-3 rounded-lg border border-sutil p-4 sm:grid-cols-5"
-    >
-      <label className="grid gap-1 text-sm">
-        <span className="text-secundario">Acción</span>
-        <input
-          name="action"
-          defaultValue={filtros.action ?? ''}
-          placeholder="ventas:anular"
-          className="rounded border border-fuerte bg-transparent px-2 py-1.5 text-sm"
-        />
-      </label>
+    /*
+      Es una tarjeta del sistema, no un recuadro con borde.
 
-      <label className="grid gap-1 text-sm">
-        <span className="text-secundario">Módulo</span>
-        <input
-          name="resource"
-          defaultValue={filtros.resource ?? ''}
-          placeholder="usuarios"
-          className="rounded border border-fuerte bg-transparent px-2 py-1.5 text-sm"
-        />
-      </label>
+      Estaba como `rounded-lg border border-sutil`: un rectángulo dibujado
+      encima del agua, sin relación con ninguna otra superficie de la app. Con
+      `aq-tarjeta` es la misma lámina que el resto y los campos se hunden en
+      ella, que es lo que hace que se lean como campos.
+    */
+    <form action={ruta} method="get" className="aq-tarjeta grid gap-4 p-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <label className="aq-etiqueta-campo">
+          <span>Acción</span>
+          <input
+            name="action"
+            defaultValue={filtros.action ?? ''}
+            placeholder="ventas:anular"
+            className="aq-campo"
+          />
+        </label>
 
-      <label className="grid gap-1 text-sm">
-        <span className="text-secundario">Resultado</span>
-        <select
-          name="result"
-          defaultValue={filtros.result ?? ''}
-          className="rounded border border-fuerte bg-transparent px-2 py-1.5 text-sm"
-        >
-          <option value="">Todos</option>
-          <option value="ok">Permitidos</option>
-          {/* Ver solo los denegados es la consulta de seguridad más útil. */}
-          <option value="denied">Denegados</option>
-        </select>
-      </label>
+        <label className="aq-etiqueta-campo">
+          <span>Módulo</span>
+          <input
+            name="resource"
+            defaultValue={filtros.resource ?? ''}
+            placeholder="usuarios"
+            className="aq-campo"
+          />
+        </label>
 
-      <label className="grid gap-1 text-sm">
-        <span className="text-secundario">Desde</span>
-        <input
-          name="desde"
-          type="date"
-          defaultValue={filtros.desde ?? ''}
-          className="rounded border border-fuerte bg-transparent px-2 py-1.5 text-sm"
-        />
-      </label>
+        <label className="aq-etiqueta-campo">
+          <span>Resultado</span>
+          <select name="result" defaultValue={filtros.result ?? ''} className="aq-campo">
+            <option value="">Todos</option>
+            <option value="ok">Permitidos</option>
+            {/* Ver solo los denegados es la consulta de seguridad más útil. */}
+            <option value="denied">Denegados</option>
+          </select>
+        </label>
 
-      <label className="grid gap-1 text-sm">
-        <span className="text-secundario">Hasta</span>
-        <input
-          name="hasta"
-          type="date"
-          defaultValue={filtros.hasta ?? ''}
-          className="rounded border border-fuerte bg-transparent px-2 py-1.5 text-sm"
-        />
-      </label>
+        <label className="aq-etiqueta-campo">
+          <span>Desde</span>
+          <input name="desde" type="date" defaultValue={filtros.desde ?? ''} className="aq-campo" />
+        </label>
 
-      <div className="flex items-end gap-2 sm:col-span-5">
-        <button
-          type="submit"
-          className="rounded bg-accion px-4 py-2 text-sm font-medium text-invertido"
-        >
+        <label className="aq-etiqueta-campo">
+          <span>Hasta</span>
+          <input name="hasta" type="date" defaultValue={filtros.hasta ?? ''} className="aq-campo" />
+        </label>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="submit" className="aq-boton aq-boton-primario">
           Filtrar
         </button>
         {/* Un link y no un reset: `reset` devuelve los campos a sus valores
             iniciales, que son justamente los filtros aplicados. */}
-        <a
-          href={ruta}
-          className="inline-flex min-h-11 items-center rounded border border-fuerte px-4 text-sm"
-        >
+        <a href={ruta} className="aq-boton aq-boton-secundario">
           Limpiar
         </a>
       </div>

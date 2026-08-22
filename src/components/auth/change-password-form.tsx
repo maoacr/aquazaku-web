@@ -15,7 +15,7 @@ export function ChangePasswordForm({ primerIngreso = false }: { primerIngreso?: 
 
   return (
     <form action={enviar} className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight">Cambiar contraseña</h1>
+      <h1 className="aq-titulo-seccion text-principal">Cambiar contraseña</h1>
 
       {primerIngreso && (
         <p role="status" className="text-sm text-secundario">
@@ -33,7 +33,7 @@ export function ChangePasswordForm({ primerIngreso = false }: { primerIngreso?: 
           required
           autoComplete="current-password"
           aria-describedby={estado.error ? 'change-error' : undefined}
-          className="rounded border border-fuerte p-2"
+          className="aq-campo"
         />
       </label>
 
@@ -47,7 +47,7 @@ export function ChangePasswordForm({ primerIngreso = false }: { primerIngreso?: 
       <button
         type="submit"
         disabled={pendiente}
-        className="h-14 rounded-md bg-accion px-5 font-semibold text-invertido hover:bg-accion-hover disabled:opacity-50"
+        className="aq-boton aq-boton-primario aq-boton-grande"
       >
         {pendiente ? 'Guardando…' : 'Cambiar contraseña'}
       </button>

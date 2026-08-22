@@ -54,6 +54,20 @@ const SUPERFICIES_DE_LECTURA = ['fondo', 'tarjeta', 'elevada'].flatMap((superfic
   })),
 )
 
+/**
+ * El enlace suave es texto y le aplica el mismo 4,5:1 que a cualquier otro.
+ *
+ * Está separado de la lista de arriba porque no es un nivel de la jerarquía de
+ * lectura: es un color de acción, y se eligió por el tono de la marca. Sin esta
+ * fila, el celeste `#8CF0FA` que se ve bien en oscuro podía cruzar a modo claro
+ * —donde da 1,2:1— y nadie se enteraba hasta abrirlo de día.
+ */
+const ENLACE_SUAVE = ['fondo', 'tarjeta', 'elevada'].map((superficie) => ({
+  nombre: `${superficie} + accion-suave`,
+  fondo: `--aq-superficie-${superficie}`,
+  texto: '--aq-accion-suave',
+}))
+
 describe('contraste de los pares fondo/texto', () => {
   const claro = leerTokens('claro')
   const oscuro = leerTokens('oscuro')
@@ -63,7 +77,7 @@ describe('contraste de los pares fondo/texto', () => {
     { etiqueta: 'oscuro', tokens: oscuro },
   ]) {
     describe(`en modo ${modo.etiqueta}`, () => {
-      for (const par of [...PARES_DECLARADOS, ...SUPERFICIES_DE_LECTURA]) {
+      for (const par of [...PARES_DECLARADOS, ...SUPERFICIES_DE_LECTURA, ...ENLACE_SUAVE]) {
         it(`${par.nombre} llega a ${MINIMO_AA}:1`, () => {
           const fondo = resolver(par.fondo, modo.tokens)
           const texto = resolver(par.texto, modo.tokens)
@@ -79,6 +93,58 @@ describe('contraste de los pares fondo/texto', () => {
       }
     })
   }
+
+  /**
+   * El icono decorativo tiene otro mínimo, y por eso va aparte.
+   *
+   * No es texto: es el glifo en la esquina de una tarjeta, y lo que dice está
+   * escrito al lado. WCAG pide 3:1 para un elemento gráfico, no 4,5:1.
+   *
+   * Existe como token para que los iconos dejen de robarse `secundario` — el
+   * mismo valor que la prosa— y compitan con el texto que acompañan. El test
+   * está para que ese tono no se siga bajando «porque es decorativo» hasta
+   * desaparecer.
+   */
+  const MINIMO_GRAFICO = 3
+  for (const modo of [
+    { etiqueta: 'claro', tokens: claro },
+    { etiqueta: 'oscuro', tokens: oscuro },
+  ]) {
+    for (const superficie of ['fondo', 'tarjeta', 'elevada']) {
+      it(`el icono decorativo sobre ${superficie} en ${modo.etiqueta} llega a ${MINIMO_GRAFICO}:1`, () => {
+        const fondo = resolver(`--aq-superficie-${superficie}`, modo.tokens)
+        const icono = resolver('--aq-icono-decorativo', modo.tokens)
+        const razon = contraste(fondo, icono)
+
+        expect(
+          razon,
+          `icono sobre ${superficie} en ${modo.etiqueta}: ${fondo} / ${icono} da ${razon.toFixed(2)}:1`,
+        ).toBeGreaterThanOrEqual(MINIMO_GRAFICO)
+      })
+    }
+  }
+
+  /**
+   * Un icono decorativo que iguala a `tenue` no es una capa: es más texto.
+   *
+   * Es el defecto que este token vino a arreglar, así que se verifica que la
+   * separación exista de verdad y no solo en la intención.
+   */
+  it('el icono decorativo se distingue de `tenue`', () => {
+    for (const [etiqueta, tokens] of [
+      ['claro', claro],
+      ['oscuro', oscuro],
+    ] as const) {
+      const icono = resolver('--aq-icono-decorativo', tokens)
+      const tenue = resolver('--aq-texto-tenue', tokens)
+
+      expect(icono, `en ${etiqueta} el icono y \`tenue\` son el mismo hex`).not.toBe(tenue)
+      expect(
+        contraste(icono, tenue),
+        `en ${etiqueta} el icono y \`tenue\` casi no se separan`,
+      ).toBeGreaterThan(1.2)
+    }
+  })
 
   /**
    * El test se cuida a sí mismo. Sin esto, un error en el parser o en la

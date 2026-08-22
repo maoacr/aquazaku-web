@@ -17,7 +17,7 @@ export function PasswordFields({ describedBy }: { describedBy?: string }) {
           minLength={8}
           autoComplete="new-password"
           aria-describedby={describedBy}
-          className="rounded border border-fuerte p-2"
+          className="aq-campo"
         />
       </label>
 
@@ -30,7 +30,7 @@ export function PasswordFields({ describedBy }: { describedBy?: string }) {
           minLength={8}
           autoComplete="new-password"
           aria-describedby={describedBy}
-          className="rounded border border-fuerte p-2"
+          className="aq-campo"
         />
       </label>
     </>

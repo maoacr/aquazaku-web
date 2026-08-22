@@ -79,30 +79,24 @@ export function CabeceraYMenu({
   return (
     <>
       <header
-        style={{ gridArea: 'cabecera' }}
         /*
-          Sin superficie propia: ni fondo, ni borde, ni sombra.
- 
-          La cabecera NO se superpone a nada. El contenido scrollea en su propia
-          fila del grid, debajo, así que una lámina acá no está tapando nada — es
-          una barra que se dibuja sola y parte la pantalla en dos.
+          Sin superficie propia: ni fondo, ni borde, ni sombra. Son chrome —tres
+          controles— y no una sección, así que flotan sobre la misma agua que
+          todo lo demás en vez de dibujarse una barra que parte la pantalla.
 
-          Sin ella, los tres controles quedan flotando sobre el mismo fondo que
-          el contenido, que es exactamente lo que son: chrome, no una sección.
-        */
-        /*
-          El padding horizontal es el MISMO que el del contenido, y esa es toda
-          la razón: los iconos tienen que caer en el mismo canal que los títulos
-          y las tarjetas. Con 16 px acá y 24 px abajo, el borde derecho de los
-          iconos quedaba 8 px afuera del de las tarjetas — poco para nombrarlo y
-          suficiente para que la pantalla se sienta desalineada.
+          En escritorio la cabecera NO ocupa fila propia: `aq-cabecera` la manda
+          encima del contenido (ver `globals.css`). Es lo que permite que el
+          `<main>` empiece en el borde del viewport y que su primera línea quede
+          a la misma altura que el borde del panel del menú. Con la cabecera
+          como fila, el contenido arrancaba 68 px más abajo que el menú y la
+          pantalla se leía partida en dos.
 
-          El `py-3` hace lo mismo en vertical: 12 px, que es el margen superior
-          del panel del menú. Con `py-2` los iconos arrancaban 4 px más arriba
-          que el borde del panel — y esos 4 px son la diferencia entre que la
-          fila de arriba se lea como una sola cosa o como dos piezas sueltas.
+          El padding horizontal es el MISMO que el del contenido: los iconos
+          caen en el canal de los títulos y las tarjetas. Con 16 px acá y 24 px
+          abajo, el borde derecho quedaba 8 px afuera del de las tarjetas — poco
+          para nombrarlo y suficiente para sentir la pantalla desalineada.
         */
-        className="relative flex items-center gap-1 px-4 py-3 sm:px-6"
+        className="aq-cabecera relative flex items-center gap-1 px-4 py-3 sm:px-6 sm:py-6"
       >
         <button
           ref={botonRef}

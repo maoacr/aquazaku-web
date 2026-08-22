@@ -13,7 +13,10 @@ export function Creditos() {
   const anio = new Date().getFullYear()
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[13px] text-secundario">
+    // Los créditos son el texto más callado de la pantalla: `tenue`, no
+    // `secundario`. Antes compartían color con el subtítulo del tablero y con
+    // los rótulos de sección, y no hay razón — nadie viene a leer esto.
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[13px] text-tenue">
       <p>© {anio} Aquazaku. Todos los derechos reservados.</p>
 
       <p>
@@ -23,7 +26,12 @@ export function Creditos() {
           target="_blank"
           // `noopener` para que el sitio destino no pueda tocar esta pestaña.
           rel="noopener noreferrer"
-          className="rounded-sm font-medium text-accion underline-offset-4 hover:underline"
+          /*
+            `text-accion-suave` y no `text-accion`: el azul de acción es el de
+            los botones, y acá le daba a un enlace de autoría el mismo peso que
+            a «Guardar». Este es el celeste de la gota de la marca.
+          */
+          className="rounded-sm font-medium text-accion-suave underline-offset-4 hover:underline"
         >
           @maoacr
         </a>

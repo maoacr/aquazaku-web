@@ -198,3 +198,150 @@ describe('la tipografía no baja del piso del sistema', () => {
     expect(globales).toMatch(/\.aq-micro\s*\{[\s\S]*?text-transform:\s*uppercase/)
   })
 })
+
+/**
+ * ── Las primitivas de formulario existen para que nadie escriba la suya ──────
+ *
+ * Diez archivos repetían `rounded border border-fuerte bg-transparent px-2
+ * py-1.5` copiado, y los botones salían en tres alturas distintas —`py-2`,
+ * `h-14`, `min-h-11`—. Por eso los formularios de auditoría y de usuarios se
+ * veían de otro sistema: no había con qué construirlos.
+ *
+ * Este test es lo que impide que vuelva a pasar. Es de texto y no de render a
+ * propósito: el problema nunca fue cómo se ve UNA pantalla, fue que cada
+ * pantalla decidiera por su cuenta.
+ */
+describe('los formularios se construyen con las primitivas del sistema', () => {
+  const componentes = archivosTsx(join(process.cwd(), 'src'))
+
+  it('ningún componente dibuja su propio campo', () => {
+    const culpables = componentes.filter(({ contenido }) => contenido.includes('border-fuerte'))
+
+    expect(
+      culpables.map((c) => c.ruta),
+      'usan `border-fuerte` a mano en vez de `.aq-campo` o `.aq-boton-secundario`',
+    ).toEqual([])
+  })
+
+  it('ningún componente dibuja su propio botón primario', () => {
+    // `bg-accion` seguido de padding es la firma de un botón hecho a mano. El
+    // token en sí es legítimo —lo usa `.aq-boton-primario`— así que se busca la
+    // combinación, no el token.
+    const culpables = componentes.filter(({ contenido }) => /bg-accion\s+px-|h-14\s+rounded/.test(contenido))
+
+    expect(
+      culpables.map((c) => c.ruta),
+      'arman un botón a mano en vez de usar `.aq-boton aq-boton-primario`',
+    ).toEqual([])
+  })
+
+  it('ninguna pantalla elige el tamaño de su propio título', () => {
+    // Había CUATRO tamaños para el mismo rol: 24 px, 28→32 y 32. Una escala que
+    // cada pantalla reinterpreta no es una escala.
+    const culpables = componentes.filter(({ contenido }) =>
+      /<h1[^>]*className="[^"]*(text-\dxl|text-\[\d)/.test(contenido),
+    )
+
+    expect(
+      culpables.map((c) => c.ruta),
+      'fijan el tamaño del `<h1>` a mano en vez de usar `.aq-titulo-pantalla`',
+    ).toEqual([])
+  })
+
+  it('el campo se ve HUNDIDO, que es lo que lo distingue de una tarjeta', () => {
+    const campo = bloque(globales, '.aq-campo')
+
+    // Sin fondo propio, sobre el agua un campo se lee como un borde dibujado
+    // encima del gradiente. Era el defecto que más se notaba.
+    expect(campo).toMatch(/background:\s*var\(--aq-campo-fondo\)/)
+    expect(campo, 'la sombra tiene que ser interna: hacia afuera lo haría flotar').toMatch(
+      /box-shadow:\s*inset/,
+    )
+  })
+
+  it('el campo no se pelea con el anillo de foco', () => {
+    // Es el error que ya dejó el foco invisible una vez: una sombra propia en
+    // `:focus` compite con el `outline` global.
+    expect(bloque(globales, '.aq-campo')).not.toMatch(/:focus/)
+  })
+
+  it('el botón compacto solo se angosta, nunca se achica', () => {
+    const compacto = bloque(globales, '.aq-boton-compacto')
+
+    expect(compacto, 'toca padding vertical: el dedo no se achica en una tabla').not.toMatch(
+      /padding:[^;]*\d+(px|rem)\s+[\d.]+(px|rem)\s+/,
+    )
+    expect(compacto).not.toMatch(/min-height/)
+  })
+})
+
+/**
+ * La cabecera se monta sobre el contenido, y eso vive en CSS.
+ *
+ * Estaba como `style={{ gridArea: 'cabecera' }}` inline, y un `style` le gana a
+ * cualquier clase: la regla de escritorio no podía moverla por más que lo
+ * dijera la hoja de estilos. Es la tercera vez que un valor puesto en el lugar
+ * equivocado de la cascada rompe el armazón.
+ */
+describe('el armazón deja que la cabecera flote', () => {
+  const armazon = readFileSync(
+    join(process.cwd(), 'src/components/ui/cajon-navegacion.tsx'),
+    'utf8',
+  )
+
+  it('la cabecera no fija su área con un style inline', () => {
+    expect(armazon, 'un `style` inline le gana a la media query de escritorio').not.toMatch(
+      /gridArea:\s*'cabecera'/,
+    )
+  })
+
+  it('la cabecera lleva la clase que el CSS posiciona', () => {
+    expect(armazon).toMatch(/className="aq-cabecera/)
+  })
+
+  it('en escritorio ocupa el área del contenido, encima', () => {
+    const regla = bloque(globales, '.aq-cabecera', { ultimo: true })
+
+    expect(regla).toMatch(/grid-area:\s*contenido/)
+    expect(regla).toMatch(/z-index:\s*1/)
+    // Sin esto la cabecera es una banda invisible de lado a lado que se come
+    // los clics de la primera línea del contenido.
+    expect(regla).toMatch(/pointer-events:\s*none/)
+  })
+
+  it('los controles de la cabecera sí reciben clics', () => {
+    expect(bloque(globales, '.aq-cabecera > *')).toMatch(/pointer-events:\s*auto/)
+  })
+})
+
+/** Los `.tsx` de `src/`, con su ruta relativa para que el error sea accionable. */
+function archivosTsx(desde: string): Array<{ ruta: string; contenido: string }> {
+  const salida: Array<{ ruta: string; contenido: string }> = []
+
+  for (const entrada of readdirSync(desde, { withFileTypes: true })) {
+    const completa = join(desde, entrada.name)
+
+    if (entrada.isDirectory()) {
+      if (entrada.name === '__tests__' || entrada.name === 'node_modules') continue
+      salida.push(...archivosTsx(completa))
+    } else if (entrada.name.endsWith('.tsx')) {
+      salida.push({
+        ruta: completa.slice(process.cwd().length + 1),
+        contenido: readFileSync(completa, 'utf8'),
+      })
+    }
+  }
+
+  return salida
+}
+
+/** El cuerpo de una regla CSS por selector exacto. `ultimo` toma la de la media query. */
+function bloque(css: string, selector: string, { ultimo = false } = {}): string {
+  const escapado = selector.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
+  const encontrados = [...css.matchAll(new RegExp(`(?:^|[},])\\s*${escapado}\\s*\\{([^}]*)\\}`, 'gm'))]
+
+  if (encontrados.length === 0) throw new Error(`no existe la regla \`${selector}\``)
+
+  const elegido = ultimo ? encontrados.at(-1) : encontrados[0]
+  return elegido?.[1] ?? ''
+}

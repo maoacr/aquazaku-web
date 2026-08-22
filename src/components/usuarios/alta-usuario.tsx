@@ -24,41 +24,29 @@ export function AltaDeUsuario() {
   const [estado, accion, enviando] = useActionState(crearUsuarioAction, INICIAL)
 
   return (
-    <form action={accion} className="grid gap-4 rounded-lg border border-sutil p-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-secundario">
-        Nuevo usuario
-      </h2>
+    <form action={accion} className="aq-tarjeta grid gap-5 p-5">
+      {/* El título del formulario es un título, no un rótulo micro en gris. */}
+      <h2 className="aq-titulo-tarjeta text-principal">Nuevo usuario</h2>
 
       <FormError id="alta-error">{estado.error}</FormError>
       {estado.ok ? (
-        <p role="status" className="text-sm text-exito-texto">
+        <p role="status" className="text-[14px] text-exito-texto">
           {estado.ok}
         </p>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <label className="grid gap-1 text-sm">
+        <label className="aq-etiqueta-campo">
           <span>Nombre</span>
-          <input
-            name="name"
-            required
-            autoComplete="off"
-            className="rounded border border-fuerte bg-transparent px-2 py-1.5"
-          />
+          <input name="name" required autoComplete="off" className="aq-campo" />
         </label>
 
-        <label className="grid gap-1 text-sm">
+        <label className="aq-etiqueta-campo">
           <span>Email</span>
-          <input
-            name="email"
-            type="email"
-            required
-            autoComplete="off"
-            className="rounded border border-fuerte bg-transparent px-2 py-1.5"
-          />
+          <input name="email" type="email" required autoComplete="off" className="aq-campo" />
         </label>
 
-        <label className="grid gap-1 text-sm">
+        <label className="aq-etiqueta-campo">
           <span>Contraseña inicial</span>
           <input
             name="password"
@@ -68,25 +56,28 @@ export function AltaDeUsuario() {
             // `new-password` evita que el gestor de contraseñas del admin
             // ofrezca las suyas al crear una cuenta ajena.
             autoComplete="new-password"
-            className="rounded border border-fuerte bg-transparent px-2 py-1.5"
+            className="aq-campo"
           />
         </label>
       </div>
 
-      <fieldset className="grid gap-2">
-        <legend className="text-sm">Roles</legend>
+      <fieldset className="grid gap-2.5">
+        <legend className="aq-etiqueta-campo">Roles</legend>
         {/* Checkboxes y no un select: los roles se acumulan, no se eligen entre
             sí (RN-ACC-01). Un desplegable de opción única sugeriría lo
             contrario. */}
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-x-5 gap-y-2.5">
           {ROLES_DISPONIBLES.map((rol) => (
-            <label key={rol} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="roles" value={rol} className="size-4" />
+            <label
+              key={rol}
+              className="flex items-center gap-2 text-[14px] text-principal"
+            >
+              <input type="checkbox" name="roles" value={rol} className="size-4 accent-accion" />
               <span>{rol}</span>
             </label>
           ))}
         </div>
-        <p className="text-sm text-tenue">
+        <p className="text-[13px] text-tenue">
           Se puede crear sin roles: entra al sistema y no ve ningún módulo.
         </p>
       </fieldset>
@@ -94,7 +85,7 @@ export function AltaDeUsuario() {
       <button
         type="submit"
         disabled={enviando}
-        className="justify-self-start rounded bg-accion px-4 py-2 text-sm font-medium text-invertido disabled:opacity-50"
+        className="aq-boton aq-boton-primario justify-self-start"
       >
         {enviando ? 'Creando…' : 'Crear usuario'}
       </button>

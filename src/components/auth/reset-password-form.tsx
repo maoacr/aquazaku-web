@@ -13,7 +13,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   return (
     <form action={enviar} className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight">Nueva contraseña</h1>
+      <h1 className="aq-titulo-seccion text-principal">Nueva contraseña</h1>
 
       <FormError id="reset-error">{estado.error}</FormError>
 
@@ -26,7 +26,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <button
         type="submit"
         disabled={pendiente}
-        className="h-14 rounded-md bg-accion px-5 font-semibold text-invertido hover:bg-accion-hover disabled:opacity-50"
+        className="aq-boton aq-boton-primario aq-boton-grande"
       >
         {pendiente ? 'Guardando…' : 'Guardar contraseña'}
       </button>

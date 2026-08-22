@@ -30,7 +30,7 @@ export default async function PerfilPage() {
   return (
     <div className="grid max-w-2xl gap-6">
       <header>
-        <h1 className="text-[28px] font-semibold leading-9 tracking-tight text-principal sm:text-[32px] sm:leading-10">
+        <h1 className="aq-titulo-pantalla text-principal">
           {usuario.name}
         </h1>
         <p className="mt-1 text-secundario">{usuario.email}</p>
@@ -70,7 +70,7 @@ export default async function PerfilPage() {
         <h2 className="aq-micro text-secundario">Seguridad</h2>
         <Link
           href="/change-password"
-          className="flex min-h-11 w-fit items-center gap-2 rounded-md bg-accion px-4 font-medium text-invertido hover:bg-accion-hover"
+          className="aq-boton aq-boton-primario w-fit"
         >
           <KeyRound aria-hidden className="size-4" />
           Cambiar mi contraseña

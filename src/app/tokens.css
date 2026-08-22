@@ -113,9 +113,9 @@
   --aq-font-sans: var(--font-plex-sans), 'IBM Plex Sans', Helvetica, Arial, sans-serif;
   --aq-font-mono: var(--font-plex-mono), 'IBM Plex Mono', ui-monospace, monospace;
 
-  --aq-titulo-pantalla: 600 32px/40px var(--aq-font-sans);
+  --aq-titulo-pantalla: 600 36px/44px var(--aq-font-sans);
   --aq-titulo-seccion:  600 24px/32px var(--aq-font-sans);
-  --aq-titulo-tarjeta:  600 20px/28px var(--aq-font-sans);
+  --aq-titulo-tarjeta:  600 17px/24px var(--aq-font-sans);
   --aq-cuerpo-grande:   400 18px/28px var(--aq-font-sans);
   --aq-cuerpo:          400 16px/24px var(--aq-font-sans);
   --aq-cuerpo-chico:    400 14px/20px var(--aq-font-sans);
@@ -123,7 +123,7 @@
   --aq-micro:           500 11px/16px var(--aq-font-sans);
 
   /* móvil — mínimo absoluto 16px */
-  --aq-m-titulo:     600 28px/34px var(--aq-font-sans);
+  --aq-m-titulo:     600 30px/38px var(--aq-font-sans);
   --aq-m-cifra:      600 34px/38px var(--aq-font-mono);
   --aq-m-seccion:    600 22px/28px var(--aq-font-sans);
   --aq-m-cuerpo:     400 18px/26px var(--aq-font-sans);

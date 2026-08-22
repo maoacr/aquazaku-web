@@ -18,7 +18,7 @@ export function TablaDeStock({ productos }: { productos: ResumenDeStock[] }) {
   const hayVencido = productos.some((p) => p.vencido > 0)
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-sutil bg-tarjeta shadow-elev-1">
+    <div className="overflow-x-auto rounded-lg border border-sutil bg-tarjeta">
       <table className="w-full border-collapse text-left">
         <thead className="border-b border-sutil">
           <tr className="text-secundario">

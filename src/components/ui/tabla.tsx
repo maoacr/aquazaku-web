@@ -78,7 +78,7 @@ export function Etiqueta({ tono, children }: { tono: 'ok' | 'alerta' | 'neutro';
 
   return (
     <span
-      className={`aq-micro inline-flex items-center rounded px-2 py-0.5 ring-1 ring-inset ${estilos[tono]}`}
+      className={`aq-micro inline-flex items-center rounded-full px-2.5 py-1 ring-1 ring-inset ${estilos[tono]}`}
     >
       {children}
     </span>

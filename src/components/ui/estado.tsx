@@ -41,7 +41,7 @@ export function Estado({ tono, children }: { tono: Tono; children: ReactNode }) 
 
   return (
     <span
-      className={`aq-micro inline-flex items-center gap-1.5 rounded px-2 py-0.5 ring-1 ring-inset ${estilo}`}
+      className={`aq-micro inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 ring-1 ring-inset ${estilo}`}
     >
       {/* Canal 2: la forma. `aria-hidden` — el texto ya lo dice. */}
       <span aria-hidden className={`size-2.5 shrink-0 bg-current ${forma}`} />

@@ -60,18 +60,10 @@ export function AppShell({
      */
     <div className="aq-ambiente aq-armazon grid h-dvh">
       <CabeceraYMenu
-        marca={
-          /* La marca vuelve al inicio: es la convención de la web y el atajo
-             que todo el mundo prueba primero. */
-          <Link
-            href="/"
-            // Medía 36 px de alto. Es el atajo al tablero, un objetivo suelto.
-            className="inline-flex min-h-11 items-center rounded-md px-1"
-            aria-label="Ir al inicio"
-          >
-            <Marca compacta />
-          </Link>
-        }
+        marca={<EnlaceDeMarca />}
+        // La del panel es otra instancia: se apoya sobre el fondo oscuro de
+        // marca, que no cambia con el tema, así que fuerza la cinta clara.
+        marcaDelPanel={<EnlaceDeMarca sobreOscuro />}
         acciones={<AccionesDeSesion nombre={userName} />}
         menu={<MenuLateral modules={modules} />}
       />
@@ -92,6 +84,26 @@ export function AppShell({
 }
 
 /** Contenido del menú: solo navegación. Lo demás vive en la cabecera. */
+/**
+ * La marca, enlazada al inicio.
+ *
+ * Es la convención de la web y el atajo que todo el mundo prueba primero. Se
+ * pinta dos veces —cabecera en teléfono, panel en escritorio— y cada una elige
+ * su gradiente según la superficie donde se apoya.
+ */
+function EnlaceDeMarca({ sobreOscuro = false }: { sobreOscuro?: boolean }) {
+  return (
+    <Link
+      href="/"
+      // Medía 36 px de alto. Es el atajo al tablero, un objetivo suelto.
+      className="inline-flex min-h-11 items-center rounded-md px-1"
+      aria-label="Ir al inicio"
+    >
+      <Marca compacta sobreOscuro={sobreOscuro} />
+    </Link>
+  )
+}
+
 function MenuLateral({ modules }: { modules: ReturnType<typeof computeVisibleModules> }) {
   return (
     <ul

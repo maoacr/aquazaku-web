@@ -147,6 +147,37 @@
     var(--aq-marca-verde-media) 100%
   );
 
+  /*
+   * La cinta, en su versión para superficies OSCURAS.
+   *
+   * Medido: la parada azul de la cinta normal —`#0A8CBE`— da 3,89:1 sobre el
+   * panel de marca, o sea que las primeras letras de «AQUAZAKU» quedan bajo AA.
+   * No se ve como un error, se ve como un logo un poco apagado, que es peor:
+   * nadie lo reporta.
+   *
+   * Esta versión sube las tres paradas un paso —5,66 · 8,66 · 7,01— y conserva
+   * la secuencia azul → aqua → verde, que es lo que la cinta significa.
+   */
+  --aq-gradiente-cinta-clara: linear-gradient(
+    90deg,
+    var(--aq-primaria-400) 0%,
+    var(--aq-acento-400) 52%,
+    var(--aq-exito-400) 100%
+  );
+
+  /*
+   * El gradiente del NOMBRE sigue al tema.
+   *
+   * En claro el nombre se apoya sobre una cabecera clara y las paradas normales
+   * contrastan. En oscuro la cabecera es ahumada y esas mismas paradas se
+   * apagan, así que ahí manda la versión clara.
+   *
+   * Es distinto de `--aq-gradiente-cinta`, que pinta la LÍNEA decorativa de 2 px
+   * bajo la cabecera: una línea no se lee, así que no le aplica el mínimo de
+   * contraste de texto.
+   */
+  --aq-gradiente-nombre: var(--aq-gradiente-cinta);
+
   /* Fondo de las superficies de marca: las tres hondas, en diagonal. */
   --aq-gradiente-marca: linear-gradient(
     135deg,
@@ -250,6 +281,7 @@
 
   /* En oscuro el aqua claro sí funciona: 10,57:1 sobre el fondo. */
   --aq-anillo-foco: var(--aq-acento-400);
+  --aq-gradiente-nombre: var(--aq-gradiente-cinta-clara);
 
   /*
    * El vidrio en oscuro no es el mismo con menos alfa: es vidrio AHUMADO. La
@@ -803,6 +835,7 @@ input:not([type='checkbox'], [type='radio'], [type='hidden']) {
   --aq-texto-secundario:   var(--aq-neutro-300);
   --aq-texto-tenue:        var(--aq-neutro-400);
   --aq-anillo-foco: var(--aq-acento-400);
+  --aq-gradiente-nombre: var(--aq-gradiente-cinta-clara);
   --aq-vidrio-fondo: rgb(20 30 36 / 0.58);
   --aq-vidrio-fondo-panel: rgb(14 22 28 / 0.82);
 

@@ -90,7 +90,24 @@ export function LogoCompleto({ className = 'w-64' }: { className?: string }) {
  * Así funcionan los sistemas de marca de verdad: el lockup manda donde es
  * grande, y el chrome usa isotipo + texto.
  */
-export function Marca({ compacta = false }: { compacta?: boolean }) {
+export function Marca({
+  compacta = false,
+  sobreOscuro = false,
+}: {
+  compacta?: boolean
+  /**
+   * Si la marca se apoya sobre una superficie oscura de marca.
+   *
+   * No se detecta solo, y no puede: el panel del menú es oscuro en los DOS
+   * modos, así que ni el tema ni una media query lo saben. Lo sabe quien la
+   * coloca.
+   *
+   * Cambia la cinta por su versión clara. Medido, la parada azul de la cinta
+   * normal da 3,89:1 sobre el panel — las primeras letras quedan bajo AA sin
+   * que se vea como un error, solo como un logo apagado.
+   */
+  sobreOscuro?: boolean
+}) {
   return (
     <span className="flex items-center gap-2.5">
       <Isotipo className="h-7 w-auto shrink-0" decorativo />
@@ -98,7 +115,14 @@ export function Marca({ compacta = false }: { compacta?: boolean }) {
         className={`bg-clip-text text-[17px] font-semibold tracking-tight text-transparent ${
           compacta ? 'sr-only sm:not-sr-only' : ''
         }`}
-        style={{ backgroundImage: 'var(--aq-gradiente-cinta)' }}
+        style={{
+          // `--aq-gradiente-nombre` ya sigue al tema. `sobreOscuro` fuerza la
+          // versión clara para el panel de marca, que es oscuro en los DOS
+          // modos y por lo tanto ninguna media query lo puede saber.
+          backgroundImage: sobreOscuro
+            ? 'var(--aq-gradiente-cinta-clara)'
+            : 'var(--aq-gradiente-nombre)',
+        }}
       >
         Aquazaku
       </span>

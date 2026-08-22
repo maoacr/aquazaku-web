@@ -29,10 +29,12 @@ import type { ReactNode } from 'react'
  */
 export function CabeceraYMenu({
   marca,
+  marcaDelPanel,
   acciones,
   menu,
 }: {
   marca: ReactNode
+  marcaDelPanel: ReactNode
   acciones: ReactNode
   menu: ReactNode
 }) {
@@ -125,7 +127,7 @@ export function CabeceraYMenu({
           cajón ya se abre desde la cabecera —que la muestra— así que acá sería
           la segunda vez en la misma pantalla.
         */}
-        <div className="mb-1 hidden px-5 sm:block">{marca}</div>
+        <div className="mb-1 hidden px-5 sm:block">{marcaDelPanel}</div>
 
         {/* Cerrar al navegar: tocar un módulo y que el cajón quede tapando la
             pantalla a la que acabás de llegar es la forma más rápida de que se

@@ -1,7 +1,11 @@
-import { AlertTriangle, Package } from 'lucide-react'
+import { Package } from 'lucide-react'
 import Link from 'next/link'
+import { ICONO_DE_ESTADO } from '@/components/ui/estado'
 import type { ResumenDeStock } from '@/lib/api-types'
 import { Cifra } from './cifra'
+
+/** El mismo icono que usa la insignia de «vencido». Una sola fuente. */
+const IconoVencido = ICONO_DE_ESTADO.expuesto
 
 /**
  * Cuánto hay de cada producto.
@@ -60,8 +64,13 @@ export function TablaDeStock({ productos }: { productos: ResumenDeStock[] }) {
                   <td className="px-4 py-3 text-right">
                     {p.vencido > 0 ? (
                       <span className="inline-flex items-center gap-1.5">
-                        {/* El color no es el único portador: también hay icono. */}
-                        <AlertTriangle aria-hidden className="size-4 text-alerta" />
+                        {/*
+                          El icono sale de `ICONO_DE_ESTADO`, no escrito acá.
+                          Antes esta celda usaba un triángulo de alerta mientras
+                          la insignia de la pantalla de lotes usaba una equis
+                          para lo mismo — dos iconos para «vencido».
+                        */}
+                        <IconoVencido aria-hidden className="size-4 text-error" />
                         <Cifra tono="alerta">{p.vencido}</Cifra>
                       </span>
                     ) : (

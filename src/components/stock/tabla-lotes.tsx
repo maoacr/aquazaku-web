@@ -1,4 +1,5 @@
 import { Boxes } from 'lucide-react'
+import { Estado, TEXTO_DE_VENCIMIENTO, estadoDeVencimiento } from '@/components/ui/estado'
 import type { LoteConSaldo } from '@/lib/api-types'
 import { Cifra } from './cifra'
 
@@ -30,7 +31,8 @@ export function TablaDeLotes({ lotes, hoy }: { lotes: LoteConSaldo[]; hoy: strin
         </thead>
         <tbody>
           {lotes.map((lote, indice) => {
-            const vencido = lote.fechaVencimiento < hoy
+            const estado = estadoDeVencimiento(lote.fechaVencimiento, hoy)
+            const vencido = estado === 'expuesto'
 
             return (
               <tr key={lote.id} className="border-t border-sutil">
@@ -49,17 +51,20 @@ export function TablaDeLotes({ lotes, hoy }: { lotes: LoteConSaldo[]; hoy: strin
                 <td className="px-4 py-3">
                   <Cifra tono="secundario">{lote.fechaEmpaque}</Cifra>
                 </td>
+                {/*
+                  Los tres estados llevan insignia, no solo el vencido. Antes
+                  «sin insignia» significaba vigente, y eso obliga a deducir por
+                  ausencia: quien mira rápido no distingue «está bien» de «no
+                  se calculó». Decirlo siempre cuesta una línea y se lee de un
+                  vistazo.
+                */}
                 <td className="px-4 py-3">
-                  {vencido ? (
-                    <span className="inline-flex items-center gap-2">
-                      <Cifra tono="alerta">{lote.fechaVencimiento}</Cifra>
-                      <span className="aq-micro rounded-sm border border-alerta-borde bg-alerta-fondo px-1.5 py-0.5 text-alerta-texto">
-                        vencido
-                      </span>
-                    </span>
-                  ) : (
-                    <Cifra tono="secundario">{lote.fechaVencimiento}</Cifra>
-                  )}
+                  <span className="inline-flex flex-wrap items-center gap-2">
+                    <Cifra tono={vencido ? 'alerta' : 'secundario'}>
+                      {lote.fechaVencimiento}
+                    </Cifra>
+                    <Estado tono={estado}>{TEXTO_DE_VENCIMIENTO[estado]}</Estado>
+                  </span>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Cifra tamano="grande" tono={vencido ? 'alerta' : 'principal'}>

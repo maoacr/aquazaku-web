@@ -96,7 +96,7 @@ export function CabeceraYMenu({
       <div
         onClick={() => setAbierto(false)}
         aria-hidden
-        className={`fixed inset-0 z-20 bg-neutral-950/50 transition-opacity duration-200 motion-reduce:transition-none sm:hidden ${
+        className={`fixed inset-0 z-20 bg-velo transition-opacity duration-200 motion-reduce:transition-none sm:hidden ${
           abierto ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       />

@@ -16,7 +16,7 @@ export function LoginForm() {
       {/* `role="alert"` hace que un lector de pantalla lo anuncie apenas
           aparece, sin que el usuario tenga que ir a buscarlo. */}
       {estado.error && (
-        <p id="login-error" role="alert" className="text-sm text-red-600">
+        <p id="login-error" role="alert" className="text-sm text-error-texto">
           {estado.error}
         </p>
       )}

@@ -2,6 +2,7 @@ import { Home } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { CabeceraYMenu } from '@/components/ui/cajon-navegacion'
+import { EnlaceDeMenu } from '@/components/ui/enlace-de-menu'
 import { AccionesDeSesion } from '@/components/ui/acciones-de-sesion'
 import { Marca } from '@/components/ui/marca'
 import { Pie } from '@/components/ui/pie'
@@ -95,38 +96,16 @@ function MenuLateral({ modules }: { modules: ReturnType<typeof computeVisibleMod
         que atiende un mostrador merece un link que lo diga.
       */}
       <li>
-        <Enlace href="/" icono={<Home aria-hidden className="size-4 shrink-0" />}>
+        <EnlaceDeMenu href="/" icono={<Home aria-hidden className="size-4 shrink-0" />}>
           Inicio
-        </Enlace>
+        </EnlaceDeMenu>
       </li>
 
       {modules.map((modulo) => (
         <li key={modulo.id}>
-          <Enlace href={modulo.href}>{modulo.label}</Enlace>
+          <EnlaceDeMenu href={modulo.href}>{modulo.label}</EnlaceDeMenu>
         </li>
       ))}
     </ul>
-  )
-}
-
-function Enlace({
-  href,
-  icono,
-  children,
-}: {
-  href: string
-  icono?: ReactNode
-  children: ReactNode
-}) {
-  return (
-    <Link
-      href={href}
-      // El par fondo/texto va junto: cambiar el fondo sin cambiar el texto es
-      // como nace un contraste ilegible.
-      className="flex min-h-11 items-center gap-2.5 rounded-md px-3 text-[14px] text-principal hover:bg-accion hover:text-invertido"
-    >
-      {icono}
-      {children}
-    </Link>
   )
 }

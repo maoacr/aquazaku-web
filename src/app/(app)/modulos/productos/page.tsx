@@ -45,7 +45,7 @@ export default async function ProductosPage() {
       </header>
 
       {noVendibles.length > 0 ? (
-        <div className="grid gap-1 rounded border border-amber-900 bg-amber-950/40 px-3 py-2 text-sm text-amber-300">
+        <div className="grid gap-1 rounded border border-alerta-borde bg-alerta-fondo px-3 py-2 text-sm text-alerta-texto">
           <p className="font-medium">{avisoDeNoVendibles(noVendibles.length, esperandoPrecio.length)}</p>
 
           {/*
@@ -54,7 +54,7 @@ export default async function ProductosPage() {
             lector busca la diferencia entre las dos líneas y no la encuentra.
           */}
           {necesitaDesglose(vendibilidad) ? (
-            <p className="text-amber-400/80">
+            <p className="text-alerta-texto/80">
               Esperando precio: {esperandoPrecio.map((p) => p.codigo).join(', ')}. Los otros{' '}
               {soloFaltaActivar === 1 ? 'ya tiene precio' : 'ya tienen precio'} y solo falta
               activar{soloFaltaActivar === 1 ? 'lo' : 'los'}.

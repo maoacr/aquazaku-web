@@ -108,7 +108,7 @@ function Fila({ usuario }: { usuario: UsuarioListado }) {
           <td colSpan={4} className="px-3 pb-2">
             <p
               role={esError ? 'alert' : 'status'}
-              className={`text-xs ${esError ? 'text-red-400' : 'text-emerald-400'}`}
+              className={`text-xs ${esError ? 'text-error-texto' : 'text-exito-texto'}`}
             >
               {mensaje}
             </p>

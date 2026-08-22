@@ -29,7 +29,7 @@ export function AltaDeProducto() {
 
       <FormError id="alta-producto-error">{estado.error}</FormError>
       {estado.ok ? (
-        <p role="status" className="text-sm text-emerald-400">
+        <p role="status" className="text-sm text-exito-texto">
           {estado.ok}
         </p>
       ) : null}

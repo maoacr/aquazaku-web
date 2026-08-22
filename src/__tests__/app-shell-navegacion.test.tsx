@@ -1,7 +1,17 @@
 import { render, screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { AppShell } from '@/components/ui/app-shell'
 import type { Role } from '@/lib/roles'
+
+/**
+ * El enlace del menú marca el módulo activo, y para eso pregunta en qué ruta
+ * está. `usePathname()` necesita el router del App Router, que en un render
+ * suelto no existe.
+ *
+ * Se fija en `/`: es la ruta donde el armazón se ve con Inicio activo y ningún
+ * módulo, que es el estado que estos tests dan por sentado.
+ */
+vi.mock('next/navigation', () => ({ usePathname: () => '/' }))
 
 /**
  * El armazón: cabecera, menú, contenido y pie.

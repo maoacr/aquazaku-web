@@ -27,6 +27,26 @@
  * el sistema cambia, se vuelve a copiar entera y estas líneas sobrevivirían.
  */
 :root {
+  /*
+   * ── La jerarquía de texto corrida un paso ─────────────────────────────────
+   *
+   * La copia del sistema de diseño trae `secundario` en neutro-600 y `tenue` en
+   * neutro-500. Medido contra las superficies reales, `tenue` NO llega a AA:
+   * 3,65:1 sobre el fondo y 3,86:1 sobre una tarjeta, contra los 4,5:1 que pide
+   * WCAG para texto normal.
+   *
+   * Y no es un problema de uso: `text-tenue` sostiene contenido real en veinte
+   * lugares —el email en la tabla de auditoría, "(cuenta eliminada)", el link de
+   * recuperar contraseña—. Nada de eso es decorativo, así que el que tiene que
+   * moverse es el token.
+   *
+   * Correr los dos un paso conserva los tres niveles bien separados y los deja a
+   * todos por encima de 4,5:1 en las tres superficies. `globals.contraste.test.ts`
+   * lo verifica en claro y en oscuro.
+   */
+  --aq-texto-secundario: var(--aq-neutro-700);
+  --aq-texto-tenue:      var(--aq-neutro-600);
+
   --aq-estado-exito-base:   var(--aq-exito-500);
   --aq-estado-exito-fondo:  var(--aq-exito-50);
   --aq-estado-exito-borde:  var(--aq-exito-300);
@@ -41,10 +61,26 @@
   --aq-estado-error-fondo:  var(--aq-error-50);
   --aq-estado-error-borde:  var(--aq-error-400);
   --aq-estado-error-texto:  var(--aq-error-800);
+
+  /*
+   * El velo que oscurece la pantalla detrás del cajón del menú.
+   *
+   * Es el único color del sistema que NO cambia entre claro y oscuro, y es a
+   * propósito: un velo tiene que apagar lo que hay debajo. Si en modo oscuro
+   * se invirtiera —como hace un token de texto o de superficie— quedaría un
+   * velo claro que ilumina el fondo en vez de apagarlo.
+   *
+   * Por eso no aparece en el bloque `[data-tema='oscuro']`.
+   */
+  --aq-velo: rgb(6 10 16 / 0.55);
 }
 
 [data-tema='oscuro'] {
-  --aq-estado-exito-fondo:  #14603F;
+  /* Ídem en oscuro: `tenue` en neutro-500 daba 4,04:1 sobre una tarjeta. */
+  --aq-texto-secundario: var(--aq-neutro-300);
+  --aq-texto-tenue:      var(--aq-neutro-400);
+
+  --aq-estado-exito-fondo:  var(--aq-exito-900);
   --aq-estado-exito-texto:  var(--aq-exito-300);
   --aq-estado-exito-borde:  var(--aq-exito-700);
 
@@ -87,6 +123,8 @@
   --color-alerta-fondo: var(--aq-estado-alerta-fondo);
   --color-alerta-borde: var(--aq-estado-alerta-borde);
   --color-alerta-texto: var(--aq-estado-alerta-texto);
+
+  --color-velo: var(--aq-velo);
 
   --color-error: var(--aq-estado-error-base);
   --color-error-fondo: var(--aq-estado-error-fondo);
@@ -201,6 +239,36 @@ body {
 }
 
 /**
+ * ─── La regla del par fondo/texto ───────────────────────────────────────────
+ *
+ * Cada estado del sistema trae CUATRO tokens, y no son intercambiables:
+ *
+ *   `-fondo`   la superficie del aviso
+ *   `-borde`   su contorno
+ *   `-texto`   el texto que va ARRIBA de ese fondo
+ *   `-base`    el color puro, para un punto o un icono sobre el fondo normal
+ *
+ * `-fondo` y `-texto` son un par y se usan JUNTOS. Están calculados para
+ * contrastar entre sí en los dos modos: en claro el fondo es pálido y el texto
+ * oscuro; en oscuro se invierten los dos a la vez.
+ *
+ * Romper el par es lo que dejó cuatro botones invisibles en M2. Los dos casos:
+ *
+ *   `bg-exito-fondo text-principal`  → en oscuro, texto claro sobre fondo verde
+ *                                      claro. Ilegible.
+ *   `text-exito-texto` sin su fondo  → en claro, verde muy oscuro sobre blanco;
+ *                                      en oscuro, verde claro sobre negro. Pasa,
+ *                                      pero no es el color que el sistema pensó
+ *                                      para texto suelto — para eso está `-base`.
+ *
+ * En una palabra: si ponés `bg-<estado>-fondo`, poné `text-<estado>-texto`. Si
+ * necesitás el color sin superficie, usá `text-<estado>` (que es `-base`).
+ *
+ * El test de contraste de `globals.contraste.test.ts` recorre estos pares y
+ * exige 4.5:1 en los dos modos, así que un par mal calculado no llega a la app.
+ */
+
+/**
  * Etiqueta micro: 11px en mayúsculas con tracking.
  *
  * Es el único texto del sistema por debajo de 13px, y solo se permite en
@@ -241,8 +309,8 @@ body {
   --aq-borde-sutil:        var(--aq-neutro-800);
   --aq-borde-fuerte:       var(--aq-neutro-600);
   --aq-texto-principal:    var(--aq-neutro-100);
-  --aq-texto-secundario:   var(--aq-neutro-400);
-  --aq-texto-tenue:        var(--aq-neutro-500);
+  --aq-texto-secundario:   var(--aq-neutro-300);
+  --aq-texto-tenue:        var(--aq-neutro-400);
   --aq-texto-invertido:    var(--aq-neutro-950);
   --aq-accion-primaria:       #4EA9DA;
   --aq-accion-primaria-hover: #86C6EA;
@@ -253,7 +321,7 @@ body {
   --aq-elev-2: none;
   --aq-elev-3: none;
   --aq-elev-4: none;
-  --aq-estado-exito-fondo:  #14603F;
+  --aq-estado-exito-fondo:  var(--aq-exito-900);
   --aq-estado-exito-texto:  var(--aq-exito-300);
   --aq-estado-exito-borde:  var(--aq-exito-700);
   --aq-estado-alerta-fondo: var(--aq-advertencia-900);

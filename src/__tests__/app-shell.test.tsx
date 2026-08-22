@@ -6,7 +6,7 @@ import type { ServerUser } from '@/lib/api-server'
 import type { Role } from '@/lib/roles'
 
 vi.mock('@/lib/api-server', () => ({ getServerUser: vi.fn() }))
-vi.mock('next/navigation', () => ({ redirect: vi.fn() }))
+vi.mock('next/navigation', () => ({ redirect: vi.fn(), usePathname: () => '/' }))
 
 /**
  * `leerTema` va a la cookie, y `cookies()` solo existe dentro de una petición.

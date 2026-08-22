@@ -44,14 +44,14 @@ export function GestionDeProducto({ producto }: { producto: Producto }) {
       </header>
 
       {sinPrecio ? (
-        <p className="rounded border border-amber-900 bg-amber-950/40 px-3 py-2 text-sm text-amber-300">
+        <p className="rounded border border-alerta-borde bg-alerta-fondo px-3 py-2 text-sm text-alerta-texto">
           Este producto está esperando su precio real. No se puede vender hasta que lo cargues{' '}
           <strong>y lo actives</strong>: son dos pasos.
         </p>
       ) : null}
 
       {listoPeroApagado ? (
-        <p className="rounded border border-amber-900 bg-amber-950/40 px-3 py-2 text-sm text-amber-300">
+        <p className="rounded border border-alerta-borde bg-alerta-fondo px-3 py-2 text-sm text-alerta-texto">
           Ya tiene precio, pero sigue desactivado: <strong>todavía no se puede vender</strong>.
           Activalo con el botón de abajo.
         </p>
@@ -62,7 +62,7 @@ export function GestionDeProducto({ producto }: { producto: Producto }) {
 
         <FormError id={`precios-${producto.id}`}>{precios.error}</FormError>
         {precios.ok ? (
-          <p role="status" className="text-sm text-emerald-400">
+          <p role="status" className="text-sm text-exito-texto">
             {precios.ok}
           </p>
         ) : null}
@@ -90,7 +90,7 @@ export function GestionDeProducto({ producto }: { producto: Producto }) {
 
         <FormError id={`estado-${producto.id}`}>{estado.error}</FormError>
         {estado.ok ? (
-          <p role="status" className="mb-2 text-sm text-emerald-400">
+          <p role="status" className="mb-2 text-sm text-exito-texto">
             {estado.ok}
           </p>
         ) : null}

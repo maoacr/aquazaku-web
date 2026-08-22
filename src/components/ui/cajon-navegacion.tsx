@@ -59,7 +59,10 @@ export function CabeceraYMenu({
     <>
       <header
         style={{ gridArea: 'cabecera' }}
-        className="relative flex items-center gap-1 border-b border-sutil bg-tarjeta px-2 py-2 sm:px-4"
+        // Vidrio y no `bg-tarjeta`: la cabecera flota sobre el contenido que
+        // scrollea, así que dejar pasar lo de atrás desenfocado es lo que le
+        // da profundidad. `border-b` en vez del borde completo de `.aq-vidrio`.
+        className="aq-vidrio relative flex items-center gap-1 border-x-0 border-t-0 px-2 py-2 sm:px-4"
       >
         <button
           ref={botonRef}
@@ -107,7 +110,7 @@ export function CabeceraYMenu({
         style={{ gridArea: 'menu' }}
         // `-translate-x-full` en vez de `hidden`: un elemento con `display:none`
         // no se puede animar, y el cajón entra deslizándose.
-        className={`fixed inset-y-0 left-0 z-30 flex w-72 max-w-[85vw] flex-col border-r border-sutil bg-tarjeta p-4 shadow-elev-3 transition-transform duration-200 ease-out motion-reduce:transition-none sm:static sm:w-auto sm:max-w-none sm:translate-x-0 sm:shadow-none ${
+        className={`aq-vidrio fixed inset-y-0 left-0 z-30 flex w-72 max-w-[85vw] flex-col border-y-0 border-l-0 p-4 transition-transform duration-200 ease-out motion-reduce:transition-none sm:static sm:w-auto sm:max-w-none sm:translate-x-0 sm:shadow-none ${
           abierto ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

@@ -1,60 +1,104 @@
+import Image from 'next/image'
+
 /**
- * Isotipo de Aquazaku: tres gotas, azul → aqua → verde.
+ * La marca de Aquazaku.
  *
- * Redibujado como SVG desde `claude-design/disenos/assets/aquazaku-isotipo.png`,
- * que pesa 9,7 MB — un header no manda diez megas para pintar 28 píxeles.
+ * ── Se usa el arte real, no una versión redibujada ──────────────────────────
  *
- * Las tres ondas de adentro se dejan solo en la gota del medio. A 28 px, nueve
- * ondas son ruido gris: el ojo lee «tres gotas con algo adentro», que es lo que
- * tiene que leer.
+ * El original pesa entre 3 y 13 MB, y la primera reacción fue redibujar el
+ * isotipo como SVG para no mandar eso a un navegador. Era resolver el problema
+ * equivocado: el peso se arregla **optimizando**, no dibujando de nuevo.
  *
- * El orden de los colores no es decorativo — es de dónde sale el gradiente de
- * marca, y por eso la línea del header repite la misma secuencia: el agua que
- * entra azul y sale potable.
+ * Ese mismo arte a 240 px de ancho en WebP pesa **11 KB** —de 9,7 MB— y es la
+ * marca de verdad, con su bisel, su cavidad y sus ondas. Un SVG redibujado a
+ * mano nunca iba a llegar a eso, y encima lo iba a parecer.
+ *
+ * Cada pieza en el tamaño en que se usa:
+ *
+ *   `isotipo.webp`        240 px — la cabecera lo pinta a 37, sobra para 3x
+ *   `gota.webp`           512 px — la gota sola, para usos chicos y cuadrados
+ *   `logo-completo.webp`  900 px — el lockup, para la pantalla de acceso
+ *   `wordmark.webp`       900 px — solo el nombre
+ *
+ * `alt=""` y `aria-hidden` en el isotipo cuando va acompañado del nombre: si no,
+ * un lector de pantalla dice "Aquazaku" dos veces seguidas.
  */
-export function Isotipo({ className = 'size-7' }: { className?: string }) {
+export function Isotipo({
+  className = 'h-7 w-[2.3rem]',
+  decorativo = false,
+}: {
+  className?: string
+  decorativo?: boolean
+}) {
   return (
-    <svg
-      viewBox="0 0 44 32"
+    <Image
+      src="/marca/isotipo.webp"
+      alt={decorativo ? '' : 'Aquazaku'}
+      aria-hidden={decorativo || undefined}
+      width={240}
+      height={161}
+      // `priority`: es lo primero que se ve de la marca y vive en la cabecera,
+      // así que no puede entrar tarde y correr el layout.
+      priority
       className={className}
-      role="img"
-      aria-label="Aquazaku"
-      fill="none"
-    >
-      <Gota x={0} color="var(--aq-primaria-600)" />
-      <Gota x={12} color="var(--aq-acento-500)" ondas />
-      <Gota x={24} color="var(--aq-exito-500)" />
-    </svg>
+    />
   )
 }
 
-function Gota({ x, color, ondas = false }: { x: number; color: string; ondas?: boolean }) {
+/** La gota sola. Para donde el espacio es cuadrado y tres gotas no entran. */
+export function Gota({ className = 'size-8' }: { className?: string }) {
   return (
-    <g transform={`translate(${x} 0)`}>
-      {/* Gota: punta arriba, cuerpo redondo abajo. */}
-      <path
-        d="M10 1 C10 1 19 12.5 19 19 A9 9 0 0 1 1 19 C1 12.5 10 1 10 1 Z"
-        fill={color}
-      />
-      {ondas ? (
-        <g stroke="var(--aq-neutro-0)" strokeWidth="1.6" strokeLinecap="round" opacity=".92">
-          <path d="M5 17.5c1.7-1.6 3.3-1.6 5 0s3.3 1.6 5 0" />
-          <path d="M5 21.5c1.7-1.6 3.3-1.6 5 0s3.3 1.6 5 0" />
-        </g>
-      ) : null}
-    </g>
+    <Image
+      src="/marca/gota.webp"
+      alt=""
+      aria-hidden
+      width={512}
+      height={752}
+      className={className}
+    />
   )
 }
 
-/** Isotipo + nombre. El nombre se oculta donde no entra, el isotipo nunca. */
+/**
+ * El lockup completo: las tres gotas con el nombre debajo.
+ *
+ * Va donde la marca es la protagonista y hay lugar —la pantalla de acceso—, no
+ * en el chrome de la app. Es la regla D3 del sistema: la marca aparece en
+ * superficies de marca, nunca detrás de datos.
+ */
+export function LogoCompleto({ className = 'w-64' }: { className?: string }) {
+  return (
+    <Image
+      src="/marca/logo-completo.webp"
+      alt="Aquazaku"
+      width={900}
+      height={900}
+      priority
+      className={className}
+    />
+  )
+}
+
+/**
+ * Isotipo + nombre, para la cabecera.
+ *
+ * El nombre va en texto y no en el wordmark de la marca: el wordmark tiene su
+ * extrusión 3D y sus tonos oscuros del lado izquierdo, que a 17 px se embarran
+ * y sobre fondo oscuro desaparecen. El texto con el gradiente de la cinta —la
+ * misma secuencia del isotipo— se lee en los dos modos y a cualquier tamaño.
+ *
+ * Así funcionan los sistemas de marca de verdad: el lockup manda donde es
+ * grande, y el chrome usa isotipo + texto.
+ */
 export function Marca({ compacta = false }: { compacta?: boolean }) {
   return (
     <span className="flex items-center gap-2.5">
-      <Isotipo />
+      <Isotipo className="h-7 w-auto shrink-0" decorativo />
       <span
-        className={`text-[17px] font-semibold tracking-tight text-principal ${
+        className={`bg-clip-text text-[17px] font-semibold tracking-tight text-transparent ${
           compacta ? 'sr-only sm:not-sr-only' : ''
         }`}
+        style={{ backgroundImage: 'var(--aq-gradiente-cinta)' }}
       >
         Aquazaku
       </span>

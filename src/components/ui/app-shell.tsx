@@ -58,7 +58,7 @@ export function AppShell({
      * En teléfono el menú sale del grid —pasa a `fixed` y se desplaza— pero
      * sigue siendo el mismo nodo. Nada se renderiza dos veces.
      */
-    <div className="aq-armazon grid h-dvh">
+    <div className="aq-ambiente aq-armazon grid h-dvh">
       <CabeceraYMenu
         marca={
           /* La marca vuelve al inicio: es la convención de la web y el atajo
@@ -114,7 +114,12 @@ function MenuLateral({ modules }: { modules: ReturnType<typeof computeVisibleMod
 
       {modules.map((modulo) => (
         <li key={modulo.id}>
-          <EnlaceDeMenu href={modulo.href}>{modulo.label}</EnlaceDeMenu>
+          <EnlaceDeMenu
+            href={modulo.href}
+            icono={<modulo.icono aria-hidden className="size-4 shrink-0" />}
+          >
+            {modulo.label}
+          </EnlaceDeMenu>
         </li>
       ))}
     </ul>

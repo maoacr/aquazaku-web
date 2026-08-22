@@ -31,7 +31,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         {pendiente ? 'Guardando…' : 'Guardar contraseña'}
       </button>
 
-      <Link href="/forgot-password" className="text-sm text-tenue underline">
+      <Link href="/forgot-password" className="text-sm text-secundario underline">
         Pedir un link nuevo
       </Link>
     </form>

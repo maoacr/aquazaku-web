@@ -1,9 +1,24 @@
+import { Boxes, Calculator, Package, ShieldCheck, Users } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { Role } from './roles'
 
 export interface MenuModule {
   id: string
   label: string
   href: string
+  /**
+   * El icono del menú. **Obligatorio, y a propósito.**
+   *
+   * Regla de oro del proyecto: un módulo nuevo llega al menú con su icono. No
+   * está escrito solo en la documentación —eso se olvida— sino en el tipo: sin
+   * `icono`, esto no compila. Es la única forma de que la regla sobreviva a la
+   * décima persona que agregue un módulo un viernes.
+   *
+   * Se guarda el COMPONENTE, no un JSX ya armado: este archivo lo lee tanto el
+   * servidor como el cliente, y un elemento de React construido acá no se puede
+   * serializar entre los dos.
+   */
+  icono: LucideIcon
   /** Roles que ven este módulo. Basta con tener UNO de ellos. */
   roles: Role[]
 }
@@ -23,6 +38,7 @@ export const ALL_MODULES: MenuModule[] = [
     id: 'productos',
     label: 'Productos',
     href: '/modulos/productos',
+    icono: Package,
     roles: ['admin', 'seller', 'pos', 'contador'],
   },
   // Los cuatro roles ven el stock: el contador necesita el inventario para
@@ -31,14 +47,24 @@ export const ALL_MODULES: MenuModule[] = [
     id: 'stock',
     label: 'Stock',
     href: '/modulos/stock',
+    icono: Boxes,
     roles: ['admin', 'seller', 'pos', 'contador'],
   },
-  { id: 'usuarios', label: 'Usuarios', href: '/modulos/usuarios', roles: ['admin'] },
-  { id: 'auditoria', label: 'Auditoría', href: '/modulos/auditoria', roles: ['admin'] },
+  { id: 'usuarios', label: 'Usuarios', href: '/modulos/usuarios', icono: Users, roles: ['admin'] },
+  {
+    id: 'auditoria',
+    label: 'Auditoría',
+    href: '/modulos/auditoria',
+    icono: ShieldCheck,
+    roles: ['admin'],
+  },
   {
     id: 'contador-auditoria',
     label: 'Auditoría',
     href: '/contador/auditoria',
+    // Distinto del escudo de la auditoría de admin: quien tiene los dos roles
+    // ve dos entradas, y el icono es lo primero que las separa.
+    icono: Calculator,
     roles: ['contador'],
   },
 ]

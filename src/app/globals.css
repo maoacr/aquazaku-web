@@ -48,6 +48,98 @@
   --aq-texto-tenue:      var(--aq-neutro-600);
 
   /*
+   * ── La marca, muestreada del archivo original ─────────────────────────────
+   *
+   * Estos hex NO están elegidos: salen de contar píxeles sobre `gotas.png`, el
+   * arte real de la marca. Cada gota es un degradado de tres paradas, y son las
+   * que el isotipo dibuja.
+   *
+   * La copia del sistema traía aproximaciones —el azul `#1D78B3` contra el
+   * `#0A8CBE` real, el verde `#33BD73` contra el `#1EAA64`—. El aqua sí estaba
+   * bien: `#5CD9CC` contra `#54D8CC` medido. Se corrigen los tres para que la
+   * app y el arte impreso sean el mismo color.
+   *
+   * `--aq-marca-*-media` es el color de la gota; `-honda` y `-luz` son el fondo
+   * y el brillo del bisel. Los tres juntos son lo que hace que se lea como
+   * volumen y no como una silueta plana.
+   */
+  --aq-marca-azul-honda:  #003250;
+  --aq-marca-azul-media:  #0A8CBE;
+  --aq-marca-azul-luz:    #8CF0FA;
+
+  --aq-marca-aqua-honda:  #005A50;
+  --aq-marca-aqua-media:  #3CBEAA;
+  --aq-marca-aqua-luz:    #BEF0F0;
+
+  --aq-marca-verde-honda: #003C1E;
+  --aq-marca-verde-media: #1EAA64;
+  --aq-marca-verde-luz:   #DCFAAA;
+
+  /* La cinta de la cabecera repite la secuencia del isotipo: entra azul, sale
+     potable. Ahora con los colores reales. */
+  --aq-gradiente-cinta: linear-gradient(
+    90deg,
+    var(--aq-marca-azul-media) 0%,
+    var(--aq-marca-aqua-media) 52%,
+    var(--aq-marca-verde-media) 100%
+  );
+
+  /* Fondo de las superficies de marca: las tres hondas, en diagonal. */
+  --aq-gradiente-marca: linear-gradient(
+    135deg,
+    var(--aq-marca-azul-honda) 0%,
+    var(--aq-marca-aqua-honda) 58%,
+    var(--aq-marca-verde-honda) 100%
+  );
+
+  /*
+   * ── Vidrio ────────────────────────────────────────────────────────────────
+   *
+   * Una superficie de vidrio son tres cosas a la vez, y sin las tres se ve como
+   * un rectángulo gris con opacidad:
+   *
+   *   `-fondo`  la lámina, translúcida — deja pasar lo que hay detrás
+   *   `-borde`  el canto que atrapa la luz; más claro arriba que abajo
+   *   `-brillo` el reflejo interno, apenas, sobre el borde superior
+   *
+   * Y hace falta que HAYA algo detrás. Vidrio sobre un gris plano no refracta
+   * nada: por eso existe `--aq-ambiente`, un resplandor de marca amplísimo y
+   * muy tenue que le da al vidrio qué mostrar.
+   *
+   * Ojo con la diferencia respecto de D3: `--aq-gradiente-marca` es el degradado
+   * FUERTE y sigue yendo solo en superficies de marca. `--aq-ambiente` es otra
+   * cosa —2 % de opacidad, sin bordes visibles— y no compite con una cifra.
+   */
+  --aq-vidrio-fondo:  rgb(255 255 255 / 0.62);
+  /*
+   * La lámina de los paneles que viven SOBRE el gradiente de marca.
+   *
+   * A 0,62 de alfa sobre el verde oscuro de la marca, el blanco compone un
+   * `rgb(158,186,183)` —verde sucio— y ahí los colores de texto pensados para
+   * una tarjeta blanca dejan de contrastar: el link de recuperar contraseña
+   * caía a 2,88:1. Con más cuerpo la lámina vuelve a ser una superficie clara y
+   * el desenfoque le sigue dando el carácter de vidrio.
+   */
+  --aq-vidrio-fondo-panel: rgb(255 255 255 / 0.90);
+
+  /* Las piezas del canto y el reflejo. En claro la luz es blanca y franca. */
+  --aq-vidrio-canto-luz:    rgb(255 255 255 / 0.95);
+  --aq-vidrio-canto-sombra: rgb(120 150 160 / 0.22);
+  --aq-vidrio-reflejo:      rgb(255 255 255 / 0.75);
+  --aq-vidrio-brillo-alto:  rgb(255 255 255 / 0.90);
+  --aq-vidrio-brillo-bajo:  rgb(120 150 160 / 0.14);
+  --aq-vidrio-sombra-lejos: rgb(8 30 40 / 0.38);
+  --aq-vidrio-sombra-cerca: rgb(8 30 40 / 0.20);
+  --aq-vidrio-borde:  rgb(255 255 255 / 0.85);
+  --aq-vidrio-brillo: rgb(255 255 255 / 0.55);
+  --aq-vidrio-desenfoque: blur(20px) saturate(180%);
+
+  --aq-ambiente:
+    radial-gradient(60% 55% at 12% 0%, rgb(10 140 190 / 0.09) 0%, transparent 62%),
+    radial-gradient(55% 50% at 88% 8%, rgb(30 170 100 / 0.08) 0%, transparent 60%),
+    radial-gradient(70% 60% at 50% 100%, rgb(60 190 170 / 0.07) 0%, transparent 65%);
+
+  /*
    * El anillo de foco también tiene que cambiar de paso entre modos.
    *
    * La copia del sistema lo deja en el aqua claro (acento-400) para los dos, y
@@ -96,6 +188,37 @@
   /* En oscuro el aqua claro sí funciona: 10,57:1 sobre el fondo. */
   --aq-anillo-foco: var(--aq-acento-400);
 
+  /*
+   * El vidrio en oscuro no es el mismo con menos alfa: es vidrio AHUMADO. La
+   * lámina se oscurece en vez de aclararse, y el canto se ilumina apenas —lo
+   * justo para dibujar el borde—. Con la lámina clara de modo claro, en oscuro
+   * queda una nube lechosa que tapa en vez de dejar ver.
+   */
+  --aq-vidrio-fondo:  rgb(20 30 36 / 0.58);
+  --aq-vidrio-fondo-panel: rgb(14 22 28 / 0.82);
+
+  /*
+   * En oscuro la luz no es blanca: es el aqua de la marca, y muy tenue. Un
+   * canto blanco sobre una lámina ahumada se ve como un borde pintado, no como
+   * vidrio — el canto tiene que ser del color de lo que lo ilumina.
+   */
+  --aq-vidrio-canto-luz:    rgb(150 235 225 / 0.34);
+  --aq-vidrio-canto-sombra: rgb(120 200 210 / 0.05);
+  --aq-vidrio-reflejo:      rgb(140 230 240 / 0.10);
+  --aq-vidrio-brillo-alto:  rgb(170 240 235 / 0.16);
+  --aq-vidrio-brillo-bajo:  rgb(0 0 0 / 0.30);
+  --aq-vidrio-sombra-lejos: rgb(0 0 0 / 0.60);
+  --aq-vidrio-sombra-cerca: rgb(0 0 0 / 0.40);
+  --aq-vidrio-borde:  rgb(160 230 220 / 0.16);
+  --aq-vidrio-brillo: rgb(190 240 240 / 0.10);
+
+  /* Más opacidad que en claro: sobre un fondo casi negro, el mismo 8 % no se
+     ve. El ojo necesita más señal para leer el mismo gesto. */
+  --aq-ambiente:
+    radial-gradient(60% 55% at 12% 0%, rgb(10 140 190 / 0.16) 0%, transparent 62%),
+    radial-gradient(55% 50% at 88% 8%, rgb(30 170 100 / 0.13) 0%, transparent 60%),
+    radial-gradient(70% 60% at 50% 100%, rgb(60 190 170 / 0.11) 0%, transparent 65%);
+
   --aq-estado-exito-fondo:  var(--aq-exito-900);
   --aq-estado-exito-texto:  var(--aq-exito-300);
   --aq-estado-exito-borde:  var(--aq-exito-700);
@@ -141,6 +264,8 @@
   --color-alerta-texto: var(--aq-estado-alerta-texto);
 
   --color-velo: var(--aq-velo);
+  --color-vidrio: var(--aq-vidrio-fondo);
+  --color-vidrio-borde: var(--aq-vidrio-borde);
 
   --color-error: var(--aq-estado-error-base);
   --color-error-fondo: var(--aq-estado-error-fondo);
@@ -255,6 +380,129 @@ body {
 }
 
 /**
+ * ─── La lámina de vidrio ────────────────────────────────────────────────────
+ *
+ * Tres capas en un solo elemento, y las tres hacen falta:
+ *
+ *   1. la lámina translúcida con `backdrop-filter`, que desenfoca y satura lo
+ *      que hay detrás — el `saturate` es lo que evita que el vidrio se vea
+ *      sucio, porque el desenfoque solo apaga el color;
+ *   2. el canto, un borde de 1 px del color que atrapa la luz;
+ *   3. el reflejo interno sobre el borde de arriba, con `inset`, que es lo que
+ *      hace que la lámina parezca tener espesor y no ser una capa de opacidad.
+ *
+ * `-webkit-backdrop-filter` va sí o sí: Safari todavía lo pide con prefijo, y
+ * sin él en un iPhone la lámina queda opaca y tapa lo de atrás.
+ *
+ * Si el navegador no soporta `backdrop-filter`, el `@supports` de abajo sube la
+ * opacidad del fondo. Sin eso se lee el texto de atrás a través del panel.
+ */
+.aq-vidrio {
+  background: var(--aq-vidrio-fondo);
+  -webkit-backdrop-filter: var(--aq-vidrio-desenfoque);
+  backdrop-filter: var(--aq-vidrio-desenfoque);
+  border: 1px solid var(--aq-vidrio-borde);
+  box-shadow:
+    inset 0 1px 0 0 var(--aq-vidrio-brillo),
+    var(--aq-elev-2);
+}
+
+/**
+ * ─── Vidrio de verdad ───────────────────────────────────────────────────────
+ *
+ * Translucidez más desenfoque **no es vidrio**: es un rectángulo con opacidad.
+ * Lo que hace que el ojo lea "vidrio" son tres cosas que una lámina plana no
+ * tiene, y las tres están acá:
+ *
+ * **1 · El canto refracta.** Un borde de un solo color es plástico. El vidrio
+ * tiene el canto encendido donde le pega la luz —arriba a la izquierda— y
+ * apagado en la diagonal opuesta. Eso es un borde con degradado, que en CSS no
+ * existe: se falsifica pintando el degradado en un `::after` y recortándole el
+ * centro con dos máscaras que se excluyen entre sí. Queda solo el marco.
+ *
+ * **2 · Hay un reflejo especular.** Una mancha de luz ancha y suave que entra
+ * por la esquina superior. No es un degradado de fondo a fondo: es un óvalo
+ * corrido fuera del panel, del que solo se ve la caída.
+ *
+ * **3 · La pieza tiene espesor.** Dos sombras, no una. Una amplia y difusa que
+ * la separa del fondo, y otra corta y cerrada justo debajo —la de contacto—,
+ * que es la que dice a qué distancia está. Y hacia adentro, una línea clara
+ * arriba y una oscura abajo: el grosor del canto visto desde arriba.
+ */
+.aq-vidrio-panel {
+  position: relative;
+  isolation: isolate;
+  background: var(--aq-vidrio-fondo-panel);
+  border: 0;
+  box-shadow:
+    inset 0 1px 0 0 var(--aq-vidrio-brillo-alto),
+    inset 0 -1px 0 0 var(--aq-vidrio-brillo-bajo),
+    0 24px 48px -16px var(--aq-vidrio-sombra-lejos),
+    0 3px 8px -2px var(--aq-vidrio-sombra-cerca);
+}
+
+/* 2 · el reflejo */
+.aq-vidrio-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(130% 85% at 12% -12%, var(--aq-vidrio-reflejo) 0%, transparent 58%);
+  pointer-events: none;
+}
+
+/* 1 · el canto */
+.aq-vidrio-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    145deg,
+    var(--aq-vidrio-canto-luz) 0%,
+    var(--aq-vidrio-canto-sombra) 38%,
+    var(--aq-vidrio-canto-sombra) 62%,
+    var(--aq-vidrio-canto-luz) 100%
+  );
+  /*
+   * Las dos máscaras: una cubre solo la caja de contenido y la otra la caja
+   * entera. `exclude` deja lo que está en una y no en la otra — o sea el
+   * `padding` de 1px, que es el marco. Safari todavía pide el prefijo.
+   */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .aq-vidrio,
+  .aq-vidrio-panel {
+    background: var(--aq-superficie-tarjeta);
+  }
+}
+
+/**
+ * El resplandor de marca del fondo. Fijo respecto de la ventana para que no se
+ * mueva con el scroll: es luz de ambiente, no contenido.
+ */
+.aq-ambiente::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--aq-ambiente);
+  pointer-events: none;
+}
+
+/**
  * ─── El anillo de foco ──────────────────────────────────────────────────────
  *
  * Pisa la regla de `tokens.css`, que resuelve el anillo con `box-shadow` y dos
@@ -318,6 +566,27 @@ body {
 :is(button, select, textarea, [role='button']),
 input:not([type='checkbox'], [type='radio'], [type='hidden']) {
   min-height: 44px;
+}
+
+/**
+ * ─── Un campo no se sale de su columna ──────────────────────────────────────
+ *
+ * Un `<input>` sin ancho declarado no mide lo que le den: mide su ancho
+ * INTRÍNSECO, que sale de un largo por defecto en caracteres y por lo tanto
+ * **depende del tamaño de fuente**. Al subir la tipografía de 12 a 14 px en T4,
+ * los filtros de auditoría pasaron de 145 a 168 px dentro de columnas de 131 y
+ * se montaron sobre la columna vecina.
+ *
+ * Como ítems de grid o de flex, los campos traen `min-width: auto`, que les
+ * prohíbe encogerse por debajo de ese intrínseco. Ponerlo en `0` les devuelve
+ * el permiso y el campo se acomoda a la columna que le tocó.
+ *
+ * Va acá y no en cada formulario por lo mismo de siempre: los campos viven en
+ * once archivos sin primitiva compartida, y esto vuelve a pasar en la próxima
+ * grilla que alguien escriba.
+ */
+:is(input, select, textarea) {
+  min-width: 0;
 }
 
 /**
@@ -394,6 +663,26 @@ input:not([type='checkbox'], [type='radio'], [type='hidden']) {
   --aq-texto-secundario:   var(--aq-neutro-300);
   --aq-texto-tenue:        var(--aq-neutro-400);
   --aq-anillo-foco: var(--aq-acento-400);
+  --aq-vidrio-fondo: rgb(20 30 36 / 0.58);
+  --aq-vidrio-fondo-panel: rgb(14 22 28 / 0.82);
+
+  /*
+   * En oscuro la luz no es blanca: es el aqua de la marca, y muy tenue. Un
+   * canto blanco sobre una lámina ahumada se ve como un borde pintado, no como
+   * vidrio — el canto tiene que ser del color de lo que lo ilumina.
+   */
+  --aq-vidrio-canto-luz:    rgb(150 235 225 / 0.34);
+  --aq-vidrio-canto-sombra: rgb(120 200 210 / 0.05);
+  --aq-vidrio-reflejo:      rgb(140 230 240 / 0.10);
+  --aq-vidrio-brillo-alto:  rgb(170 240 235 / 0.16);
+  --aq-vidrio-brillo-bajo:  rgb(0 0 0 / 0.30);
+  --aq-vidrio-sombra-lejos: rgb(0 0 0 / 0.60);
+  --aq-vidrio-sombra-cerca: rgb(0 0 0 / 0.40);
+  --aq-vidrio-borde: rgb(160 230 220 / 0.16);
+  --aq-vidrio-brillo: rgb(190 240 240 / 0.10);
+  --aq-ambiente: radial-gradient(60% 55% at 12% 0%, rgb(10 140 190 / 0.16) 0%, transparent 62%),
+    radial-gradient(55% 50% at 88% 8%, rgb(30 170 100 / 0.13) 0%, transparent 60%),
+    radial-gradient(70% 60% at 50% 100%, rgb(60 190 170 / 0.11) 0%, transparent 65%);
   --aq-texto-invertido:    var(--aq-neutro-950);
   --aq-accion-primaria:       #4EA9DA;
   --aq-accion-primaria-hover: #86C6EA;

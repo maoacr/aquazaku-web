@@ -55,7 +55,7 @@ export function LoginForm() {
         {pendiente ? 'Entrando…' : 'Entrar'}
       </button>
 
-      <Link href="/forgot-password" className="text-sm text-tenue underline">
+      <Link href="/forgot-password" className="text-sm text-secundario underline">
         ¿Olvidaste tu contraseña?
       </Link>
     </form>

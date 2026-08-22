@@ -28,8 +28,12 @@ const INICIAL: EstadoDeFormulario = {}
  * Con error no hay token, así que **lo escrito se conserva**: hacer reescribir
  * el motivo por un error de cantidad castiga a quien ya pensó la explicación.
  */
-function limpiezaKey(estado: EstadoDeFormulario): string {
-  return estado.token ?? 'inicial'
+function limpiezaKey(estado: EstadoDeFormulario, campo: string): string {
+  // El nombre del campo va en la clave porque estas `key` se aplican a
+  // elementos HERMANOS. Con la misma clave en dos hermanos, React avisa
+  // «two children with the same key» y —textual— «puede duplicar u omitir
+  // children»: el formulario se rompe de formas que no se explican solas.
+  return `${campo}-${estado.token ?? 'inicial'}`
 }
 
 const campo =
@@ -96,7 +100,7 @@ function CampoDeMotivo({
 
 export function EntradaDeInventario({ productos }: { productos: ResumenDeStock[] }) {
   const [estado, accion, enviando] = useActionState(registrarEntradaAction, INICIAL)
-  const generacion = limpiezaKey(estado)
+  const generacion = (campo: string) => limpiezaKey(estado, campo)
   const hoy = new Date().toISOString().slice(0, 10)
 
   return (
@@ -108,7 +112,7 @@ export function EntradaDeInventario({ productos }: { productos: ResumenDeStock[]
 
       <Resultado estado={estado} />
 
-      <div key={generacion} className="grid gap-4 sm:grid-cols-3">
+      <div key={generacion('datos')} className="grid gap-4 sm:grid-cols-3">
         <label className="grid gap-1.5">
           <span className="text-[13px] font-semibold text-principal">Producto</span>
           <select name="productoId" required defaultValue="" className={campo}>
@@ -149,7 +153,10 @@ export function EntradaDeInventario({ productos }: { productos: ResumenDeStock[]
         </label>
       </div>
 
-      <CampoDeMotivo key={generacion} ayuda="Por ejemplo: carga inicial del inventario de agosto" />
+      <CampoDeMotivo
+        key={generacion('motivo')}
+        ayuda="Por ejemplo: carga inicial del inventario de agosto"
+      />
 
       <div>
         <button type="submit" disabled={enviando} className={botonPrimario}>
@@ -162,7 +169,7 @@ export function EntradaDeInventario({ productos }: { productos: ResumenDeStock[]
 
 export function AjusteDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
   const [estado, accion, enviando] = useActionState(ajustarLoteAction, INICIAL)
-  const generacion = limpiezaKey(estado)
+  const generacion = (campo: string) => limpiezaKey(estado, campo)
 
   return (
     <form action={accion} className="grid gap-4 rounded-lg border border-sutil bg-tarjeta p-5 shadow-elev-1">
@@ -173,7 +180,7 @@ export function AjusteDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
 
       <Resultado estado={estado} />
 
-      <div key={generacion} className="grid gap-4 sm:grid-cols-2">
+      <div key={generacion('datos')} className="grid gap-4 sm:grid-cols-2">
         <SelectorDeLote lotes={lotes} />
 
         <label className="grid gap-1.5">
@@ -191,7 +198,7 @@ export function AjusteDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
       </div>
 
       <CampoDeMotivo
-        key={generacion}
+        key={generacion('motivo')}
         ayuda="Por ejemplo: conteo físico del lunes, faltaban 8 unidades"
       />
 
@@ -206,7 +213,7 @@ export function AjusteDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
 
 export function DescarteDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
   const [estado, accion, enviando] = useActionState(descartarAction, INICIAL)
-  const generacion = limpiezaKey(estado)
+  const generacion = (campo: string) => limpiezaKey(estado, campo)
 
   return (
     <form action={accion} className="grid gap-4 rounded-lg border border-sutil bg-tarjeta p-5 shadow-elev-1">
@@ -217,7 +224,7 @@ export function DescarteDeLote({ lotes }: { lotes: LoteConSaldo[] }) {
 
       <Resultado estado={estado} />
 
-      <div key={generacion} className="grid gap-4 sm:grid-cols-3">
+      <div key={generacion('datos')} className="grid gap-4 sm:grid-cols-3">
         <SelectorDeLote lotes={lotes} />
 
         <label className="grid gap-1.5">

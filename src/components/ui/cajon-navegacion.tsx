@@ -71,7 +71,14 @@ export function CabeceraYMenu({
           Sin ella, los tres controles quedan flotando sobre el mismo fondo que
           el contenido, que es exactamente lo que son: chrome, no una sección.
         */
-        className="relative flex items-center gap-1 px-2 py-2 sm:px-4"
+        /*
+          El padding horizontal es el MISMO que el del contenido, y esa es toda
+          la razón: los iconos tienen que caer en el mismo canal que los títulos
+          y las tarjetas. Con 16 px acá y 24 px abajo, el borde derecho de los
+          iconos quedaba 8 px afuera del de las tarjetas — poco para nombrarlo y
+          suficiente para que la pantalla se sienta desalineada.
+        */
+        className="relative flex items-center gap-1 px-4 py-2 sm:px-6"
       >
         <button
           ref={botonRef}

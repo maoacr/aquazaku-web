@@ -15,15 +15,13 @@ export function Pie() {
         Misma lámina que el menú, y mismo ritmo de márgenes, para que el pie sea
         parte del ecosistema y no una barra pegada abajo.
 
-        `my-3 mr-3` sin margen izquierdo: el pie vive en la columna del
-        contenido, y el menú ya aporta su propio margen derecho. Sumar otro
-        abriría un hueco de 24 px justo ahí y rompería la alineación con la
-        cabecera y el contenido, que arrancan en el borde de la columna.
-
-        En teléfono no hay columna de menú, así que ahí lleva margen en los dos
-        lados.
+        Los márgenes horizontales son los mismos que el padding del contenido
+        —24 px en escritorio— así que los bordes del pie caen exactamente donde
+        caen los de las tarjetas. Antes estaba a 12 px y quedaba 12 px más ancho
+        que todo lo demás: la clase de desalineación que no se sabe nombrar pero
+        se ve.
       */
-      className="aq-panel-marca m-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl px-4 py-2.5 text-[13px] text-secundario sm:ml-0 sm:px-6"
+      className="aq-panel-marca mx-4 mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl px-4 py-2.5 text-[13px] text-secundario sm:mx-6 sm:px-5"
     >
       <p>© {anio} Aquazaku. Todos los derechos reservados.</p>
 

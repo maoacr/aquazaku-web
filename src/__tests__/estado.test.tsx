@@ -136,7 +136,7 @@ function nombreLucide(icono: (typeof ICONO_DE_ESTADO)[Tono]): string {
  * El vencimiento como estado del semáforo.
  *
  * `RN-STK-08` fija la vida útil en 30 días y bloquea lo vencido; el aviso previo
- * no está en el dominio y es la pregunta 36. El test no valida el número: valida
+ * lo fija `RN-STK-11`. El test no valida el número: valida
  * que la frontera esté donde la constante dice, sea cual sea.
  */
 describe('el vencimiento se traduce a un estado', () => {

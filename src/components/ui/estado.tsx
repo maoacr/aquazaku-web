@@ -105,14 +105,21 @@ const CANALES = {
 /**
  * ── El vencimiento de un lote, como estado del semáforo ─────────────────────
  *
- * `RN-STK-08` fija la vida útil en 30 días y bloquea lo vencido. Lo que el
- * dominio **no** define es cuántos días antes conviene avisar, así que este
- * número es una propuesta, no una regla: está la pregunta 36 en `pendientes`
- * esperando que Aquazaku lo confirme.
+ * `RN-STK-08` fija la vida útil en 30 días y bloquea lo vencido. Cuántos días
+ * antes avisar lo define `RN-STK-11`, confirmada el 22-ago-2026: **7 días**.
  *
- * Siete días sobre treinta deja una cuarta parte de la vida para reaccionar, y
- * es un número redondo de decir en la planta: «lo que vence esta semana». Si
- * resulta ser poco o mucho, se cambia esta constante y nada más.
+ * Siete sobre treinta deja una cuarta parte de la vida para reaccionar, y es un
+ * número que se dice fácil en la planta: «lo que vence esta semana».
+ *
+ * ── Esta constante tiene fecha de vencimiento ──────────────────────────────
+ *
+ * `RN-STK-11` dice que el umbral **se configura, no se codifica**: el número
+ * correcto depende de la rotación real, que todavía no se midió, y moverlo no
+ * puede exigir un despliegue.
+ *
+ * Vive acá porque el módulo de configuración es M12. Cuando llegue, esto pasa a
+ * ser un parámetro y esta constante se va — no se queda como «default», que es
+ * como nacen los dos lugares donde configurar lo mismo.
  */
 export const DIAS_DE_AVISO_DE_VENCIMIENTO = 7
 

@@ -26,41 +26,56 @@ export default async function ProductosPage() {
 
   return (
     <div className="grid gap-6">
-      {/* `aq-cabecera-pantalla` reserva el ángulo que ocupa el chrome flotante.
-          Sin eso, «Gestionar catálogo» queda debajo de los iconos de sesión. */}
-      <header className="aq-cabecera-pantalla flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="aq-titulo-pantalla text-principal">Productos</h1>
-          <p className="mt-1 text-sm text-tenue">
-            Qué se vende, con su equivalencia en litros y sus precios por tipo de cliente.
-          </p>
-        </div>
-
-        {puedeGestionar ? (
-          <Link
-            href="/modulos/productos/gestion"
-            className="aq-boton aq-boton-primario aq-boton-compacto"
-          >
-            Gestionar catálogo
-          </Link>
-        ) : null}
+      <header>
+        <h1 className="aq-titulo-pantalla text-principal">Productos</h1>
+        <p className="mt-1 text-sm text-tenue">
+          Qué se vende, con su equivalencia en litros y sus precios por tipo de cliente.
+        </p>
       </header>
 
-      {noVendibles.length > 0 ? (
-        <div className="grid gap-1 rounded border border-alerta-borde bg-alerta-fondo px-3 py-2 text-sm text-alerta-texto">
-          <p className="font-medium">{avisoDeNoVendibles(noVendibles.length, esperandoPrecio.length)}</p>
+      {/*
+        ── El aviso y la acción comparten renglón ─────────────────────────────
 
-          {/*
-            El desglose aparece SOLO cuando conviven los dos motivos. Con un
-            motivo único, el resumen ya lo dijo todo y repetirlo es ruido: el
-            lector busca la diferencia entre las dos líneas y no la encuentra.
-          */}
-          {necesitaDesglose(vendibilidad) ? (
-            <p className="text-alerta-texto/80">
-              Esperando precio: {esperandoPrecio.map((p) => p.codigo).join(', ')}. Los otros{' '}
-              {soloFaltaActivar === 1 ? 'ya tiene precio' : 'ya tienen precio'} y solo falta
-              activar{soloFaltaActivar === 1 ? 'lo' : 'los'}.
-            </p>
+        La acción estaba arriba a la derecha, dentro del encabezado, y ahí choca
+        con el chrome flotante —perfil, tema y salir— que reclama ese ángulo.
+
+        Reservarle el espacio era esquivar el problema. Esto lo saca de la banda
+        del chrome y lo pone donde pertenece: junto a lo que acciona. El aviso
+        dice qué hay que arreglar y el botón lleva a arreglarlo, así que leerlos
+        en la misma línea es leer una sola frase.
+
+        `ml-auto` mantiene el botón contra el borde derecho HAYA o no aviso, así
+        que la pantalla no salta cuando el último producto se activa. En
+        teléfono la fila se apila: el aviso primero, porque explica el botón.
+      */}
+      {noVendibles.length > 0 || puedeGestionar ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {noVendibles.length > 0 ? (
+            <div className="grid flex-1 gap-1 rounded-lg border border-alerta-borde bg-alerta-fondo px-3 py-2 text-sm text-alerta-texto">
+              <p className="font-medium">{avisoDeNoVendibles(noVendibles.length, esperandoPrecio.length)}</p>
+
+              {/*
+                El desglose aparece SOLO cuando conviven los dos motivos. Con un
+                motivo único, el resumen ya lo dijo todo y repetirlo es ruido: el
+                lector busca la diferencia entre las dos líneas y no la encuentra.
+              */}
+              {necesitaDesglose(vendibilidad) ? (
+                <p className="text-alerta-texto/80">
+                  Esperando precio: {esperandoPrecio.map((p) => p.codigo).join(', ')}. Los otros{' '}
+                  {soloFaltaActivar === 1 ? 'ya tiene precio' : 'ya tienen precio'} y solo falta
+                  activar{soloFaltaActivar === 1 ? 'lo' : 'los'}.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {puedeGestionar ? (
+            <Link
+              href="/modulos/productos/gestion"
+              className="aq-boton aq-boton-primario shrink-0 sm:ml-auto"
+            >
+              Gestionar catálogo
+            </Link>
           ) : null}
         </div>
       ) : null}

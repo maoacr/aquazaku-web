@@ -17,13 +17,28 @@ describe('computeVisibleModules()', () => {
     // Necesita el inventario para cerrar los números, no solo la bitácora.
     // La auditoría es la MISMA que ve el admin: qué filas trae cada uno lo
     // decide `api/` según la sesión, no la ruta por la que se entró.
-    expect(ids).toEqual(['productos', 'stock', 'auditoria'])
+    expect(ids).toEqual(['productos', 'stock', 'insumos', 'auditoria'])
   })
 
-  // Hasta M0 estos dos roles no veían ningún módulo. M1 les dio el catálogo
-  // (RN-CAT-06) y M2 el stock: quien vende necesita saber qué hay.
-  it.each(['pos', 'seller'] as const)('%s ve catálogo y stock', (rol) => {
-    expect(computeVisibleModules([rol]).map((m) => m.id)).toEqual(['productos', 'stock'])
+  /**
+   * Hasta M0 estos dos roles no veían ningún módulo. M1 les dio el catálogo
+   * (RN-CAT-06) y M2 el stock: quien vende necesita saber qué hay.
+   *
+   * M3 los SEPARA. El `pos` ve insumos porque es quien produce —sin tapas no se
+   * envasa— y el `seller` no: contacta clientes y registra ventas, no toca la
+   * planta. Es la primera vez que estos dos roles dejan de ver lo mismo, así
+   * que el test deja de ser compartido.
+   */
+  it('el seller ve catálogo y stock, y nada de la planta', () => {
+    expect(computeVisibleModules(['seller']).map((m) => m.id)).toEqual(['productos', 'stock'])
+  })
+
+  it('el pos ve además los insumos: es quien produce', () => {
+    expect(computeVisibleModules(['pos']).map((m) => m.id)).toEqual([
+      'productos',
+      'stock',
+      'insumos',
+    ])
   })
 
   /**
@@ -60,7 +75,7 @@ describe('computeVisibleModules()', () => {
   it('multi-rol ve la unión de los módulos de todos sus roles', () => {
     const ids = computeVisibleModules(['admin', 'contador']).map((m) => m.id)
 
-    expect(ids).toEqual(['productos', 'stock', 'usuarios', 'auditoria'])
+    expect(ids).toEqual(['productos', 'stock', 'insumos', 'usuarios', 'auditoria'])
   })
 
   it('multi-rol no duplica un módulo que dos roles comparten', () => {

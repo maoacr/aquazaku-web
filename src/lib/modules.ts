@@ -1,4 +1,4 @@
-import { Boxes, Package, ShieldCheck, Users } from 'lucide-react'
+import { Boxes, Package, PackageOpen, ShieldCheck, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Role } from './roles'
 
@@ -64,6 +64,14 @@ export const ALL_MODULES: MenuModule[] = [
     href: '/modulos/stock',
     icono: Boxes,
     roles: ['admin', 'seller', 'pos', 'contador'],
+  },
+  // Tapas, sellos y bolsas. El `seller` no lo ve: no toca la planta.
+  {
+    id: 'insumos',
+    label: 'Insumos',
+    href: '/modulos/insumos',
+    icono: PackageOpen,
+    roles: ['admin', 'pos', 'contador'],
   },
   { id: 'usuarios', label: 'Usuarios', href: '/modulos/usuarios', icono: Users, roles: ['admin'] },
   // Admin y contador ven la MISMA auditoría. Qué filas trae cada uno lo decide

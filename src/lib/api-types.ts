@@ -134,3 +134,39 @@ export interface PaginaDeMovimientos {
   filas: MovimientoDeStock[]
   siguienteCursor: number | null
 }
+
+/**
+ * Un insumo de empaque — M3.
+ *
+ * `saldo` está SIEMPRE en unidades, aunque las bolsas se compren por kilo
+ * (RN-INS-02). `equivalenciaPorKilo` en `null` no es un dato faltante por
+ * descuido: es la medición de planta que todavía no se hizo, y mientras siga
+ * así la entrada por kilos se rechaza en vez de estimar.
+ */
+export interface InsumoListado {
+  id: string
+  codigo: string
+  nombre: string
+  unidad: 'unidad'
+  minimo: number
+  saldo: number
+  /** Unidades por kilo. `null` hasta medirlo — pregunta 37. */
+  equivalenciaPorKilo: string | null
+  activo: boolean
+  /** Resuelto por `api/`: la pantalla no repite la comparación. */
+  bajoMinimo: boolean
+}
+
+export interface MovimientoDeInsumo {
+  id: number
+  insumoId: string
+  cantidad: number
+  tipo: 'compra' | 'ajuste' | 'descarte' | 'produccion'
+  motivo: string | null
+  causa: string | null
+  /** Los dos juntos o los dos nulos: es lo que hace auditable la conversión. */
+  kilos: string | null
+  equivalencia: string | null
+  registradoPor: string | null
+  createdAt: string
+}

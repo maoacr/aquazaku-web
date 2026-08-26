@@ -207,6 +207,17 @@
 
   /* La lámina del menú. Más cuerpo que una tarjeta: sostiene la navegación. */
   --aq-panel-lamina: rgb(255 255 255 / 0.55);
+  /*
+   * El riel del menú CUANDO se despliega sobre main.
+   *
+   * Más opaco que `--aq-panel-lamina` a propósito: colapsado el riel vive en su
+   * propia pista y detrás no pasa nada, pero expandido se superpone al texto de
+   * la pantalla. Con 0,5 ese texto se transparentaba por debajo del menú.
+   *
+   * Va acompañado de desenfoque, así que no necesita ser opaco del todo: el
+   * fondo sigue dejando ver que hay agua atrás, sin dejar leer lo que tapa.
+   */
+  --aq-menu-desplegado-fondo: rgb(255 255 255 / 0.9);
 
   /*
    * ── El panel NO lleva resplandor en modo claro ────────────────────────────
@@ -498,6 +509,7 @@
   --aq-tarjeta-contacto:     rgb(0 0 0 / 0.4);
   --aq-agua: linear-gradient(168deg, #0B1F2C 0%, #0E3540 46%, #0F3B31 100%);
   --aq-panel-lamina: rgb(12 26 34 / 0.5);
+  --aq-menu-desplegado-fondo: rgb(10 22 30 / 0.92);
 
   /*
    * En oscuro el resplandor SÍ vuelve: sobre una lámina ahumada dibuja el
@@ -765,10 +777,31 @@ body {
     transition: width var(--aq-fluido-medio) var(--aq-fluido);
   }
 
+  /*
+   * ── Al expandirse, el riel se SUPERPONE a main ────────────────────────────
+   *
+   * La pista del grid sigue midiendo 4,5rem: el riel crece por encima en vez de
+   * empujar. Es a propósito — si main se corriera con el hover, rozar el borde
+   * izquierdo con el mouse movería la página entera mientras alguien lee, y ese
+   * borde es justo por donde el cursor pasa para llegar a la barra de scroll.
+   *
+   * Pero superponerse al 50 % de opacidad y sin desenfoque dejaba el texto de
+   * main transparentándose por debajo del menú: medido, `rgba(12,26,34,0.5)` con
+   * `backdrop-filter: none`.
+   *
+   * Acá el desenfoque SÍ se gana el lugar, por el mismo criterio que ya está
+   * escrito más abajo: aporta cuando detrás pasa contenido con detalle. Detrás
+   * de esto pasa el texto de la pantalla que se está leyendo — el mismo caso que
+   * el cajón en teléfono. Y solo mientras está expandido: colapsado vive en su
+   * propia pista y no tapa nada, así que ahí no hay nada que desenfocar.
+   */
   .aq-menu-colapsado:hover,
   .aq-menu-colapsado:focus-within {
     width: 16rem;
     z-index: 20;
+    background: var(--aq-menu-desplegado-fondo);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    backdrop-filter: blur(16px) saturate(150%);
   }
 
   /*
@@ -833,7 +866,20 @@ body {
     padding-inline: 0;
   }
 
-  .aq-menu-colapsado .aq-menu-encabezado a {
+  /*
+   * ── Por qué esto NO puede aplicar mientras está expandido ─────────────────
+   *
+   * El ancla mide 4,25rem (68 px) y su contenido —isotipo más nombre— mide 85
+   * cuando el nombre vuelve a ser visible. Con `justify-content: center`, esos
+   * 17 px de más se reparten a los DOS lados: el isotipo terminaba en x = 3
+   * mientras el panel arrancaba en x = 12, o sea asomándose 9 px por fuera del
+   * menú.
+   *
+   * El `:not()` es lo que ata esta regla al estado colapsado de verdad. Sin él,
+   * la regla seguía viva al expandirse —cuando ya no hay motivo para encoger el
+   * ancla— y el síntoma no se parecía en nada a su causa.
+   */
+  .aq-menu-colapsado:not(:hover):not(:focus-within) .aq-menu-encabezado a {
     justify-content: center;
     width: 4.25rem;
     padding-inline: 0;
@@ -1928,6 +1974,7 @@ textarea.aq-campo {
   --aq-tarjeta-contacto:     rgb(0 0 0 / 0.4);
   --aq-agua: linear-gradient(168deg, #0B1F2C 0%, #0E3540 46%, #0F3B31 100%);
   --aq-panel-lamina: rgb(12 26 34 / 0.5);
+  --aq-menu-desplegado-fondo: rgb(10 22 30 / 0.92);
 
   /*
    * En oscuro el resplandor SÍ vuelve: sobre una lámina ahumada dibuja el

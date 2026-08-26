@@ -72,9 +72,7 @@ describe('se puede volver al inicio', () => {
 
     expect(envoltorios.some((c) => c.includes('sm:hidden')), 'falta la de teléfono').toBe(true)
     expect(
-      // `sm:flex` y no `sm:block`: el contenedor comparte fila con el botón
-      // que colapsa el menú.
-      envoltorios.some((c) => c.includes('hidden') && c.includes('sm:flex')),
+      envoltorios.some((c) => c.includes('hidden') && c.includes('sm:block')),
       'falta la de escritorio',
     ).toBe(true)
   })

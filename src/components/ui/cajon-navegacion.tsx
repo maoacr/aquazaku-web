@@ -185,9 +185,8 @@ export function CabeceraYMenu({
           colapsa. `min-w-0` deja que la marca se encoja en vez de empujar al
           botón fuera del riel.
         */}
-        <div className="mb-1 hidden min-w-0 items-center gap-1 px-3 sm:flex">
+        <div className="aq-menu-encabezado mb-1 hidden min-w-0 px-3 sm:block">
           {marcaDelPanel}
-          {toggleDelMenu}
         </div>
 
         {/* Cerrar al navegar: tocar un módulo y que el cajón quede tapando la
@@ -203,7 +202,22 @@ export function CabeceraYMenu({
           quién es el sistema. En escritorio el pie sigue existiendo y repetirlo
           acá sería decirlo dos veces en la misma pantalla.
         */}
-        <div className="mt-auto px-2 pt-4 sm:hidden">{creditos}</div>
+        <div className="mt-auto">
+          {/* Los créditos, solo en teléfono: ahí abajo el pie lo ocupa la barra
+              de navegación. */}
+          <div className="px-2 pt-4 sm:hidden">{creditos}</div>
+
+          {/*
+            El toggle vive ABAJO, y no arriba junto a la marca.
+
+            Arriba tenía que compartir fila con el logo, y al colapsar los dos se
+            repartían 48 px útiles: ninguno caía donde caen los iconos de módulo,
+            y el orden de la columna se reacomodaba solo. Acá abajo tiene su
+            propia fila, cae en el mismo eje que todo lo demás, y colapsar deja
+            de mover nada de lugar.
+          */}
+          <div className="hidden px-3 pb-1 pt-2 sm:block">{toggleDelMenu}</div>
+        </div>
       </nav>
     </>
   )

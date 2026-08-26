@@ -38,7 +38,7 @@ export function ToggleDelMenu({ estado }: { estado: EstadoDelMenu }) {
         aria-expanded={!colapsado}
         aria-label={colapsado ? 'Desplegar el menú' : 'Contraer el menú'}
         title={colapsado ? 'Desplegar el menú' : 'Contraer el menú'}
-        className="hidden size-11 shrink-0 items-center justify-center rounded-md text-secundario hover:bg-menu-realce hover:text-principal sm:flex"
+        className="aq-menu-toggle hidden min-h-11 shrink-0 items-center justify-center rounded-md text-secundario hover:bg-menu-realce hover:text-principal sm:flex"
       >
         <Icono aria-hidden className="size-4" />
       </button>

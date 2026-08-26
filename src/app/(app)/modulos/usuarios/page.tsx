@@ -1,5 +1,5 @@
 import { AltaDeUsuario } from '@/components/usuarios/alta-usuario'
-import { TablaDeUsuarios } from '@/components/usuarios/tabla-usuarios'
+import { TarjetasDeUsuarios } from '@/components/usuarios/tarjetas-de-usuarios'
 import { apiServerFetch } from '@/lib/api-server'
 import type { UsuarioListado } from '@/lib/api-types'
 
@@ -11,8 +11,13 @@ import type { UsuarioListado } from '@/lib/api-types'
  * cosmética (RN-ACC-02); esta página no vuelve a chequear el rol porque hacerlo
  * sugeriría que ESA es la barrera.
  *
- * Los roles vienen en la misma respuesta que los usuarios, así la tabla se
- * arma con un solo viaje a `api/`.
+ * Los roles vienen en la misma respuesta que los usuarios, así la lista se arma
+ * con un solo viaje a `api/` — y por eso el filtro puede ser del cliente.
+ *
+ * La lista sirve para ENCONTRAR a alguien. Repartir roles, desactivar y
+ * restablecer la contraseña viven en `/modulos/usuarios/[id]`: eran una celda de
+ * tabla con cuatro casillas y dos botones, que en un teléfono obligaba a
+ * scrollear en horizontal para llegar a la acción.
  */
 export default async function UsuariosPage() {
   const usuarios = await apiServerFetch<UsuarioListado[]>('/users')
@@ -28,7 +33,7 @@ export default async function UsuariosPage() {
 
       <AltaDeUsuario />
 
-      <TablaDeUsuarios usuarios={usuarios} />
+      <TarjetasDeUsuarios usuarios={usuarios} />
     </div>
   )
 }

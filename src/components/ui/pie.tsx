@@ -64,7 +64,14 @@ export function Pie() {
         eran la razón de que el pie no cerrara con el menú ni con el contenido.
         El único padding que queda es el interno, que sí es suyo.
       */
-      className="aq-panel-marca hidden rounded-xl px-5 py-2.5 sm:block"
+      /*
+        `aq-panel-banda` corrige la geometría de la luz. El brillo del vidrio se
+        mide en porcentaje del elemento, así que sobre una caja ancha y baja la
+        misma regla que en el menú da una raya fina en vez de un resplandor: el
+        pie se veía plano al lado del panel lateral sin que ninguna variable
+        fuera distinta.
+      */
+      className="aq-panel-marca aq-panel-banda hidden rounded-xl px-5 py-2.5 sm:block"
     >
       <Creditos />
     </footer>

@@ -120,3 +120,51 @@ export async function cambiarEstadoAction(
         : 'Usuario reactivado.',
   }
 }
+
+/**
+ * Restablece la contraseña de un usuario y devuelve la temporal UNA vez.
+ *
+ * ── Por qué existe, y por qué no muestra la contraseña real ─────────────────
+ *
+ * `accounts.password` guarda un hash argon2id: el sistema **no tiene** la
+ * contraseña de nadie, tiene una huella que sirve para verificar un intento.
+ * Mostrar «la contraseña registrada» exigiría dejar de hashear.
+ *
+ * Y no se haría igual aunque se pudiera. Si el admin ve las contraseñas, el
+ * `audit_log` deja de probar nada: «pos@aquazaku.com anuló esta venta» pasaría a
+ * significar «alguien que sabía esa clave lo hizo», y esa lista incluye al
+ * admin. El módulo de auditoría —la pieza más cara del sistema— quedaría
+ * decorativo.
+ *
+ * Esto resuelve el problema real —que nadie dependa del correo para volver a
+ * entrar— sin ese costo: el admin dicta una temporal de viva voz y
+ * `mustChangePassword` obliga a cambiarla al entrar. **El admin nunca conoce la
+ * contraseña final.**
+ */
+export interface EstadoDeRestablecer extends EstadoDeFormulario {
+  /** Se muestra UNA vez y no se persiste en ningún lado. */
+  temporal?: string
+}
+
+export async function restablecerPasswordAction(
+  _previo: EstadoDeRestablecer,
+  formData: FormData,
+): Promise<EstadoDeRestablecer> {
+  const userId = String(formData.get('userId') ?? '')
+
+  if (!userId) return { error: 'Falta el usuario.' }
+
+  const res = await apiServerFetchRaw(`/users/${userId}/reset-password`, { method: 'POST' })
+
+  if (!res.ok) {
+    return { error: await mensajeDeError(res, 'No pudimos restablecer la contraseña.') }
+  }
+
+  const { temporal } = (await res.json()) as { temporal: string }
+
+  revalidatePath(`${RUTA}/${userId}`)
+  return {
+    temporal,
+    ok: 'Listo. Dígasela en persona: es de un solo uso y se cambia al entrar.',
+  }
+}

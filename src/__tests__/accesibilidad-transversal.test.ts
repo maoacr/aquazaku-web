@@ -407,3 +407,51 @@ function bloque(css: string, selector: string, { ultimo = false } = {}): string 
   const elegido = ultimo ? encontrados.at(-1) : encontrados[0]
   return elegido?.[1] ?? ''
 }
+
+/**
+ * La cabecera flotante reclama el ángulo superior derecho, y algo tiene que
+ * impedir que el contenido llegue hasta ahí.
+ *
+ * Pasó con «Gestionar catálogo»: quedó literalmente debajo de los iconos de
+ * sesión. Y «título a la izquierda, acción a la derecha» es el encabezado
+ * estándar de una pantalla, así que sin una reserva iba a repetirse.
+ */
+describe('el contenido no invade el ángulo del chrome', () => {
+  const acciones = readFileSync(
+    join(process.cwd(), 'src/components/ui/acciones-de-sesion.tsx'),
+    'utf8',
+  )
+
+  it('la reserva alcanza para los controles que el chrome renderiza', () => {
+    const reserva = Number(/--aq-chrome-ancho:\s*(\d+)px/.exec(globales)?.[1])
+
+    // El toggle de tema renderiza sus DOS botones y el CSS muestra uno: para el
+    // ancho cuenta como uno solo. Ver `.aq-toggle-tema` en `globals.css`.
+    const controles =
+      (acciones.match(/aria-label=/g)?.length ?? 0) -
+      (acciones.includes('aq-en-claro') ? 1 : 0)
+
+    // 44 px de objetivo táctil más el `gap-1` que los separa.
+    const minimo = controles * 44 + (controles - 1) * 4
+
+    expect(controles, 'no se detectó ningún control en el chrome').toBeGreaterThan(0)
+    expect(
+      reserva,
+      `el chrome tiene ${controles} controles (${minimo}px) y la reserva es ${reserva}px: ` +
+        'la primera fila del contenido queda debajo de los iconos',
+    ).toBeGreaterThanOrEqual(minimo)
+  })
+
+  it('toda pantalla con acción arriba a la derecha reserva el ángulo', () => {
+    const culpables = archivosTsx(join(process.cwd(), 'src/app')).filter(
+      ({ contenido }) =>
+        /<header[^>]*className="[^"]*justify-between/.test(contenido) &&
+        !/<header[^>]*className="[^"]*aq-cabecera-pantalla/.test(contenido),
+    )
+
+    expect(
+      culpables.map((c) => c.ruta),
+      'ponen una acción arriba a la derecha sin `aq-cabecera-pantalla`',
+    ).toEqual([])
+  })
+})

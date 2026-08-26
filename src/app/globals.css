@@ -587,6 +587,19 @@ body {
    */
   --aq-canal: 0.75rem;
 
+  /*
+   * El ancho que ocupa el chrome flotante: perfil, tema y salir.
+   *
+   * Tres controles de 44 px con 4 px entre ellos = 140. Es el espacio que la
+   * primera fila del contenido tiene que dejar libre, y está acá —no en un
+   * `pr-40` suelto— para que sea UN número y no cinco pantallas adivinando.
+   *
+   * Un test verifica que la reserva alcance para los controles que el cluster
+   * realmente renderiza: si algún día entra un cuarto icono, falla acá en vez
+   * de taparle el botón a alguien en producción.
+   */
+  --aq-chrome-ancho: 140px;
+
   padding: var(--aq-canal);
   gap: var(--aq-canal);
 }
@@ -656,6 +669,22 @@ body {
 
   .aq-cabecera > * {
     pointer-events: auto;
+  }
+
+  /*
+   * La cabecera flotante RECLAMA el ángulo superior derecho, y esta regla es la
+   * contrapartida: la primera fila del contenido no puede llegar hasta ahí.
+   *
+   * Pasó con «Gestionar catálogo» en productos, que quedó literalmente debajo
+   * de los iconos de perfil, tema y salir. Y no es un caso suelto: «título a la
+   * izquierda, acción a la derecha» es el encabezado estándar de una pantalla,
+   * así que iba a repetirse en stock, en usuarios y en la que venga.
+   *
+   * La reserva es estructural en vez de una convención —«no pongas acciones
+   * arriba a la derecha»— porque una convención hay que recordarla y esto no.
+   */
+  .aq-cabecera-pantalla {
+    padding-right: var(--aq-chrome-ancho);
   }
 }
 
@@ -877,6 +906,29 @@ body {
  */
 
 /** El panel del menú y el pie: más cuerpo, radio mayor. */
+/**
+ * La lámina en forma de BANDA: ancha y baja. Hoy, el pie.
+ *
+ * El brillo del vidrio es un radial medido en porcentaje DEL ELEMENTO
+ * —`120% 65% at 6% -10%`—, y eso no escala: deforma. En el menú, angosto y
+ * altísimo, da una elipse de ~307×650 px: un resplandor amplio. En el pie, de
+ * 44 px de alto, la misma regla da ~1440×28: una raya fina pegada al borde de
+ * arriba.
+ *
+ * Misma CSS, mismas variables, mismo fondo — y el pie se ve plano al lado del
+ * menú. No era opacidad ni sombra: era la forma de la caja.
+ *
+ * Acá el radial se redimensiona para una banda: mucho más alto que el elemento
+ * y entrando desde arriba a la izquierda, para que la luz tenga el mismo
+ * carácter que en el panel alto. Y el `sheen` gira a un ángulo casi horizontal,
+ * porque a 150° sobre una caja ancha y baja recorre el largo en vez del canto.
+ */
+.aq-panel-banda::before {
+  background:
+    radial-gradient(60% 900% at 3% -50%, var(--aq-lamina-luz, var(--aq-tarjeta-luz)) 0%, transparent 60%),
+    linear-gradient(100deg, var(--aq-lamina-sheen, var(--aq-tarjeta-sheen)) 0%, transparent 34%);
+}
+
 .aq-panel-marca {
   --aq-lamina-fondo: var(--aq-panel-lamina);
   --aq-lamina-radio: var(--aq-radio-xl);

@@ -26,7 +26,9 @@ export default async function ProductosPage() {
 
   return (
     <div className="grid gap-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
+      {/* `aq-cabecera-pantalla` reserva el ángulo que ocupa el chrome flotante.
+          Sin eso, «Gestionar catálogo» queda debajo de los iconos de sesión. */}
+      <header className="aq-cabecera-pantalla flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="aq-titulo-pantalla text-principal">Productos</h1>
           <p className="mt-1 text-sm text-tenue">

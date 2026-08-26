@@ -68,6 +68,29 @@ const ENLACE_SUAVE = ['fondo', 'tarjeta', 'elevada'].map((superficie) => ({
   texto: '--aq-accion-suave',
 }))
 
+/**
+ * El AGUA, que es la superficie donde realmente cae el texto suelto.
+ *
+ * `--aq-superficie-fondo` es un token opaco que casi no se ve: el fondo real de
+ * la app es `--aq-agua`, un gradiente fijo que cubre el viewport. El rótulo de
+ * una sección, la bajada de un título y los avisos caen sobre ESO, no sobre el
+ * token.
+ *
+ * Sin esta fila, hundir el agua en claro dejó `tenue` en 4,10:1 y la suite
+ * siguió en verde, porque estaba mirando la superficie equivocada. Es la misma
+ * lección que ya costó cuatro botones invisibles: medir lo que se ve.
+ *
+ * Se toman las tres paradas del gradiente, no solo la del medio: el texto puede
+ * caer sobre cualquiera.
+ */
+const PARADAS_DEL_AGUA = ['principal', 'secundario', 'tenue'].flatMap((nivel) =>
+  [0, 1, 2].map((parada) => ({
+    nombre: `agua[${parada}] + ${nivel}`,
+    fondo: `--aq-agua#${parada}`,
+    texto: `--aq-texto-${nivel}`,
+  })),
+)
+
 describe('contraste de los pares fondo/texto', () => {
   const claro = leerTokens('claro')
   const oscuro = leerTokens('oscuro')
@@ -77,7 +100,12 @@ describe('contraste de los pares fondo/texto', () => {
     { etiqueta: 'oscuro', tokens: oscuro },
   ]) {
     describe(`en modo ${modo.etiqueta}`, () => {
-      for (const par of [...PARES_DECLARADOS, ...SUPERFICIES_DE_LECTURA, ...ENLACE_SUAVE]) {
+      for (const par of [
+        ...PARES_DECLARADOS,
+        ...SUPERFICIES_DE_LECTURA,
+        ...ENLACE_SUAVE,
+        ...PARADAS_DEL_AGUA,
+      ]) {
         it(`${par.nombre} llega a ${MINIMO_AA}:1`, () => {
           const fondo = resolver(par.fondo, modo.tokens)
           const texto = resolver(par.texto, modo.tokens)
@@ -230,6 +258,23 @@ function declaracionesDe(css: string, selector: string): Array<[string, string]>
 /** Sigue la cadena de `var(--x)` hasta llegar a un color literal. */
 function resolver(nombre: string, tokens: Map<string, string>, saltos = 0): string {
   if (saltos > 10) throw new Error(`cadena de var() circular en ${nombre}`)
+
+  // `--aq-agua#1` = la segunda parada del gradiente. El agua no es un color
+  // sino un `linear-gradient`, y el texto puede caer sobre cualquiera de sus
+  // paradas — así que cada una se mide por separado.
+  const gradiente = /^(--[\w-]+)#(\d+)$/.exec(nombre)
+  if (gradiente) {
+    const declarado = tokens.get(gradiente[1]!)
+    if (declarado === undefined) throw new Error(`el token ${gradiente[1]} no está declarado`)
+
+    const paradas = declarado.match(/#[0-9A-Fa-f]{6}\b/g) ?? []
+    const parada = paradas[Number(gradiente[2])]
+
+    if (parada === undefined) {
+      throw new Error(`${gradiente[1]} no tiene la parada ${gradiente[2]}: ${declarado}`)
+    }
+    return parada
+  }
 
   const valor = tokens.get(nombre)
   if (valor === undefined) throw new Error(`el token ${nombre} no está declarado`)

@@ -53,7 +53,15 @@
    */
   --aq-texto-principal:  #132029;
   --aq-texto-secundario: #3B5163;
-  --aq-texto-tenue:      #576E80;
+  /*
+   * Bajó de #576E80 al hundirse el agua: ahí daba 4,10:1 y AA pide 4,5.
+   *
+   * No se bajó más, aunque los tonos más oscuros también pasan: a #425665 la
+   * separación contra `secundario` cae a 1,08:1 y los dos niveles vuelven a ser
+   * el mismo gris — que es exactamente el defecto que esta escalera vino a
+   * arreglar. Pasar AA y no distinguirse no sirve de nada.
+   */
+  --aq-texto-tenue:      #4E6475;
 
   /*
    * Los glifos que son TEXTURA, no información: el icono decorativo en la
@@ -175,7 +183,23 @@
    * Y sigue al tema, porque tiene que: en claro es agua de superficie —casi
    * blanca, con reflejos aqua— y en oscuro es agua profunda.
    */
-  --aq-agua: linear-gradient(168deg, #F4FAFC 0%, #EDF6F7 46%, #EDF7F1 100%);
+  /*
+   * ── El agua tiene que ser AGUA, no papel ───────────────────────────────────
+   *
+   * Estaba en #F4FAFC → #EDF6F7 → #EDF7F1, y medido contra las láminas que
+   * flotan encima daba una separación de 1,053:1. En oscuro esa misma relación
+   * es 1,174. O sea: en claro el agua, el body y los paneles estaban los tres
+   * dentro del 5% de luminancia — no había planos, había una sola masa blanca,
+   * y el contenido no tenía sobre qué apoyarse.
+   *
+   * Se veía como un resplandor que tapaba la pantalla, y no había ningún
+   * resplandor: medido con `elementsFromPoint`, encima del contenido no hay
+   * ninguna capa. Era la ausencia de contraste entre planos.
+   *
+   * Subir las láminas no alcanzaba: aun con un panel BLANCO y opaco, sobre el
+   * agua vieja el techo de separación era 1,105. El agua tenía que bajar.
+   */
+  --aq-agua: linear-gradient(168deg, #DCEBF2 0%, #D4E5EA 46%, #D6E9DF 100%);
 
   /* La lámina del menú. Más cuerpo que una tarjeta: sostiene la navegación. */
   --aq-panel-lamina: rgb(255 255 255 / 0.55);
@@ -302,11 +326,11 @@
    */
   --aq-tarjeta-fondo:        rgb(255 255 255 / 0.62);
   --aq-tarjeta-fondo-hover:  rgb(255 255 255 / 0.78);
-  --aq-tarjeta-brillo:       rgb(255 255 255 / 0.95);
+  --aq-tarjeta-brillo:       rgb(255 255 255 / 0.75);
   --aq-tarjeta-fondo-canto:  rgb(120 160 175 / 0.18);
   --aq-tarjeta-luz:          rgb(255 255 255 / 0.85);
   --aq-tarjeta-sheen:        rgb(255 255 255 / 0.55);
-  --aq-tarjeta-canto-luz:    rgb(255 255 255 / 0.98);
+  --aq-tarjeta-canto-luz:    rgb(255 255 255 / 0.6);
   --aq-tarjeta-canto-sombra: rgb(110 155 175 / 0.28);
   --aq-tarjeta-sombra:       rgb(10 45 60 / 0.28);
   --aq-tarjeta-contacto:     rgb(10 45 60 / 0.12);
@@ -420,14 +444,31 @@
    * lámina se oscurece en vez de aclararse, y el canto se ilumina apenas —lo
    * justo para dibujar el borde—. Con la lámina clara de modo claro, en oscuro
    * queda una nube lechosa que tapa en vez de dejar ver.
+   *
+   * ── Igualadas al panel del menú ────────────────────────────────────────────
+   *
+   * Las tarjetas se veían más sólidas que el menú, y la diferencia NO estaba
+   * donde parecía: los dos rellenos ya tenían casi el mismo alfa —0,52 contra
+   * 0,50—. Lo que las separaba eran los reflejos. El brillo interno iba en 0,26
+   * contra 0,10 del panel, y el canto en 0,42 contra 0,16: dos veces y media más
+   * fuertes. Un borde brillante es lo que hace que algo se lea como un objeto
+   * apoyado encima en vez de una lámina que deja pasar el agua.
+   *
+   * Y la base era más clara (`#16222a` contra `#0c1a22`), así que con el mismo
+   * alfa aclaraba más el fondo. Ahora las dos parten del mismo color.
+   *
+   * Bajar el relleno ACERCA el color de la tarjeta al del agua, que en oscuro es
+   * más oscura que la lámina: el texto claro gana contraste en vez de perderlo.
+   * Medido componiendo, no leyendo el token — `globals.contraste.test.ts` mira
+   * `--aq-superficie-tarjeta`, que es la superficie opaca y no este vidrio.
    */
-  --aq-tarjeta-fondo:        rgb(22 34 42 / 0.52);
+  --aq-tarjeta-fondo:        rgb(12 26 34 / 0.5);
   --aq-tarjeta-fondo-hover:  rgb(30 46 56 / 0.68);
-  --aq-tarjeta-brillo:       rgb(190 245 245 / 0.26);
+  --aq-tarjeta-brillo:       rgb(180 240 240 / 0.12);
   --aq-tarjeta-fondo-canto:  rgb(0 0 0 / 0.35);
   --aq-tarjeta-luz:          rgb(140 235 240 / 0.20);
   --aq-tarjeta-sheen:        rgb(160 240 245 / 0.10);
-  --aq-tarjeta-canto-luz:    rgb(165 245 240 / 0.42);
+  --aq-tarjeta-canto-luz:    rgb(150 230 225 / 0.2);
   --aq-tarjeta-canto-sombra: rgb(120 200 210 / 0.06);
   --aq-tarjeta-sombra:       rgb(0 0 0 / 0.55);
   --aq-tarjeta-contacto:     rgb(0 0 0 / 0.4);
@@ -1554,13 +1595,13 @@ textarea.aq-campo {
   --aq-campo-hueco:      rgb(0 0 0 / 0.35);
   --aq-anillo-foco: var(--aq-acento-400);
   --aq-gradiente-nombre: var(--aq-gradiente-cinta-clara);
-  --aq-tarjeta-fondo:        rgb(22 34 42 / 0.52);
+  --aq-tarjeta-fondo:        rgb(12 26 34 / 0.5);
   --aq-tarjeta-fondo-hover:  rgb(30 46 56 / 0.68);
-  --aq-tarjeta-brillo:       rgb(190 245 245 / 0.26);
+  --aq-tarjeta-brillo:       rgb(180 240 240 / 0.12);
   --aq-tarjeta-fondo-canto:  rgb(0 0 0 / 0.35);
   --aq-tarjeta-luz:          rgb(140 235 240 / 0.20);
   --aq-tarjeta-sheen:        rgb(160 240 245 / 0.10);
-  --aq-tarjeta-canto-luz:    rgb(165 245 240 / 0.42);
+  --aq-tarjeta-canto-luz:    rgb(150 230 225 / 0.2);
   --aq-tarjeta-canto-sombra: rgb(120 200 210 / 0.06);
   --aq-tarjeta-sombra:       rgb(0 0 0 / 0.55);
   --aq-tarjeta-contacto:     rgb(0 0 0 / 0.4);

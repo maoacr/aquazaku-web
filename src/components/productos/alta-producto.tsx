@@ -1,5 +1,6 @@
 'use client'
 
+import { useAvisoDeExito } from '@/lib/formulario-cliente'
 import { useActionState } from 'react'
 import { crearProductoAction, type EstadoDeFormulario } from '@/app/(app)/modulos/productos/actions'
 import { FormError } from '@/components/auth/form-error'
@@ -20,20 +21,20 @@ const campo = 'aq-campo'
  */
 export function AltaDeProducto() {
   const [estado, accion, enviando] = useActionState(crearProductoAction, INICIAL)
+  useAvisoDeExito(estado)
 
+  /*
+   * El `key` remonta el formulario al crear: son campos no controlados y dejar
+   * lo anterior escrito invita a crear el mismo registro dos veces. Con error
+   * no hay token, así que lo escrito se conserva.
+   */
   return (
-    <form action={accion} className="grid gap-4 rounded-lg border border-sutil p-4">
+    <form key={estado.token ?? 'inicial'} action={accion} className="grid gap-4 rounded-lg border border-sutil p-4">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-secundario">
         Nuevo producto
       </h2>
 
       <FormError id="alta-producto-error">{estado.error}</FormError>
-      {estado.ok ? (
-        <p role="status" className="text-sm text-exito-texto">
-          {estado.ok}
-        </p>
-      ) : null}
-
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="grid gap-1 text-sm">
           <span>Nombre</span>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useAvisoDeExito } from '@/lib/formulario-cliente'
 import { useActionState } from 'react'
 import {
   cambiarEstadoAction,
@@ -21,7 +22,9 @@ const INICIAL: EstadoDeFormulario = {}
  */
 export function GestionDeProducto({ producto }: { producto: Producto }) {
   const [precios, guardarPrecios, guardando] = useActionState(editarPreciosAction, INICIAL)
+  useAvisoDeExito(precios)
   const [estado, cambiarEstado, cambiando] = useActionState(cambiarEstadoAction, INICIAL)
+  useAvisoDeExito(estado)
 
   // Dos motivos distintos por los que un producto no se vende, y cada uno pide
   // una acción distinta. Mostrar solo el primero deja al admin creyendo que
@@ -61,12 +64,6 @@ export function GestionDeProducto({ producto }: { producto: Producto }) {
         <input type="hidden" name="id" value={producto.id} />
 
         <FormError id={`precios-${producto.id}`}>{precios.error}</FormError>
-        {precios.ok ? (
-          <p role="status" className="text-sm text-exito-texto">
-            {precios.ok}
-          </p>
-        ) : null}
-
         <CamposDePrecio producto={producto} />
 
         <div>
@@ -89,12 +86,6 @@ export function GestionDeProducto({ producto }: { producto: Producto }) {
         <input type="hidden" name="activar" value={producto.activo ? 'no' : 'si'} />
 
         <FormError id={`estado-${producto.id}`}>{estado.error}</FormError>
-        {estado.ok ? (
-          <p role="status" className="mb-2 text-sm text-exito-texto">
-            {estado.ok}
-          </p>
-        ) : null}
-
         <button
           type="submit"
           disabled={cambiando}

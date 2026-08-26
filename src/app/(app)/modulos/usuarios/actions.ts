@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { apiServerFetchRaw } from '@/lib/api-server'
 import { cuerpoDeError } from '@/lib/form-errors'
+import { type EstadoDeFormulario, exito } from '@/lib/formulario'
 import type { Role } from '@/lib/roles'
 
 /**
@@ -18,11 +19,6 @@ import type { Role } from '@/lib/roles'
  */
 
 const RUTA = '/modulos/usuarios'
-
-export interface EstadoDeFormulario {
-  error?: string
-  ok?: string
-}
 
 /** Traduce un fallo de `api/` a algo que el admin pueda accionar. */
 async function mensajeDeError(res: Response, generico: string): Promise<string> {
@@ -64,7 +60,7 @@ export async function crearUsuarioAction(
   }
 
   revalidatePath(RUTA)
-  return { ok: `Usuario ${email} creado. Va a tener que cambiar la contraseña al entrar.` }
+  return exito(`Usuario ${email} creado. Va a tener que cambiar la contraseña al entrar.`)
 }
 
 export async function cambiarRolesAction(
@@ -88,7 +84,7 @@ export async function cambiarRolesAction(
   }
 
   revalidatePath(RUTA)
-  return { ok: 'Roles actualizados. El cambio ya está activo, sin necesidad de volver a entrar.' }
+  return exito('Roles actualizados. El cambio ya está activo, sin necesidad de volver a entrar.')
 }
 
 export async function cambiarEstadoAction(
@@ -168,3 +164,5 @@ export async function restablecerPasswordAction(
     ok: 'Listo. Dígasela en persona: es de un solo uso y se cambia al entrar.',
   }
 }
+
+export type { EstadoDeFormulario }

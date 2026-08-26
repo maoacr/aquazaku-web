@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { apiServerFetchRaw } from '@/lib/api-server'
 import { cuerpoDeError } from '@/lib/form-errors'
+import { type EstadoDeFormulario, exito } from '@/lib/formulario'
 
 /**
  * Mutaciones del catálogo — M1.
@@ -18,11 +19,6 @@ import { cuerpoDeError } from '@/lib/form-errors'
 
 const RUTA = '/modulos/productos'
 const RUTA_GESTION = '/modulos/productos/gestion'
-
-export interface EstadoDeFormulario {
-  error?: string
-  ok?: string
-}
 
 /** Traduce un fallo de `api/` a algo que el admin pueda accionar. */
 async function mensajeDeError(res: Response, generico: string): Promise<string> {
@@ -83,7 +79,7 @@ export async function crearProductoAction(
   const creado = (await res.json()) as { codigo: string }
 
   revalidarCatalogo()
-  return { ok: `Producto creado con el código ${creado.codigo}.` }
+  return exito(`Producto creado con el código ${creado.codigo}.`)
 }
 
 /**
@@ -111,7 +107,7 @@ export async function editarPreciosAction(
   }
 
   revalidarCatalogo()
-  return { ok: 'Precios actualizados. El cambio quedó registrado en la auditoría.' }
+  return exito('Precios actualizados. El cambio quedó registrado en la auditoría.')
 }
 
 export async function cambiarEstadoAction(
@@ -154,3 +150,5 @@ function preciosDe(formData: FormData) {
     precioMinimo: String(formData.get('precioMinimo') ?? '').trim(),
   }
 }
+
+export type { EstadoDeFormulario }

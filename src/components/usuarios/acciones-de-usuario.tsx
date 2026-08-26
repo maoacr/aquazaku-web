@@ -1,5 +1,6 @@
 'use client'
 
+import { useAvisoDeExito } from '@/lib/formulario-cliente'
 import { useActionState } from 'react'
 import {
   cambiarEstadoAction,
@@ -30,7 +31,9 @@ const INICIAL: EstadoDeFormulario = {}
  */
 export function AccionesDeUsuario({ usuario }: { usuario: UsuarioListado }) {
   const [roles, guardarRoles, guardandoRoles] = useActionState(cambiarRolesAction, INICIAL)
+  useAvisoDeExito(roles)
   const [estado, cambiarEstado, cambiandoEstado] = useActionState(cambiarEstadoAction, INICIAL)
+  useAvisoDeExito(estado)
 
   const activo = usuario.status === 'active'
 
@@ -46,12 +49,6 @@ export function AccionesDeUsuario({ usuario }: { usuario: UsuarioListado }) {
         </div>
 
         <FormError id="roles-error">{roles.error}</FormError>
-        {roles.ok ? (
-          <p role="status" className="text-[14px] text-exito-texto">
-            {roles.ok}
-          </p>
-        ) : null}
-
         <form action={guardarRoles} className="grid gap-4">
           <input type="hidden" name="userId" value={usuario.id} />
 
@@ -96,12 +93,6 @@ export function AccionesDeUsuario({ usuario }: { usuario: UsuarioListado }) {
         </div>
 
         <FormError id="estado-error">{estado.error}</FormError>
-        {estado.ok ? (
-          <p role="status" className="text-[14px] text-exito-texto">
-            {estado.ok}
-          </p>
-        ) : null}
-
         <form action={cambiarEstado}>
           <input type="hidden" name="userId" value={usuario.id} />
           <input type="hidden" name="status" value={activo ? 'inactive' : 'active'} />

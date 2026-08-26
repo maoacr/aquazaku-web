@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useId, useRef, useState } from 'react'
+import { useActionState, useId, useState } from 'react'
 import {
   ajustarInsumoAction,
   cargarEquivalenciaAction,
@@ -10,7 +10,7 @@ import {
 } from '@/app/(app)/modulos/insumos/actions'
 import { FormError } from '@/components/auth/form-error'
 import type { InsumoListado } from '@/lib/api-types'
-import { avisarExito } from '@/lib/avisos'
+import { limpiezaKey, useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
 
 const INICIAL: EstadoDeFormulario = {}
 
@@ -28,63 +28,6 @@ function Resultado({ estado }: { estado: EstadoDeFormulario }) {
   useAvisoDeExito(estado)
 
   return <FormError id="insumo-error">{estado.error}</FormError>
-}
-
-/**
- * Dispara el toast UNA vez por éxito.
- *
- * Se ancla al `token` y no al mensaje: dos entradas seguidas con el mismo saldo
- * darían el mismo texto, y sin el token la segunda no avisaría. El token cambia
- * siempre.
- *
- * `useEffect` acá sí corresponde: mostrar un toast es un efecto externo al
- * render, no un valor derivado. La limpieza de los campos —que SÍ es derivada—
- * va por `key`, sin efecto.
- */
-function useAvisoDeExito(estado: EstadoDeFormulario): void {
-  const ultimoAvisado = useRef<string | undefined>(undefined)
-
-  useEffect(() => {
-    if (!estado.token || !estado.ok) return
-    if (estado.token === ultimoAvisado.current) return
-
-    ultimoAvisado.current = estado.token
-    avisarExito(estado.ok)
-  }, [estado.token, estado.ok])
-}
-
-/**
- * Vuelve el estado controlado a su valor inicial cuando la acción tuvo éxito.
- *
- * Corre DURANTE el render, no en un `useEffect`. Es el patrón que React
- * documenta para ajustar estado cuando cambia una prop: React descarta el
- * render en curso y vuelve a empezar con el estado nuevo, sin pintar el
- * intermedio y sin la cascada de renders que trae sincronizar con un efecto.
- *
- * Los campos NO controlados —los que no alimentan una vista previa— se limpian
- * con `limpiezaKey`, que es todavía más barato: cambiar el `key` los remonta.
- */
-function useLimpiezaAlRegistrar(token: string | undefined, limpiar: () => void): void {
-  const [ultimo, setUltimo] = useState(token)
-
-  if (token !== ultimo) {
-    setUltimo(token)
-    if (token) limpiar()
-  }
-}
-
-/**
- * El `key` que limpia un campo al registrar.
- *
- * Se DERIVA del token que devuelve la acción, sin `useEffect`: sincronizar esto
- * con un efecto dispara renders en cascada, y el dato ya estaba ahí.
- *
- * El nombre del campo va en la clave porque estas `key` se aplican a elementos
- * HERMANOS: con la misma clave en dos hermanos, React avisa «two children with
- * the same key» y el formulario se rompe de formas que no se explican solas.
- */
-function limpiezaKey(estado: EstadoDeFormulario, campo: string): string {
-  return `${campo}-${estado.token ?? 'inicial'}`
 }
 
 /** El desplegable de insumos, compartido por los tres formularios de movimiento. */

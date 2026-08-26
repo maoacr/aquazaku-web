@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { apiServerFetchRaw } from '@/lib/api-server'
 import { cuerpoDeError } from '@/lib/form-errors'
+import { type EstadoDeFormulario, exito } from '@/lib/formulario'
 
 /**
  * Mutaciones de la pantalla de insumos — M3.
@@ -16,30 +17,6 @@ import { cuerpoDeError } from '@/lib/form-errors'
  */
 
 const RUTA = '/modulos/insumos'
-
-export interface EstadoDeFormulario {
-  error?: string
-  ok?: string
-  /**
-   * Cambia en cada éxito, y de ahí se DERIVA la limpieza de los campos.
-   *
-   * Una Server Action no vacía un campo controlado, y el texto anterior se
-   * queda: registrar dos entradas seguidas obligaba a borrar a mano lo ya
-   * enviado. Peor: dejar «5» en el campo de kilos invita a mandarlo otra vez
-   * sin querer, que en un inventario es un descuadre.
-   *
-   * Con ERROR no hay token, así que lo escrito se conserva: hacer reescribir el
-   * motivo por un error de cantidad castiga a quien ya pensó la explicación.
-   *
-   * Es el mismo mecanismo que usa `stock/formularios.tsx`.
-   */
-  token?: string
-}
-
-/** Un éxito, con el token que dispara la limpieza de los campos. */
-function exito(mensaje: string): EstadoDeFormulario {
-  return { ok: mensaje, token: crypto.randomUUID() }
-}
 
 /**
  * Traduce un fallo de `api/` a algo accionable.
@@ -181,3 +158,5 @@ export async function cargarEquivalenciaAction(
   revalidatePath(RUTA)
   return exito('Equivalencia guardada. Desde ahora se puede registrar la compra en kilos.')
 }
+
+export type { EstadoDeFormulario }

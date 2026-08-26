@@ -1,5 +1,6 @@
 'use client'
 
+import { useAvisoDeExito } from '@/lib/formulario-cliente'
 import { useActionState } from 'react'
 import { FormError } from '@/components/auth/form-error'
 import { crearUsuarioAction, type EstadoDeFormulario } from '@/app/(app)/modulos/usuarios/actions'
@@ -22,19 +23,19 @@ const INICIAL: EstadoDeFormulario = {}
  */
 export function AltaDeUsuario() {
   const [estado, accion, enviando] = useActionState(crearUsuarioAction, INICIAL)
+  useAvisoDeExito(estado)
 
+  /*
+   * El `key` remonta el formulario al crear: son campos no controlados y dejar
+   * lo anterior escrito invita a crear el mismo registro dos veces. Con error
+   * no hay token, así que lo escrito se conserva.
+   */
   return (
-    <form action={accion} className="aq-tarjeta grid gap-5 p-5">
+    <form key={estado.token ?? 'inicial'} action={accion} className="aq-tarjeta grid gap-5 p-5">
       {/* El título del formulario es un título, no un rótulo micro en gris. */}
       <h2 className="aq-titulo-tarjeta text-principal">Nuevo usuario</h2>
 
       <FormError id="alta-error">{estado.error}</FormError>
-      {estado.ok ? (
-        <p role="status" className="text-[14px] text-exito-texto">
-          {estado.ok}
-        </p>
-      ) : null}
-
       <div className="grid gap-4 sm:grid-cols-3">
         <label className="aq-etiqueta-campo">
           <span>Nombre</span>

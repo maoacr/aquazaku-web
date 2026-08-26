@@ -1,5 +1,6 @@
 'use client'
 
+import { useAvisoDeExito } from '@/lib/formulario-cliente'
 import { useActionState, useState } from 'react'
 import {
   ajustarLoteAction,
@@ -8,33 +9,11 @@ import {
   type EstadoDeFormulario,
 } from '@/app/(app)/modulos/stock/actions'
 import { FormError } from '@/components/auth/form-error'
+import { limpiezaKey } from '@/lib/formulario-cliente'
 import type { LoteConSaldo, ResumenDeStock } from '@/lib/api-types'
 import { LARGO_MINIMO_MOTIVO } from '@/lib/motivos'
 
 const INICIAL: EstadoDeFormulario = {}
-
-/**
- * `key` que cambia con cada operación exitosa, para limpiar los campos.
- *
- * Una Server Action no vacía un campo controlado, y el texto anterior se queda:
- * registrar dos ajustes seguidos obligaba a borrar a mano lo ya enviado. Peor:
- * dejar «-8» en el campo invita a mandarlo otra vez sin querer, que en un
- * inventario es un descuadre.
- *
- * Se **deriva** del token que devuelve la acción, sin `useEffect`. Sincronizar
- * esto con un efecto dispara renders en cascada — y además obliga a razonar
- * sobre el orden en que corren, cuando el dato ya estaba ahí.
- *
- * Con error no hay token, así que **lo escrito se conserva**: hacer reescribir
- * el motivo por un error de cantidad castiga a quien ya pensó la explicación.
- */
-function limpiezaKey(estado: EstadoDeFormulario, campo: string): string {
-  // El nombre del campo va en la clave porque estas `key` se aplican a
-  // elementos HERMANOS. Con la misma clave en dos hermanos, React avisa
-  // «two children with the same key» y —textual— «puede duplicar u omitir
-  // children»: el formulario se rompe de formas que no se explican solas.
-  return `${campo}-${estado.token ?? 'inicial'}`
-}
 
 const campo =
   'aq-campo'
@@ -56,15 +35,6 @@ function Resultado({ estado }: { estado: EstadoDeFormulario }) {
   return (
     <>
       <FormError id="stock-error">{estado.error}</FormError>
-      {estado.ok ? (
-        // Verde reservado: acá sí significa "quedó registrado y cuadra".
-        <p
-          role="status"
-          className="rounded-md border border-exito-borde bg-exito-fondo px-3 py-2 text-[14px] text-exito-texto"
-        >
-          {estado.ok}
-        </p>
-      ) : null}
     </>
   )
 }
@@ -109,6 +79,7 @@ function CampoDeMotivo({
 
 export function EntradaDeInventario({ productos }: { productos: ResumenDeStock[] }) {
   const [estado, accion, enviando] = useActionState(registrarEntradaAction, INICIAL)
+  useAvisoDeExito(estado)
   const generacion = (campo: string) => limpiezaKey(estado, campo)
   const hoy = new Date().toISOString().slice(0, 10)
 

@@ -1,9 +1,9 @@
 'use client'
 
-import { useActionState, useEffect, useRef } from 'react'
+import { useActionState } from 'react'
 import { crearInsumoAction, type EstadoDeFormulario } from '@/app/(app)/modulos/insumos/actions'
 import { FormError } from '@/components/auth/form-error'
-import { avisarExito } from '@/lib/avisos'
+import { useAvisoDeExito } from '@/lib/formulario-cliente'
 
 const INICIAL: EstadoDeFormulario = {}
 
@@ -21,14 +21,7 @@ const INICIAL: EstadoDeFormulario = {}
  */
 export function AltaDeInsumo() {
   const [estado, accion, enviando] = useActionState(crearInsumoAction, INICIAL)
-  const ultimoAvisado = useRef<string | undefined>(undefined)
-
-  // El éxito se va como toast; el error se queda junto al formulario.
-  useEffect(() => {
-    if (!estado.token || !estado.ok || estado.token === ultimoAvisado.current) return
-    ultimoAvisado.current = estado.token
-    avisarExito(estado.ok)
-  }, [estado.token, estado.ok])
+  useAvisoDeExito(estado)
 
   return (
     /*

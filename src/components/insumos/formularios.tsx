@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useId, useState } from 'react'
+import { useActionState, useEffect, useId, useRef, useState } from 'react'
 import {
   ajustarInsumoAction,
   cargarEquivalenciaAction,
@@ -10,21 +10,81 @@ import {
 } from '@/app/(app)/modulos/insumos/actions'
 import { FormError } from '@/components/auth/form-error'
 import type { InsumoListado } from '@/lib/api-types'
+import { avisarExito } from '@/lib/avisos'
 
 const INICIAL: EstadoDeFormulario = {}
 
-/** El aviso de resultado, igual en los cuatro formularios. */
+/**
+ * El aviso de resultado, igual en los cuatro formularios.
+ *
+ * El ERROR se queda en pantalla, junto al formulario: un error que desaparece
+ * obliga a recordar qué decía mientras se corrige.
+ *
+ * El ÉXITO se va como toast. No hace falta volver a leerlo, y dejarlo fijo
+ * ensuciaba el formulario con la confirmación del movimiento anterior mientras
+ * se cargaba el siguiente.
+ */
 function Resultado({ estado }: { estado: EstadoDeFormulario }) {
-  return (
-    <>
-      <FormError id="insumo-error">{estado.error}</FormError>
-      {estado.ok ? (
-        <p role="status" className="text-[14px] text-exito-texto">
-          {estado.ok}
-        </p>
-      ) : null}
-    </>
-  )
+  useAvisoDeExito(estado)
+
+  return <FormError id="insumo-error">{estado.error}</FormError>
+}
+
+/**
+ * Dispara el toast UNA vez por éxito.
+ *
+ * Se ancla al `token` y no al mensaje: dos entradas seguidas con el mismo saldo
+ * darían el mismo texto, y sin el token la segunda no avisaría. El token cambia
+ * siempre.
+ *
+ * `useEffect` acá sí corresponde: mostrar un toast es un efecto externo al
+ * render, no un valor derivado. La limpieza de los campos —que SÍ es derivada—
+ * va por `key`, sin efecto.
+ */
+function useAvisoDeExito(estado: EstadoDeFormulario): void {
+  const ultimoAvisado = useRef<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (!estado.token || !estado.ok) return
+    if (estado.token === ultimoAvisado.current) return
+
+    ultimoAvisado.current = estado.token
+    avisarExito(estado.ok)
+  }, [estado.token, estado.ok])
+}
+
+/**
+ * Vuelve el estado controlado a su valor inicial cuando la acción tuvo éxito.
+ *
+ * Corre DURANTE el render, no en un `useEffect`. Es el patrón que React
+ * documenta para ajustar estado cuando cambia una prop: React descarta el
+ * render en curso y vuelve a empezar con el estado nuevo, sin pintar el
+ * intermedio y sin la cascada de renders que trae sincronizar con un efecto.
+ *
+ * Los campos NO controlados —los que no alimentan una vista previa— se limpian
+ * con `limpiezaKey`, que es todavía más barato: cambiar el `key` los remonta.
+ */
+function useLimpiezaAlRegistrar(token: string | undefined, limpiar: () => void): void {
+  const [ultimo, setUltimo] = useState(token)
+
+  if (token !== ultimo) {
+    setUltimo(token)
+    if (token) limpiar()
+  }
+}
+
+/**
+ * El `key` que limpia un campo al registrar.
+ *
+ * Se DERIVA del token que devuelve la acción, sin `useEffect`: sincronizar esto
+ * con un efecto dispara renders en cascada, y el dato ya estaba ahí.
+ *
+ * El nombre del campo va en la clave porque estas `key` se aplican a elementos
+ * HERMANOS: con la misma clave en dos hermanos, React avisa «two children with
+ * the same key» y el formulario se rompe de formas que no se explican solas.
+ */
+function limpiezaKey(estado: EstadoDeFormulario, campo: string): string {
+  return `${campo}-${estado.token ?? 'inicial'}`
 }
 
 /** El desplegable de insumos, compartido por los tres formularios de movimiento. */
@@ -72,6 +132,12 @@ export function EntradaDeInsumo({ insumos }: { insumos: InsumoListado[] }) {
   const [insumoId, setInsumoId] = useState('')
   const [medida, setMedida] = useState<'unidad' | 'kilo'>('unidad')
   const [valor, setValor] = useState('')
+
+  useLimpiezaAlRegistrar(estado.token, () => {
+    setInsumoId('')
+    setMedida('unidad')
+    setValor('')
+  })
 
   const insumo = insumos.find((i) => i.id === insumoId)
   const equivalencia = insumo?.equivalenciaPorKilo ? Number(insumo.equivalenciaPorKilo) : null
@@ -166,6 +232,11 @@ export function AjusteDeInsumo({ insumos }: { insumos: InsumoListado[] }) {
   const [motivo, setMotivo] = useState('')
   const ayudaId = useId()
 
+  useLimpiezaAlRegistrar(estado.token, () => {
+    setInsumoId('')
+    setMotivo('')
+  })
+
   const faltan = Math.max(0, 10 - motivo.trim().length)
 
   return (
@@ -184,7 +255,15 @@ export function AjusteDeInsumo({ insumos }: { insumos: InsumoListado[] }) {
 
         <label className="aq-etiqueta-campo">
           <span>Diferencia</span>
-          <input name="diferencia" type="number" required step="1" placeholder="-8" className="aq-campo" />
+          <input
+            key={limpiezaKey(estado, 'diferencia')}
+            name="diferencia"
+            type="number"
+            required
+            step="1"
+            placeholder="-8"
+            className="aq-campo"
+          />
         </label>
       </div>
 
@@ -225,6 +304,11 @@ export function DescarteDeInsumo({ insumos }: { insumos: InsumoListado[] }) {
   const [insumoId, setInsumoId] = useState('')
   const [causa, setCausa] = useState('')
 
+  useLimpiezaAlRegistrar(estado.token, () => {
+    setInsumoId('')
+    setCausa('')
+  })
+
   return (
     <form action={accion} className="aq-tarjeta grid gap-4 p-5">
       <div>
@@ -241,7 +325,15 @@ export function DescarteDeInsumo({ insumos }: { insumos: InsumoListado[] }) {
 
         <label className="aq-etiqueta-campo">
           <span>Unidades</span>
-          <input name="cantidad" type="number" required min="1" step="1" className="aq-campo" />
+          <input
+            key={limpiezaKey(estado, 'cantidad')}
+            name="cantidad"
+            type="number"
+            required
+            min="1"
+            step="1"
+            className="aq-campo"
+          />
         </label>
 
         <label className="aq-etiqueta-campo">
@@ -316,7 +408,13 @@ export function CargarEquivalencia({ insumos }: { insumos: InsumoListado[] }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="aq-etiqueta-campo">
           <span>Insumo</span>
-          <select name="insumoId" required defaultValue="" className="aq-campo">
+          <select
+            key={limpiezaKey(estado, 'insumo-equivalencia')}
+            name="insumoId"
+            required
+            defaultValue=""
+            className="aq-campo"
+          >
             <option value="">Elija uno</option>
             {sinMedir.map((i) => (
               <option key={i.id} value={i.id}>
@@ -329,6 +427,7 @@ export function CargarEquivalencia({ insumos }: { insumos: InsumoListado[] }) {
         <label className="aq-etiqueta-campo">
           <span>Unidades por kilo</span>
           <input
+            key={limpiezaKey(estado, 'equivalencia')}
             name="equivalenciaPorKilo"
             type="number"
             required

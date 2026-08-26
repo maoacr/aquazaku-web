@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google'
+import { Toaster } from 'sileo'
 import { atributoDeTema, leerTema } from '@/lib/tema'
 import './globals.css'
 
@@ -55,7 +56,28 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
       {...atributoDeTema(tema)}
       className={`${plexSans.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+
+        {/*
+          Los avisos temporales del sistema.
+
+          El tema se le pasa RESUELTO, no en `system`. La preferencia vive en
+          una cookie y ya se leyó arriba: dejar que el toast consulte el sistema
+          operativo por su cuenta haría que alguien que eligió claro con el SO en
+          oscuro viera un toast oscuro sobre una app clara.
+
+          `bottom-right` en escritorio: arriba está el chrome flotante, y un
+          toast ahí taparía justamente los controles. En teléfono cae encima de
+          la barra de navegación inferior, así que la posición se corrige por
+          `offset` desde el CSS del propio toaster.
+        */}
+        <Toaster
+          position="bottom-right"
+          theme={tema === 'sistema' ? 'system' : tema === 'oscuro' ? 'dark' : 'light'}
+          offset={{ bottom: '5.5rem', right: '1rem' }}
+        />
+      </body>
     </html>
   )
 }

@@ -207,6 +207,23 @@
 
   /* La lámina del menú. Más cuerpo que una tarjeta: sostiene la navegación. */
   --aq-panel-lamina: rgb(255 255 255 / 0.55);
+
+  /*
+   * ── El panel NO lleva resplandor en modo claro ────────────────────────────
+   *
+   * El brillo del vidrio es un radial blanco al 0,85 medido en porcentaje del
+   * elemento. Sobre el panel del menú —angosto y altísimo— eso cubre una
+   * superficie enorme, y en claro, donde el panel ya es casi blanco, el
+   * resultado es una masa que se lee como si desbordara sobre el contenido.
+   *
+   * En oscuro el mismo brillo funciona: ahí la lámina es ahumada y el
+   * resplandor dibuja el volumen del vidrio en vez de aplanarlo.
+   *
+   * Por eso se apaga SOLO acá y solo en claro. La sombra se conserva: es lo que
+   * despega el panel del agua, y era lo único que ese resplandor aportaba.
+   */
+  --aq-panel-luz:   transparent;
+  --aq-panel-sheen: transparent;
   --aq-panel-canto:  rgb(110 155 175 / 0.24);
   --aq-panel-brillo: rgb(255 255 255 / 0.7);
   --aq-onda-color:   rgb(60 190 170 / 0.10);
@@ -481,6 +498,14 @@
   --aq-tarjeta-contacto:     rgb(0 0 0 / 0.4);
   --aq-agua: linear-gradient(168deg, #0B1F2C 0%, #0E3540 46%, #0F3B31 100%);
   --aq-panel-lamina: rgb(12 26 34 / 0.5);
+
+  /*
+   * En oscuro el resplandor SÍ vuelve: sobre una lámina ahumada dibuja el
+   * volumen del vidrio en vez de aplanarlo. Es en claro donde molesta, porque
+   * ahí el panel ya es casi blanco y el brillo lo convierte en una masa.
+   */
+  --aq-panel-luz:   var(--aq-tarjeta-luz);
+  --aq-panel-sheen: var(--aq-tarjeta-sheen);
   --aq-panel-canto:  rgb(150 230 225 / 0.16);
   --aq-panel-brillo: rgb(180 240 240 / 0.1);
   --aq-onda-color:   rgb(92 217 204 / 0.09);
@@ -982,6 +1007,8 @@ body {
   --aq-lamina-radio: var(--aq-radio-xl);
   --aq-lamina-brillo: var(--aq-panel-brillo);
   --aq-lamina-canto-luz: var(--aq-panel-canto);
+  --aq-lamina-luz:   var(--aq-panel-luz);
+  --aq-lamina-sheen: var(--aq-panel-sheen);
 }
 
 /** El módulo activo del menú: pieza chica, canto más presente. */
@@ -1702,6 +1729,14 @@ textarea.aq-campo {
   --aq-tarjeta-contacto:     rgb(0 0 0 / 0.4);
   --aq-agua: linear-gradient(168deg, #0B1F2C 0%, #0E3540 46%, #0F3B31 100%);
   --aq-panel-lamina: rgb(12 26 34 / 0.5);
+
+  /*
+   * En oscuro el resplandor SÍ vuelve: sobre una lámina ahumada dibuja el
+   * volumen del vidrio en vez de aplanarlo. Es en claro donde molesta, porque
+   * ahí el panel ya es casi blanco y el brillo lo convierte en una masa.
+   */
+  --aq-panel-luz:   var(--aq-tarjeta-luz);
+  --aq-panel-sheen: var(--aq-tarjeta-sheen);
   --aq-panel-canto:  rgb(150 230 225 / 0.16);
   --aq-panel-brillo: rgb(180 240 240 / 0.1);
   --aq-onda-color:   rgb(92 217 204 / 0.09);

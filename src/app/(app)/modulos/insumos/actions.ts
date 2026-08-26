@@ -20,6 +20,25 @@ const RUTA = '/modulos/insumos'
 export interface EstadoDeFormulario {
   error?: string
   ok?: string
+  /**
+   * Cambia en cada éxito, y de ahí se DERIVA la limpieza de los campos.
+   *
+   * Una Server Action no vacía un campo controlado, y el texto anterior se
+   * queda: registrar dos entradas seguidas obligaba a borrar a mano lo ya
+   * enviado. Peor: dejar «5» en el campo de kilos invita a mandarlo otra vez
+   * sin querer, que en un inventario es un descuadre.
+   *
+   * Con ERROR no hay token, así que lo escrito se conserva: hacer reescribir el
+   * motivo por un error de cantidad castiga a quien ya pensó la explicación.
+   *
+   * Es el mismo mecanismo que usa `stock/formularios.tsx`.
+   */
+  token?: string
+}
+
+/** Un éxito, con el token que dispara la limpieza de los campos. */
+function exito(mensaje: string): EstadoDeFormulario {
+  return { ok: mensaje, token: crypto.randomUUID() }
 }
 
 /**
@@ -40,7 +59,10 @@ async function mensajeDeError(res: Response, generico: string): Promise<string> 
 }
 
 /** `{ ok: false }` no es un fallo: es que no alcanzaba. Se dice con el número. */
-async function leerResultado(res: Response, exito: (saldo: number) => string): Promise<EstadoDeFormulario> {
+async function leerResultado(
+  res: Response,
+  mensajeDeExito: (saldo: number) => string,
+): Promise<EstadoDeFormulario> {
   const cuerpo = (await res.json()) as
     | { ok: true; saldo: number }
     | { ok: false; disponible: number }
@@ -52,7 +74,7 @@ async function leerResultado(res: Response, exito: (saldo: number) => string): P
   }
 
   revalidatePath(RUTA)
-  return { ok: exito(cuerpo.saldo) }
+  return exito(mensajeDeExito(cuerpo.saldo))
 }
 
 export async function crearInsumoAction(
@@ -77,7 +99,7 @@ export async function crearInsumoAction(
   if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos crear el insumo.') }
 
   revalidatePath(RUTA)
-  return { ok: 'Insumo creado.' }
+  return exito('Insumo creado.')
 }
 
 export async function registrarEntradaAction(
@@ -157,7 +179,5 @@ export async function cargarEquivalenciaAction(
   if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos guardar la equivalencia.') }
 
   revalidatePath(RUTA)
-  return {
-    ok: 'Equivalencia guardada. Desde ahora se puede registrar la compra en kilos.',
-  }
+  return exito('Equivalencia guardada. Desde ahora se puede registrar la compra en kilos.')
 }

@@ -1,8 +1,9 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
 import { crearInsumoAction, type EstadoDeFormulario } from '@/app/(app)/modulos/insumos/actions'
 import { FormError } from '@/components/auth/form-error'
+import { avisarExito } from '@/lib/avisos'
 
 const INICIAL: EstadoDeFormulario = {}
 
@@ -20,9 +21,22 @@ const INICIAL: EstadoDeFormulario = {}
  */
 export function AltaDeInsumo() {
   const [estado, accion, enviando] = useActionState(crearInsumoAction, INICIAL)
+  const ultimoAvisado = useRef<string | undefined>(undefined)
+
+  // El éxito se va como toast; el error se queda junto al formulario.
+  useEffect(() => {
+    if (!estado.token || !estado.ok || estado.token === ultimoAvisado.current) return
+    ultimoAvisado.current = estado.token
+    avisarExito(estado.ok)
+  }, [estado.token, estado.ok])
 
   return (
-    <form action={accion} className="aq-tarjeta grid gap-5 p-5">
+    /*
+      El `key` del formulario ENTERO lo remonta al crear: son cuatro campos no
+      controlados y dejar el código anterior invita a crear el mismo insumo dos
+      veces. Con error no hay token, así que lo escrito se conserva.
+    */
+    <form key={estado.token ?? 'inicial'} action={accion} className="aq-tarjeta grid gap-5 p-5">
       <div>
         <h2 className="aq-titulo-tarjeta text-principal">Nuevo insumo</h2>
         <p className="mt-1 text-[13px] text-tenue">
@@ -31,11 +45,6 @@ export function AltaDeInsumo() {
       </div>
 
       <FormError id="alta-insumo-error">{estado.error}</FormError>
-      {estado.ok ? (
-        <p role="status" className="text-[14px] text-exito-texto">
-          {estado.ok}
-        </p>
-      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="aq-etiqueta-campo">

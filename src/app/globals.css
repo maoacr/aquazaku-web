@@ -207,17 +207,6 @@
 
   /* La lámina del menú. Más cuerpo que una tarjeta: sostiene la navegación. */
   --aq-panel-lamina: rgb(255 255 255 / 0.55);
-  /*
-   * El riel del menú CUANDO se despliega sobre main.
-   *
-   * Más opaco que `--aq-panel-lamina` a propósito: colapsado el riel vive en su
-   * propia pista y detrás no pasa nada, pero expandido se superpone al texto de
-   * la pantalla. Con 0,5 ese texto se transparentaba por debajo del menú.
-   *
-   * Va acompañado de desenfoque, así que no necesita ser opaco del todo: el
-   * fondo sigue dejando ver que hay agua atrás, sin dejar leer lo que tapa.
-   */
-  --aq-menu-desplegado-fondo: rgb(255 255 255 / 0.9);
 
   /*
    * ── El panel NO lleva resplandor en modo claro ────────────────────────────
@@ -509,7 +498,6 @@
   --aq-tarjeta-contacto:     rgb(0 0 0 / 0.4);
   --aq-agua: linear-gradient(168deg, #0B1F2C 0%, #0E3540 46%, #0F3B31 100%);
   --aq-panel-lamina: rgb(12 26 34 / 0.5);
-  --aq-menu-desplegado-fondo: rgb(10 22 30 / 0.92);
 
   /*
    * En oscuro el resplandor SÍ vuelve: sobre una lámina ahumada dibuja el
@@ -757,20 +745,28 @@ body {
   }
 
   /*
-   * ── El hover NO reflota: se superpone ──────────────────────────────────────
+   * ── El hover REFLOTA: main se corre con el menú ───────────────────────────
    *
-   * Es la decisión que separa «natural» de «insoportable». Si el hover
-   * expandiera la columna, el menú se abriría solo cada vez que el mouse cruza
-   * por ahí y toda la pantalla se correría 128 px. Se siente como que la
-   * interfaz pelea.
+   * Durante un tiempo el hover se superponía y `main` no se enteraba. La idea
+   * era evitar que la pantalla se moviera al cruzar el mouse por el borde.
    *
-   * Acá el riel conserva su lugar en la grilla y el panel crece ENCIMA del
-   * contenido. Nada se mueve; solo aparece algo arriba.
+   * En uso no funcionó: el panel quedaba flotando sobre el contenido y se leía
+   * como una capa pegada encima, no como un menú que se abre. Aquazaku pidió
+   * que todo reaccione a la misma apertura, y tiene razón — un menú que empuja
+   * es una sola cosa moviéndose; uno que se superpone son dos cosas, una tapando
+   * a la otra.
+   *
+   * La pista de la grilla crece con el hover igual que con el toggle explícito,
+   * así que hay UN solo comportamiento de apertura y no dos parecidos.
    *
    * `width` y no `transform: scaleX()`: escalar deformaría los iconos y el
-   * texto. Es un ancho chico sobre un elemento con `contain`, así que el costo
-   * está acotado.
+   * texto.
    */
+  .aq-armazon:has(> .aq-menu-colapsado:hover),
+  .aq-armazon:has(> .aq-menu-colapsado:focus-within) {
+    --aq-menu-ancho: 16rem;
+  }
+
   .aq-menu-colapsado {
     width: 4.5rem;
     contain: layout;
@@ -798,10 +794,6 @@ body {
   .aq-menu-colapsado:hover,
   .aq-menu-colapsado:focus-within {
     width: 16rem;
-    z-index: 20;
-    background: var(--aq-menu-desplegado-fondo);
-    -webkit-backdrop-filter: blur(16px) saturate(150%);
-    backdrop-filter: blur(16px) saturate(150%);
   }
 
   /*
@@ -862,7 +854,15 @@ body {
     padding-inline: 0.75rem;
   }
 
-  .aq-menu-colapsado .aq-menu-encabezado {
+  /*
+   * Las DOS reglas que anulan el padding van atadas al estado colapsado.
+   *
+   * Guardar solo la del ancla dejaba el encabezado sin sus 12 px, y el isotipo
+   * caía en x = 16 mientras los iconos de los links caían en x = 36: nav(12) +
+   * contenedor(12) + link(12). Veinte pixeles de diferencia entre el logo y la
+   * columna de iconos que tiene justo debajo.
+   */
+  .aq-menu-colapsado:not(:hover):not(:focus-within) .aq-menu-encabezado {
     padding-inline: 0;
   }
 
@@ -883,6 +883,16 @@ body {
     justify-content: center;
     width: 4.25rem;
     padding-inline: 0;
+  }
+
+  /*
+   * Expandido, el ancla del logo lleva el MISMO sangrado que un link (12 px).
+   * Así el borde izquierdo del isotipo cae exactamente sobre el de los iconos
+   * de abajo, que es contra lo que el ojo lo compara — no contra el panel.
+   */
+  .aq-menu-colapsado:hover .aq-menu-encabezado a,
+  .aq-menu-colapsado:focus-within .aq-menu-encabezado a {
+    padding-inline: 0.75rem;
   }
 
   .aq-menu-colapsado .aq-menu-toggle {
@@ -1974,7 +1984,6 @@ textarea.aq-campo {
   --aq-tarjeta-contacto:     rgb(0 0 0 / 0.4);
   --aq-agua: linear-gradient(168deg, #0B1F2C 0%, #0E3540 46%, #0F3B31 100%);
   --aq-panel-lamina: rgb(12 26 34 / 0.5);
-  --aq-menu-desplegado-fondo: rgb(10 22 30 / 0.92);
 
   /*
    * En oscuro el resplandor SÍ vuelve: sobre una lámina ahumada dibuja el

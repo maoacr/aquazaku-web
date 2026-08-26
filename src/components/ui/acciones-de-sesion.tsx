@@ -2,6 +2,7 @@ import { LogOut, Moon, Sun, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { cerrarSesionAction } from '@/app/(app)/actions'
 import { cambiarTemaAction } from '@/app/actions-tema'
+import { CabeceraAlScroll } from '@/components/ui/cabecera-al-scroll'
 
 /**
  * Los tres controles de la persona que entró: perfil, tema y salida.
@@ -15,7 +16,12 @@ import { cambiarTemaAction } from '@/app/actions-tema'
  */
 export function AccionesDeSesion({ nombre }: { nombre: string }) {
   return (
-    <div className="ml-auto flex items-center gap-1">
+    /*
+      La lámina aparece SOLO al scrollear. Arriba de todo los tres controles
+      flotan sobre la misma agua que el contenido; cuando el contenido pasa por
+      debajo, la lámina es lo que los separa de lo que se desplaza.
+    */
+    <CabeceraAlScroll>
       <Link
         href="/perfil"
         className={estilo}
@@ -39,7 +45,7 @@ export function AccionesDeSesion({ nombre }: { nombre: string }) {
           <LogOut aria-hidden className="size-5" />
         </button>
       </form>
-    </div>
+    </CabeceraAlScroll>
   )
 }
 

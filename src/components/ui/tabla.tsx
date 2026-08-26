@@ -18,17 +18,31 @@ import type { ReactNode } from 'react'
 
 export function Tabla({ children }: { children: ReactNode }) {
   return (
-    // `overflow-x-auto` para que en un teléfono la tabla scrollee sola en vez
-    // de estirar la página entera (mobile-first).
-    <div className="overflow-x-auto rounded-lg border border-sutil">
-      <table className="w-full border-collapse text-sm">{children}</table>
+    /*
+      La tabla es una LÁMINA del sistema, no un recuadro con borde.
+
+      Estaba como `rounded-lg border border-sutil`: un rectángulo dibujado
+      encima del agua, sin relación con las tarjetas ni con el menú. Mismo
+      defecto que tenían los formularios antes de `.aq-campo`.
+
+      El scroll horizontal vive en un div INTERNO y no en la lámina: `overflow`
+      sobre el vidrio convertiría la lámina en contenedor de scroll, y sus capas
+      —el brillo y el canto— tendrían que competir con el contenido que se
+      desplaza. Separarlos deja que cada uno haga una sola cosa.
+    */
+    <div className="aq-tarjeta overflow-hidden">
+      {/* `overflow-x-auto` para que en un teléfono la tabla scrollee sola en vez
+          de estirar la página entera (mobile-first). */}
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-sm">{children}</table>
+      </div>
     </div>
   )
 }
 
 export function Encabezados({ children }: { children: ReactNode }) {
   return (
-    <thead className="aq-micro bg-fondo text-left text-secundario">
+    <thead className="aq-tabla-encabezado aq-micro text-left text-tenue">
       <tr>{children}</tr>
     </thead>
   )
@@ -39,14 +53,14 @@ export function Th({ children }: { children: ReactNode }) {
 }
 
 export function Td({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <td className={`border-t border-sutil px-3 py-2 align-top ${className}`}>{children}</td>
+  return <td className={`aq-tabla-fila px-3 py-2.5 align-top ${className}`}>{children}</td>
 }
 
 /** Fila única que ocupa toda la tabla cuando no hay datos que mostrar. */
 export function SinResultados({ columnas, children }: { columnas: number; children: ReactNode }) {
   return (
     <tr>
-      <td colSpan={columnas} className="border-t border-sutil px-3 py-8 text-center text-tenue">
+      <td colSpan={columnas} className="aq-tabla-fila px-3 py-8 text-center text-tenue">
         {children}
       </td>
     </tr>

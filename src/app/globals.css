@@ -104,6 +104,10 @@
    * es interna. En claro eso es un blanco más frío que la tarjeta; en oscuro,
    * un hueco más profundo que el agua.
    */
+  /* La tabla: el encabezado se separa con luz, no con un bloque de color. */
+  --aq-tabla-encabezado-fondo: rgb(255 255 255 / 0.55);
+  --aq-tabla-linea:            rgb(110 155 175 / 0.22);
+
   --aq-campo-fondo:      rgb(255 255 255 / 0.72);
   --aq-campo-canto:      rgb(110 155 175 / 0.38);
   --aq-campo-canto-vivo: rgb(10 140 190 / 0.6);
@@ -430,6 +434,9 @@
   --aq-accion-suave:     #8CF0FA;
 
   /* El campo hundido, en agua profunda. Ver el bloque `:root`. */
+  --aq-tabla-encabezado-fondo: rgb(8 20 28 / 0.55);
+  --aq-tabla-linea:            rgb(140 200 220 / 0.14);
+
   --aq-campo-fondo:      rgb(4 14 20 / 0.42);
   --aq-campo-canto:      rgb(140 200 220 / 0.22);
   --aq-campo-canto-vivo: rgb(140 240 250 / 0.55);
@@ -1260,6 +1267,91 @@ input:not([type='checkbox'], [type='radio'], [type='hidden']) {
 }
 
 /**
+ * ── La lámina de la cabecera, que aparece al scrollear ──────────────────────
+ *
+ * Arriba de todo no hay superficie: los tres controles flotan sobre la misma
+ * agua que el contenido, que es lo que son —chrome, no una sección—. Darles
+ * lámina ahí dibuja una barra que parte la pantalla sin que nada la pida.
+ *
+ * Cuando el contenido pasa por debajo, la lámina aparece y los separa: sin ella
+ * los iconos se mezclan con lo que scrollea y por un momento no se sabe qué es
+ * chrome y qué es dato.
+ *
+ * Se transiciona `opacity` y `box-shadow`, no `background`: las dos primeras se
+ * resuelven en el compositor. Animar el fondo con un gradiente detrás fue lo que
+ * costó 17 fps la primera vez que se armó el vidrio.
+ */
+.aq-cabecera-flotante {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--aq-radio-pill);
+  padding-inline: 0.25rem;
+}
+
+/*
+ * La lámina va en un `::before` y no en el fondo del elemento: así se puede
+ * desvanecer con `opacity` sin arrastrar a los iconos, que tienen que quedarse
+ * opacos todo el tiempo.
+ */
+.aq-cabecera-flotante::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--aq-lamina-fondo, var(--aq-tarjeta-fondo));
+  box-shadow:
+    inset 0 1px 0 0 var(--aq-tarjeta-brillo),
+    0 4px 14px -8px var(--aq-tarjeta-sombra);
+  opacity: 0;
+  transition: opacity var(--aq-fluido-medio) var(--aq-fluido);
+}
+
+.aq-cabecera-flotante-separada::before {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aq-cabecera-flotante::before {
+    transition-duration: 0.01ms;
+  }
+}
+
+/**
+ * ── La tabla, como parte del ecosistema ─────────────────────────────────────
+ *
+ * Estaba como `rounded-lg border border-sutil` con el encabezado en `bg-fondo`:
+ * un rectángulo con borde y una barra opaca arriba, dibujados encima del agua
+ * sin relación con ninguna otra superficie de la app.
+ *
+ * Es el mismo defecto que tenían los formularios antes de `.aq-campo`, y se
+ * arregla igual: la tabla es una lámina del sistema, y el encabezado se separa
+ * con luz —un tinte apenas y una línea— en vez de con un bloque de color.
+ *
+ * El `thead` va `sticky`: en la auditoría, que es la tabla larga del sistema,
+ * perder los rótulos al tercer scroll obliga a subir para saber qué columna se
+ * está mirando.
+ */
+.aq-tabla-encabezado {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--aq-tabla-encabezado-fondo);
+  box-shadow: inset 0 -1px 0 0 var(--aq-tabla-linea);
+}
+
+/*
+ * La línea entre filas se dibuja con `box-shadow` interno y no con `border-top`.
+ *
+ * Un borde de 1 px sobre vidrio se ve más duro de lo que debería: no participa
+ * del tinte de la lámina, así que corta en vez de separar. La sombra interna
+ * hereda la translucidez y se lee como un pliegue.
+ */
+.aq-tabla-fila {
+  box-shadow: inset 0 1px 0 0 var(--aq-tabla-linea);
+}
+
+/**
  * ── El campo de formulario ──────────────────────────────────────────────────
  *
  * Diez archivos escribían `rounded border border-fuerte bg-transparent px-2
@@ -1589,6 +1681,9 @@ textarea.aq-campo {
   --aq-accion-suave:     #8CF0FA;
 
   /* El campo hundido, en agua profunda. Ver el bloque `:root`. */
+  --aq-tabla-encabezado-fondo: rgb(8 20 28 / 0.55);
+  --aq-tabla-linea:            rgb(140 200 220 / 0.14);
+
   --aq-campo-fondo:      rgb(4 14 20 / 0.42);
   --aq-campo-canto:      rgb(140 200 220 / 0.22);
   --aq-campo-canto-vivo: rgb(140 240 250 / 0.55);

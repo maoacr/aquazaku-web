@@ -25,7 +25,7 @@ vi.mock('next/navigation', () => ({ usePathname: () => '/' }))
  */
 function pintar(roles: Role[] = ['admin']) {
   return render(
-    <AppShell userRoles={roles} userName="Ana Gómez">
+    <AppShell userRoles={roles} userName="Ana Gómez" estadoDelMenu="desplegado">
       <p>contenido</p>
     </AppShell>,
   )
@@ -72,7 +72,9 @@ describe('se puede volver al inicio', () => {
 
     expect(envoltorios.some((c) => c.includes('sm:hidden')), 'falta la de teléfono').toBe(true)
     expect(
-      envoltorios.some((c) => c.includes('hidden') && c.includes('sm:block')),
+      // `sm:flex` y no `sm:block`: el contenedor comparte fila con el botón
+      // que colapsa el menú.
+      envoltorios.some((c) => c.includes('hidden') && c.includes('sm:flex')),
       'falta la de escritorio',
     ).toBe(true)
   })

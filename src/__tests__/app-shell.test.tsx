@@ -20,6 +20,12 @@ vi.mock('@/lib/tema', async (original) => ({
   leerTema: vi.fn(async () => 'claro' as const),
 }))
 
+/** Ídem el estado del menú: también vive en una cookie. */
+vi.mock('@/lib/menu', async (original) => ({
+  ...(await original<typeof import('@/lib/menu')>()),
+  leerEstadoDelMenu: vi.fn(async () => 'desplegado' as const),
+}))
+
 const { getServerUser } = await import('@/lib/api-server')
 const { redirect } = await import('next/navigation')
 

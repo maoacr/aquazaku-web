@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { AppShell } from '@/components/ui/app-shell'
+import { leerEstadoDelMenu } from '@/lib/menu'
 import { getServerUser } from '@/lib/api-server'
 
 /**
@@ -31,7 +32,11 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
   }
 
   return (
-    <AppShell userRoles={user.roles} userName={user.name}>
+    <AppShell
+      userRoles={user.roles}
+      userName={user.name}
+      estadoDelMenu={await leerEstadoDelMenu()}
+    >
       {children}
     </AppShell>
   )

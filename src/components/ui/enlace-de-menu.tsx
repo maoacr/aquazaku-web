@@ -43,6 +43,12 @@ export function EnlaceDeMenu({
   return (
     <Link
       href={href}
+      /*
+        El `title` es lo que hace usable el riel colapsado. Un menú de puros
+        iconos funciona para quien ya se los memorizó; para alguien nuevo en el
+        mostrador es adivinanza.
+      */
+      title={typeof children === 'string' ? children : undefined}
       // `page` y no `true`: le dice al lector de pantalla que este enlace es la
       // página actual, no que sea un control encendido.
       aria-current={activo ? 'page' : undefined}
@@ -53,7 +59,12 @@ export function EnlaceDeMenu({
       }`}
     >
       {icono}
-      {children}
+      {/*
+        La etiqueta se oculta A LA VISTA cuando el menú está colapsado, nunca del
+        DOM. Con `display: none` este link PIERDE SU NOMBRE ACCESIBLE y el menú
+        queda como siete botones sin identificar — ver `.aq-menu-etiqueta`.
+      */}
+      <span className="aq-menu-etiqueta">{children}</span>
     </Link>
   )
 }

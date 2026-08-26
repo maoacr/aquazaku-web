@@ -6,6 +6,8 @@ import { EnlaceDeMenu } from '@/components/ui/enlace-de-menu'
 import { AccionesDeSesion } from '@/components/ui/acciones-de-sesion'
 import { Marca } from '@/components/ui/marca'
 import { Creditos, Pie } from '@/components/ui/pie'
+import { ToggleDelMenu } from '@/components/ui/toggle-del-menu'
+import type { EstadoDelMenu } from '@/lib/menu'
 import { computeVisibleModules } from '@/lib/modules'
 import type { Role } from '@/lib/roles'
 
@@ -36,10 +38,18 @@ import type { Role } from '@/lib/roles'
 export function AppShell({
   userRoles,
   userName,
+  estadoDelMenu,
   children,
 }: {
   userRoles: Role[]
   userName: string
+  /**
+   * Resuelto por el layout, que lee la cookie en el SERVIDOR.
+   *
+   * Llega como prop y no se lee acá para que este componente siga siendo
+   * síncrono: los datos de sesión ya vienen del layout por la misma razón.
+   */
+  estadoDelMenu: EstadoDelMenu
   children: ReactNode
 }) {
   const modules = computeVisibleModules(userRoles)
@@ -71,6 +81,8 @@ export function AppShell({
         menu={<MenuLateral modules={modules} />}
         roles={userRoles}
         creditos={<Creditos />}
+        estadoDelMenu={estadoDelMenu}
+        toggleDelMenu={<ToggleDelMenu estado={estadoDelMenu} />}
       />
 
       <main

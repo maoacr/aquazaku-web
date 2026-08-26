@@ -113,7 +113,7 @@ export function Marca({
       <Isotipo className="h-7 w-auto shrink-0" decorativo />
       <span
         className={`bg-clip-text text-[17px] font-semibold tracking-tight text-transparent ${
-          compacta ? 'sr-only sm:not-sr-only' : ''
+          compacta ? 'aq-menu-nombre sr-only sm:not-sr-only' : 'aq-menu-nombre'
         }`}
         style={{
           // `--aq-gradiente-nombre` ya sigue al tema. `sobreOscuro` fuerza la

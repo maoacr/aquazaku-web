@@ -36,6 +36,8 @@ export function CabeceraYMenu({
   menu,
   roles,
   creditos,
+  estadoDelMenu,
+  toggleDelMenu,
 }: {
   marca: ReactNode
   marcaDelPanel: ReactNode
@@ -56,6 +58,10 @@ export function CabeceraYMenu({
    * fondo del cajón — que es donde alguien va a buscar «de quién es esto».
    */
   creditos: ReactNode
+  /** Resuelto en el SERVIDOR: la primera pintura ya sale con el ancho correcto. */
+  estadoDelMenu: 'desplegado' | 'colapsado'
+  /** El botón que lo colapsa. Es un `<form>`, así que anda sin JavaScript. */
+  toggleDelMenu: ReactNode
 }) {
   const [abierto, setAbierto] = useState(false)
   const panelId = useId()
@@ -161,16 +167,28 @@ export function CabeceraYMenu({
         // como las demás. Su separación del borde la pone el canal del armazón:
         // el `sm:m-3` que tenía acá era el valor correcto, pero solo suyo, y por
         // eso el contenido terminó al doble de distancia.
+        /*
+          `aq-menu-colapsado` solo hace efecto en escritorio: en teléfono el
+          menú es un cajón que se desliza y no hay riel que colapsar.
+        */
         className={`aq-panel-marca fixed inset-y-0 left-0 z-30 flex w-72 max-w-[85vw] flex-col rounded-none py-4 transition-transform duration-200 ease-out motion-reduce:transition-none sm:relative sm:w-auto sm:max-w-none sm:translate-x-0 sm:rounded-xl ${
           abierto ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } ${estadoDelMenu === 'colapsado' ? 'aq-menu-colapsado' : ''}`}
       >
         {/*
           La marca corona el panel, que es donde la pone el arte. En teléfono el
           cajón ya se abre desde la cabecera —que la muestra— así que acá sería
           la segunda vez en la misma pantalla.
         */}
-        <div className="mb-1 hidden px-5 sm:block">{marcaDelPanel}</div>
+        {/*
+          La marca y el toggle comparten la fila: el botón vive junto a lo que
+          colapsa. `min-w-0` deja que la marca se encoja en vez de empujar al
+          botón fuera del riel.
+        */}
+        <div className="mb-1 hidden min-w-0 items-center gap-1 px-3 sm:flex">
+          {marcaDelPanel}
+          {toggleDelMenu}
+        </div>
 
         {/* Cerrar al navegar: tocar un módulo y que el cajón quede tapando la
             pantalla a la que acabás de llegar es la forma más rápida de que se

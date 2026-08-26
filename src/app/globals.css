@@ -720,8 +720,102 @@ body {
      * borde superior del menú arrancan a la misma altura.
      */
     grid-template-areas: 'menu contenido' 'menu pie';
-    grid-template-columns: 16rem 1fr;
+    grid-template-columns: var(--aq-menu-ancho, 16rem) 1fr;
     grid-template-rows: 1fr auto;
+
+    /*
+     * UNA sola propiedad animada, en UN solo elemento.
+     *
+     * Colapsar el menú reflota el contenido sí o sí — no hay forma de correr
+     * una columna sin que la de al lado se entere. Lo que sí se puede controlar
+     * es que sea una transición y no cinco: el `<main>` no anima nada, solo
+     * ocupa lo que le queda.
+     */
+    transition: grid-template-columns var(--aq-fluido-medio) var(--aq-fluido);
+  }
+
+  /*
+   * El riel: lo justo para un icono de 44 px con su aire.
+   *
+   * Es una variable y no un valor literal porque el hover la necesita para
+   * saber cuánto tiene que superponerse.
+   */
+  .aq-armazon:has(> .aq-menu-colapsado) {
+    --aq-menu-ancho: 4.5rem;
+  }
+
+  /*
+   * ── El hover NO reflota: se superpone ──────────────────────────────────────
+   *
+   * Es la decisión que separa «natural» de «insoportable». Si el hover
+   * expandiera la columna, el menú se abriría solo cada vez que el mouse cruza
+   * por ahí y toda la pantalla se correría 128 px. Se siente como que la
+   * interfaz pelea.
+   *
+   * Acá el riel conserva su lugar en la grilla y el panel crece ENCIMA del
+   * contenido. Nada se mueve; solo aparece algo arriba.
+   *
+   * `width` y no `transform: scaleX()`: escalar deformaría los iconos y el
+   * texto. Es un ancho chico sobre un elemento con `contain`, así que el costo
+   * está acotado.
+   */
+  .aq-menu-colapsado {
+    width: 4.5rem;
+    contain: layout;
+    transition: width var(--aq-fluido-medio) var(--aq-fluido);
+  }
+
+  .aq-menu-colapsado:hover,
+  .aq-menu-colapsado:focus-within {
+    width: 16rem;
+    z-index: 20;
+  }
+
+  /*
+   * Las etiquetas se ocultan A LA VISTA, no del DOM.
+   *
+   * Con `display: none` cada link PIERDE SU NOMBRE ACCESIBLE y el menú queda
+   * como siete botones sin identificar. `sr-only` los saca de la pantalla y los
+   * conserva para el lector — que es lo único que hay que hacer acá.
+   *
+   * Al desplegarse por hover vuelven, porque ahí hay lugar.
+   */
+  .aq-menu-colapsado .aq-menu-etiqueta {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .aq-menu-colapsado:hover .aq-menu-etiqueta,
+  .aq-menu-colapsado:focus-within .aq-menu-etiqueta {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  /* El nombre de la marca desaparece; queda el isotipo, que es el favicon. */
+  .aq-menu-colapsado .aq-menu-nombre {
+    display: none;
+  }
+
+  .aq-menu-colapsado:hover .aq-menu-nombre,
+  .aq-menu-colapsado:focus-within .aq-menu-nombre {
+    display: inline;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aq-armazon,
+    .aq-menu-colapsado {
+      transition-duration: 0.01ms;
+    }
   }
 
   /*

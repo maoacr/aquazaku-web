@@ -136,7 +136,7 @@ function MenuLateral({ modules }: { modules: ReturnType<typeof computeVisibleMod
         que atiende un mostrador merece un link que lo diga.
       */}
       <li>
-        <EnlaceDeMenu href="/" icono={<Home aria-hidden className="size-4 shrink-0" />}>
+        <EnlaceDeMenu href="/" icono={<Home aria-hidden className="size-5 shrink-0" />}>
           Inicio
         </EnlaceDeMenu>
       </li>
@@ -145,7 +145,7 @@ function MenuLateral({ modules }: { modules: ReturnType<typeof computeVisibleMod
         <li key={modulo.id}>
           <EnlaceDeMenu
             href={modulo.href}
-            icono={<modulo.icono aria-hidden className="size-4 shrink-0" />}
+            icono={<modulo.icono aria-hidden className="size-5 shrink-0" />}
           >
             {modulo.label}
           </EnlaceDeMenu>

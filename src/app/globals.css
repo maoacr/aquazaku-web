@@ -804,8 +804,11 @@ body {
   /*
    * ── En el riel, cada pieza cae en el MISMO eje ────────────────────────────
    *
-   * Los iconos de módulo centran en 32 px: 12 del canal de la lista más 12 del
-   * padding del enlace, más la mitad de un icono de 16.
+   * Los iconos de módulo centran en 34 px: 12 del canal de la lista más 12 del
+   * padding del enlace, más la mitad de un icono de 20.
+   *
+   * Si el tamaño del icono cambia, este eje se mueve — y con él la caja del
+   * isotipo, que es el doble.
    *
    * El toggle vive abajo y en su propia fila, así que solo necesita el mismo
    * padding para caer ahí. Cuando estaba arriba compartiendo fila con el logo,
@@ -816,8 +819,8 @@ body {
    * proporción del archivo — el día que se retoque el logo, se descentra sin
    * que nadie lo relacione.
    *
-   * Se le da una caja de 64 px —el doble de 32— y se lo centra adentro. Así
-   * cae en el eje sea cual sea su ancho.
+   * Se le da una caja del doble del eje —68 px— y se lo centra adentro. Así
+   * cae donde los iconos, sea cual sea su ancho.
    */
   .aq-menu-colapsado .aq-menu-toggle {
     padding-inline: 0.75rem;
@@ -829,7 +832,7 @@ body {
 
   .aq-menu-colapsado .aq-menu-encabezado a {
     justify-content: center;
-    width: 4rem;
+    width: 4.25rem;
     padding-inline: 0;
   }
 

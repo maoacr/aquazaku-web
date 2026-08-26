@@ -40,7 +40,7 @@ export function ToggleDelMenu({ estado }: { estado: EstadoDelMenu }) {
         title={colapsado ? 'Desplegar el menú' : 'Contraer el menú'}
         className="aq-menu-toggle hidden min-h-11 shrink-0 items-center justify-center rounded-md text-secundario hover:bg-menu-realce hover:text-principal sm:flex"
       >
-        <Icono aria-hidden className="size-4" />
+        <Icono aria-hidden className="size-5" />
       </button>
     </form>
   )

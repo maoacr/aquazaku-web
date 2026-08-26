@@ -1,7 +1,7 @@
 import { VistaDeAuditoria } from '@/components/auditoria/vista-auditoria'
 import { unoSolo } from '@/lib/query'
 
-/** Auditoría del `admin`. La del `contador` vive en `/contador/auditoria`. */
+/** Auditoría. La ven `admin` y `contador`; qué filas trae cada uno lo decide `api/`. */
 export default async function AuditoriaPage({ searchParams }: PageProps<'/modulos/auditoria'>) {
   const params = await searchParams
 

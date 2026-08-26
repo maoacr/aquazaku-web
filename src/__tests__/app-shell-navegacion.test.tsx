@@ -115,12 +115,33 @@ describe('el menú muestra lo que cada rol puede ver', () => {
     )
   })
 
-  it('el contador entra a la auditoría por su propia ruta', () => {
+  /**
+   * Admin y contador entran por la MISMA ruta.
+   *
+   * Estuvieron separadas, con la idea de que cada rol viera un alcance distinto
+   * por su propia URL. Nunca fue así: las dos rutas renderizaban el mismo
+   * componente con los mismos filtros, y el alcance sale de la sesión.
+   */
+  it('el contador entra a la misma auditoría que el admin', () => {
     pintar(['contador'])
 
     expect(within(menu()).getByRole('link', { name: 'Auditoría' })).toHaveAttribute(
       'href',
-      '/contador/auditoria',
+      '/modulos/auditoria',
+    )
+  })
+
+  /**
+   * El defecto que se veía: «Auditoría» dos veces en el menú de quien tiene los
+   * dos roles. `getByRole` falla si hay más de una coincidencia, así que este
+   * test es exactamente la pantalla que Mao reportó.
+   */
+  it('quien tiene admin Y contador ve UNA sola Auditoría', () => {
+    pintar(['admin', 'contador'])
+
+    expect(within(menu()).getByRole('link', { name: 'Auditoría' })).toHaveAttribute(
+      'href',
+      '/modulos/auditoria',
     )
   })
 

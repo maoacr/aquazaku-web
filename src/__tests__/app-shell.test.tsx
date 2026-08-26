@@ -85,7 +85,7 @@ describe('<AppLayout />', () => {
       within(screen.getByRole('navigation', { name: 'Módulos' })).getByRole('link', {
         name: 'Auditoría',
       }),
-    ).toHaveAttribute('href', '/contador/auditoria')
+    ).toHaveAttribute('href', '/modulos/auditoria')
     expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument()
   })
 

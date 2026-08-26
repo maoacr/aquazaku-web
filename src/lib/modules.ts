@@ -1,4 +1,4 @@
-import { Boxes, Calculator, Package, ShieldCheck, Users } from 'lucide-react'
+import { Boxes, Package, ShieldCheck, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Role } from './roles'
 
@@ -26,10 +26,25 @@ export interface MenuModule {
 /**
  * Catálogo de módulos de M0. Crece con cada milestone.
  *
- * `auditoria` aparece dos veces a propósito: admin y contador miran auditoría
- * con alcances distintos, y cada uno entra por su propia ruta. Un solo módulo
- * compartido obligaría a la página a ramificar por rol, que es justo lo que
- * el modelo de alcances resuelve del lado de api/.
+ * ── Un módulo por CAPACIDAD, no por rol ─────────────────────────────────────
+ *
+ * `auditoria` estuvo registrado dos veces —una para admin, otra para contador—
+ * con la idea de que cada rol entrara por su propia ruta a un alcance distinto.
+ * Nunca fue así: las dos rutas renderizaban el mismo componente con los mismos
+ * filtros, y el alcance lo resuelve `api/` con `scopedCondition` a partir de la
+ * SESIÓN, no de la ruta (RN-ACC-03). Las dos entradas eran indistinguibles.
+ *
+ * El síntoma era un menú con «Auditoría» dos veces para quien tiene los dos
+ * roles. Y la tentación era arreglarlo filtrando —«si es admin, no muestres el
+ * de contador»—, que habría sido peor: mete precedencia entre roles en un
+ * sistema donde los roles se SUMAN (RN-ACC-01), y solo arregla este par. El
+ * próximo par de roles que comparta una capacidad necesitaría su propia
+ * excepción.
+ *
+ * La regla que evita la clase entera: **una capacidad, una entrada**, con la
+ * lista de roles que la ven. Así la unión sigue siendo una unión y no hay nada
+ * que deduplicar. Un test verifica que no haya dos módulos con la misma
+ * etiqueta ni con la misma ruta.
  */
 export const ALL_MODULES: MenuModule[] = [
   // Los cuatro roles ven el catálogo: un `pos` que no ve precios no puede
@@ -51,21 +66,14 @@ export const ALL_MODULES: MenuModule[] = [
     roles: ['admin', 'seller', 'pos', 'contador'],
   },
   { id: 'usuarios', label: 'Usuarios', href: '/modulos/usuarios', icono: Users, roles: ['admin'] },
+  // Admin y contador ven la MISMA auditoría. Qué filas trae cada uno lo decide
+  // `api/` según la sesión, así que no hay dos pantallas ni dos rutas.
   {
     id: 'auditoria',
     label: 'Auditoría',
     href: '/modulos/auditoria',
     icono: ShieldCheck,
-    roles: ['admin'],
-  },
-  {
-    id: 'contador-auditoria',
-    label: 'Auditoría',
-    href: '/contador/auditoria',
-    // Distinto del escudo de la auditoría de admin: quien tiene los dos roles
-    // ve dos entradas, y el icono es lo primero que las separa.
-    icono: Calculator,
-    roles: ['contador'],
+    roles: ['admin', 'contador'],
   },
 ]
 

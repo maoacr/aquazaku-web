@@ -11,11 +11,13 @@ describe('computeVisibleModules()', () => {
     expect(ids).toContain('productos')
   })
 
-  it('contador ve catálogo, stock y su auditoría', () => {
+  it('contador ve catálogo, stock y la auditoría', () => {
     const ids = computeVisibleModules(['contador']).map((m) => m.id)
 
     // Necesita el inventario para cerrar los números, no solo la bitácora.
-    expect(ids).toEqual(['productos', 'stock', 'contador-auditoria'])
+    // La auditoría es la MISMA que ve el admin: qué filas trae cada uno lo
+    // decide `api/` según la sesión, no la ruta por la que se entró.
+    expect(ids).toEqual(['productos', 'stock', 'auditoria'])
   })
 
   // Hasta M0 estos dos roles no veían ningún módulo. M1 les dio el catálogo
@@ -43,12 +45,22 @@ describe('computeVisibleModules()', () => {
     expect(computeVisibleModules([])).toEqual([])
   })
 
-  // RN-ACC-01: no existe switch-role. Todos los roles asignados están activos
-  // a la vez, así que el menú es la UNIÓN — nunca la intersección ni "el primero".
+  /**
+   * RN-ACC-01: no existe switch-role. Todos los roles asignados están activos a
+   * la vez, así que el menú es la UNIÓN — nunca la intersección ni «el primero».
+   *
+   * Este test afirmaba que la unión incluía `auditoria` Y `contador-auditoria`,
+   * o sea que codificaba el duplicado como correcto. El test que tenía que
+   * atrapar el defecto lo estaba sosteniendo, y por eso pasó desapercibido
+   * hasta que alguien miró el menú.
+   *
+   * La unión sigue siendo la unión. Lo que cambió es que la auditoría es UNA
+   * capacidad, así que unirla consigo misma da una sola entrada.
+   */
   it('multi-rol ve la unión de los módulos de todos sus roles', () => {
     const ids = computeVisibleModules(['admin', 'contador']).map((m) => m.id)
 
-    expect(ids).toEqual(['productos', 'stock', 'usuarios', 'auditoria', 'contador-auditoria'])
+    expect(ids).toEqual(['productos', 'stock', 'usuarios', 'auditoria'])
   })
 
   it('multi-rol no duplica un módulo que dos roles comparten', () => {
@@ -76,6 +88,80 @@ describe('computeVisibleModules()', () => {
   it('todo módulo declara al menos un rol que lo puede ver', () => {
     for (const modulo of ALL_MODULES) {
       expect(modulo.roles.length).toBeGreaterThan(0)
+    }
+  })
+})
+
+/**
+ * ── Una capacidad, una entrada ──────────────────────────────────────────────
+ *
+ * `auditoria` estuvo registrado dos veces —admin y contador— con dos rutas que
+ * renderizaban exactamente el mismo componente. Quien tenía los dos roles veía
+ * «Auditoría» dos veces en el menú, sin forma de saber en qué se diferenciaban:
+ * en nada.
+ *
+ * La tentación era filtrar por precedencia —«si es admin, escondé el de
+ * contador»—, y habría sido peor. Los roles se SUMAN (RN-ACC-01): meter
+ * precedencia contradice el modelo, y encima solo arregla este par. El próximo
+ * par que comparta una capacidad necesitaría su propia excepción.
+ *
+ * Estos dos tests cierran la clase entera: si dos módulos comparten etiqueta o
+ * ruta, es la misma capacidad registrada dos veces y hay que unirla.
+ */
+describe('el catálogo no registra la misma capacidad dos veces', () => {
+  it('ninguna etiqueta se repite', () => {
+    const vistas = new Map<string, string[]>()
+
+    for (const modulo of ALL_MODULES) {
+      vistas.set(modulo.label, [...(vistas.get(modulo.label) ?? []), modulo.id])
+    }
+
+    const repetidas = [...vistas].filter(([, ids]) => ids.length > 1)
+
+    expect(
+      repetidas.map(([label, ids]) => `«${label}» en ${ids.join(' y ')}`),
+      'dos entradas con la misma etiqueta son indistinguibles en el menú',
+    ).toEqual([])
+  })
+
+  it('ninguna ruta se repite', () => {
+    const hrefs = ALL_MODULES.map((m) => m.href)
+
+    expect(new Set(hrefs).size, `rutas duplicadas en ${hrefs.join(', ')}`).toBe(hrefs.length)
+  })
+
+  /**
+   * El caso concreto que se reportó, con los roles reales.
+   *
+   * Vale además del test de etiquetas únicas: aquel mira el catálogo, y este
+   * mira lo que sale del cálculo. Si alguien volviera a introducir el filtro por
+   * precedencia, el de etiquetas seguiría pasando y este seguiría diciendo la
+   * verdad sobre la pantalla.
+   */
+  it('admin + contador ven una sola Auditoría', () => {
+    const visibles = computeVisibleModules(['admin', 'contador'])
+    const auditorias = visibles.filter((m) => m.label === 'Auditoría')
+
+    expect(auditorias).toHaveLength(1)
+  })
+
+  /**
+   * Y la unión sigue siendo una unión: unificar no puede haberle sacado la
+   * auditoría a nadie que la tenía.
+   */
+  it('cada rol que la veía la sigue viendo por su cuenta', () => {
+    for (const rol of ['admin', 'contador'] as const) {
+      expect(
+        computeVisibleModules([rol]).some((m) => m.label === 'Auditoría'),
+        `${rol} perdió el acceso a la auditoría`,
+      ).toBe(true)
+    }
+
+    for (const rol of ['seller', 'pos'] as const) {
+      expect(
+        computeVisibleModules([rol]).some((m) => m.label === 'Auditoría'),
+        `${rol} no debería ver la auditoría`,
+      ).toBe(false)
     }
   })
 })

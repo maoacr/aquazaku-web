@@ -821,6 +821,9 @@ body {
    *
    * Se le da una caja del doble del eje —68 px— y se lo centra adentro. Así
    * cae donde los iconos, sea cual sea su ancho.
+   *
+   * Conserva su tamaño natural: achicarlo en el riel lo hacía leer como un
+   * icono más, y no lo es — es la marca.
    */
   .aq-menu-colapsado .aq-menu-toggle {
     padding-inline: 0.75rem;
@@ -841,14 +844,6 @@ body {
     width: 100%;
   }
 
-  .aq-menu-colapsado .aq-menu-encabezado img {
-    height: 1.25rem;
-  }
-
-  .aq-menu-colapsado:hover .aq-menu-encabezado img,
-  .aq-menu-colapsado:focus-within .aq-menu-encabezado img {
-    height: 1.75rem;
-  }
 
   /* El nombre de la marca desaparece; queda el isotipo, que es el favicon. */
   .aq-menu-colapsado .aq-menu-nombre {

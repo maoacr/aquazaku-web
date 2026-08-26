@@ -1516,6 +1516,67 @@ input:not([type='checkbox'], [type='radio'], [type='hidden']) {
   box-shadow: inset 0 1px 0 0 var(--aq-tabla-linea);
 }
 
+/*
+ * ── La columna que no se va ─────────────────────────────────────────────────
+ *
+ * En un teléfono la auditoría es una tabla de 1.099 px dentro de una caja de
+ * 351. Scrollear para leer «Detalle» dejaba la fecha en x = −736: se pierde el
+ * ancla de qué fila se está leyendo, y hay que volver a la izquierda para saber
+ * de quién era el dato que se acaba de leer.
+ *
+ * La primera columna se queda. Eso convierte un desplazamiento a ciegas en uno
+ * con referencia.
+ *
+ * ── Acá el `backdrop-filter` SÍ se gana el lugar ────────────────────────────
+ *
+ * El sistema lo sacó de las tarjetas porque costaba 17 fps y no mostraba nada:
+ * detrás del vidrio está el agua, que ya es un gradiente suave, y desenfocar
+ * algo borroso da lo mismo borroso. La regla que quedó escrita es que el
+ * desenfoque aporta **solo cuando detrás pasa contenido con detalle**.
+ *
+ * Este es ese caso: por debajo de la columna fija pasa el texto de las otras
+ * columnas. Sin desenfoque se leerían dos textos encima, y con un fondo opaco
+ * la celda quedaría como un parche sobre una lámina translúcida.
+ *
+ * Y es UNA columna angosta, no seis capas cubriendo el 31 % de la pantalla.
+ */
+.aq-tabla-columna-fija {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--aq-tabla-encabezado-fondo);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  /* El canto dice dónde termina lo fijo y empieza lo que se desplaza. */
+  box-shadow: inset -1px 0 0 0 var(--aq-tabla-linea);
+}
+
+/*
+ * La celda del encabezado cruza las dos stickies —la fila de arriba y la
+ * columna de la izquierda— y tiene que ganarle a las dos.
+ */
+.aq-tabla-encabezado .aq-tabla-columna-fija {
+  z-index: 3;
+}
+
+/*
+ * En pantalla ancha la tabla entra entera y no hay nada que anclar. Dejar la
+ * columna pegada ahí agregaría un canto y un desenfoque que no resuelven nada.
+ */
+@media (min-width: 768px) {
+  .aq-tabla-columna-fija {
+    position: static;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  .aq-tabla-fila.aq-tabla-columna-fija {
+    box-shadow: inset 0 1px 0 0 var(--aq-tabla-linea);
+  }
+}
+
 /**
  * ── El campo de formulario ──────────────────────────────────────────────────
  *

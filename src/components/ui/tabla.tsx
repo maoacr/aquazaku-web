@@ -48,12 +48,40 @@ export function Encabezados({ children }: { children: ReactNode }) {
   )
 }
 
-export function Th({ children }: { children: ReactNode }) {
-  return <th className="whitespace-nowrap px-3 py-2 font-medium">{children}</th>
+/**
+ * `fija` marca la columna que ancla la fila — la que dice DE QUÉ es el dato.
+ *
+ * Se queda quieta mientras el resto se desplaza, y solo en teléfono: en pantalla
+ * ancha la tabla entra entera y no hay nada que anclar.
+ *
+ * Va como prop y no automático en la primera columna porque no todas las tablas
+ * la necesitan: una de tres columnas angostas entra sin scroll, y fijarle una
+ * agregaría un canto que no resuelve nada.
+ */
+export function Th({ children, fija = false }: { children: ReactNode; fija?: boolean }) {
+  return (
+    <th className={`whitespace-nowrap px-3 py-2 font-medium ${fija ? 'aq-tabla-columna-fija' : ''}`}>
+      {children}
+    </th>
+  )
 }
 
-export function Td({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <td className={`aq-tabla-fila px-3 py-2.5 align-top ${className}`}>{children}</td>
+export function Td({
+  children,
+  className = '',
+  fija = false,
+}: {
+  children: ReactNode
+  className?: string
+  fija?: boolean
+}) {
+  return (
+    <td
+      className={`aq-tabla-fila px-3 py-2.5 align-top ${fija ? 'aq-tabla-columna-fija' : ''} ${className}`}
+    >
+      {children}
+    </td>
+  )
 }
 
 /** Fila única que ocupa toda la tabla cuando no hay datos que mostrar. */

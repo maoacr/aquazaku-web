@@ -69,7 +69,8 @@ export async function VistaDeAuditoria({
 
       <Tabla>
         <Encabezados>
-          <Th>Fecha</Th>
+          {/* El ancla: sin ella, scrollear a «Detalle» deja la fila sin de cuándo era. */}
+          <Th fija>Fecha</Th>
           <Th>Usuario</Th>
           <Th>Acción</Th>
           <Th>Resultado</Th>
@@ -119,7 +120,7 @@ export async function VistaDeAuditoria({
 function FilaDeRegistro({ fila }: { fila: RegistroDeAuditoria }) {
   return (
     <tr>
-      <Td className="whitespace-nowrap tabular-nums text-secundario">
+      <Td fija className="whitespace-nowrap tabular-nums text-secundario">
         {new Date(fila.createdAt).toLocaleString('es-CO', {
           dateStyle: 'short',
           timeStyle: 'medium',

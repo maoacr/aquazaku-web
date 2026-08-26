@@ -12,7 +12,8 @@ export function TablaDeProductos({ productos }: { productos: Producto[] }) {
   return (
     <Tabla>
       <Encabezados>
-        <Th>Código</Th>
+        {/* Siete columnas no entran en un teléfono: el código ancla la fila. */}
+        <Th fija>Código</Th>
         <Th>Producto</Th>
         <Th>Contenido</Th>
         <Th>Residencial</Th>
@@ -26,7 +27,7 @@ export function TablaDeProductos({ productos }: { productos: Producto[] }) {
         ) : (
           productos.map((p) => (
             <tr key={p.id}>
-              <Td className="aq-cifra text-sm">{p.codigo}</Td>
+              <Td fija className="aq-cifra text-sm">{p.codigo}</Td>
               <Td>{p.nombre}</Td>
               <Td className="whitespace-nowrap text-secundario">
                 {p.presentacion === 'paca'

@@ -258,3 +258,78 @@ export interface ResultadoDelCierre {
   /** Un lote por producto envasado — RN-PRD-23. */
   lotes: { codigo: string; productoId: string; cantidad: number }[]
 }
+
+/* ── Clientes — M5 ──────────────────────────────────────────────────────── */
+
+export type TipoDeCliente = 'residencial' | 'comercial'
+export type TipoDeDocumento = 'CC' | 'NIT'
+export type EstadoDeVerificacion = 'pendiente' | 'verificado'
+export type MetodoDeVerificacion = 'seller_manual' | 'pos_manual' | 'admin_oficial'
+
+/**
+ * Un cliente — M5.
+ *
+ * `documento` lo arma `api/` con el dígito de verificación calculado
+ * (`900123456-8`). **No está guardado**: el DV es una función del número base,
+ * definida por norma, y guardarlo abriría la puerta a que las dos copias digan
+ * cosas distintas. `numeroDocumento` es lo que sí vive en la base.
+ */
+export interface Cliente {
+  id: string
+  nombre: string
+  tipo: TipoDeCliente
+  tipoDocumento: TipoDeDocumento
+  /** El número base, normalizado: sin puntos, sin guion, sin DV. */
+  numeroDocumento: string
+  /** Ya armado para mostrar. Calculado, no almacenado. */
+  documento: string
+  verificacionEstado: EstadoDeVerificacion
+  verificadoPor: string | null
+  verificadoEn: string | null
+  verificacionMetodo: MetodoDeVerificacion | null
+  creditoHabilitado: boolean
+  /** `numeric` en la base. `null` es SIN TOPE, y es el default — RN-CLI-12. */
+  creditoLimite: string | null
+  activo: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * El aviso de que el mismo número ya existe con el OTRO tipo de documento.
+ *
+ * No es un error: el NIT de una persona natural se basa en su cédula, así que
+ * puede ser la misma persona. También puede ser un duplicado. La base no puede
+ * distinguirlos, así que avisa y deja decidir.
+ */
+export interface AvisoDeCruce {
+  clienteExistente: { id: string; nombre: string; tipoDocumento: TipoDeDocumento }
+  mensaje: string
+}
+
+export interface Direccion {
+  id: string
+  clienteId: string
+  etiqueta: string
+  direccion: string
+  indicaciones: string | null
+  activa: boolean
+  createdAt: string
+}
+
+/**
+ * La ficha — `GET /clientes/:id`.
+ *
+ * Los cuatro saldos de RN-CLI-06 llegan en `null` porque dependen de M6 y M7.
+ * `null` y no cero: un cero diría «este cliente no debe nada», y la verdad es
+ * «todavía no existe el módulo que registra deudas».
+ */
+export interface FichaDeCliente extends Cliente {
+  direcciones: Direccion[]
+  saldos: {
+    deuda: number | null
+    botellones: number | null
+    bases: number | null
+    cargosPendientes: number | null
+  }
+}

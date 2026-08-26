@@ -76,3 +76,21 @@ describe('al desplegarse, el menú empuja en vez de taparse encima', () => {
     expect(regla).not.toContain('z-index')
   })
 })
+
+/**
+ * La ficha no se estira.
+ *
+ * Un grid estira a sus hijos por el `justify-items: stretch` que trae por
+ * defecto, y un `inline-flex` no lo frena. Pasó dos veces en pantallas
+ * distintas —insumos y la ficha de cliente— y las dos se arreglaron con un
+ * `<div>` alrededor, que es tapar el síntoma donde aparece.
+ *
+ * No es solo estético: una ficha de 1.237 px le da a una opción normal el peso
+ * visual de una alarma, y el objetivo táctil deja de coincidir con lo que se ve.
+ */
+describe('.aq-ficha', () => {
+  it('no se estira dentro de un grid', () => {
+    expect(bloque('.aq-ficha {')).toContain('justify-self: start')
+  })
+})
+

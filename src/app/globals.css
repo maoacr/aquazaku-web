@@ -1707,6 +1707,22 @@ textarea.aq-campo {
 .aq-ficha {
   display: inline-flex;
   align-items: center;
+  /*
+   * ── Por qué un `inline-flex` necesita esto ────────────────────────────────
+   *
+   * Un grid estira a sus hijos por el `justify-items: stretch` que trae por
+   * defecto, y el `inline-flex` no lo frena: la ficha pasa a medir todo el
+   * ancho de la columna. Medido: 1.237 px para una que dice ocho palabras.
+   *
+   * No es solo feo. Una ficha de 1.237 px le da a una opción normal el peso
+   * visual de una alarma, y el objetivo táctil deja de coincidir con lo que se
+   * ve — se puede activar tocando muy lejos del texto.
+   *
+   * Pasó dos veces en pantallas distintas y las dos se habían arreglado con un
+   * `<div>` alrededor. Va acá: en un contenedor flex esta línea se ignora, así
+   * que no cambia nada donde ya funcionaba.
+   */
+  justify-self: start;
   gap: 0.5rem;
   min-height: 44px;
   padding: 0 0.875rem;

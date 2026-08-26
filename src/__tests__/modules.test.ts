@@ -19,7 +19,8 @@ describe('computeVisibleModules()', () => {
     // decide `api/` según la sesión, no la ruta por la que se entró.
     // M4 le suma producción: cierra los libros y necesita saber cuánto se
      // produjo, aunque no pueda cerrar el día ni ver los tanques.
-    expect(ids).toEqual(['productos', 'stock', 'insumos', 'produccion', 'auditoria'])
+    // M5 le suma clientes: la cartera es suya.
+    expect(ids).toEqual(['productos', 'stock', 'insumos', 'produccion', 'clientes', 'auditoria'])
   })
 
   /**
@@ -31,8 +32,14 @@ describe('computeVisibleModules()', () => {
    * planta. Es la primera vez que estos dos roles dejan de ver lo mismo, así
    * que el test deja de ser compartido.
    */
-  it('el seller ve catálogo y stock, y nada de la planta', () => {
-    expect(computeVisibleModules(['seller']).map((m) => m.id)).toEqual(['productos', 'stock'])
+  it('el seller ve catálogo, stock y clientes, y nada de la planta', () => {
+    // M5 le suma clientes: es quien los consigue en la calle. Sigue sin ver
+    // insumos ni producción — no toca la planta.
+    expect(computeVisibleModules(['seller']).map((m) => m.id)).toEqual([
+      'productos',
+      'stock',
+      'clientes',
+    ])
   })
 
   it('el pos ve además los insumos: es quien produce', () => {
@@ -42,6 +49,8 @@ describe('computeVisibleModules()', () => {
       'insumos',
       // M4: es quien opera la planta, así que es quien registra el cierre.
       'produccion',
+      // M5: atiende el mostrador, así que registra y verifica clientes.
+      'clientes',
     ])
   })
 
@@ -52,12 +61,14 @@ describe('computeVisibleModules()', () => {
    * Se reescribe como lista para que crezca a conciencia: agregar un módulo que
    * vean los cuatro roles obliga a tocar acá y decir por qué.
    */
-  it('los módulos que ven los cuatro roles son catálogo y stock', () => {
+  it('los módulos que ven los cuatro roles son catálogo, stock y clientes', () => {
     const paraTodos = ALL_MODULES.filter((m) =>
       (['admin', 'seller', 'pos', 'contador'] as Role[]).every((rol) => m.roles.includes(rol)),
     )
 
-    expect(paraTodos.map((m) => m.id)).toEqual(['productos', 'stock'])
+    // M5 suma el tercero: el `seller` los consigue, el `pos` los atiende en el
+    // mostrador y el `contador` los necesita para la cartera.
+    expect(paraTodos.map((m) => m.id)).toEqual(['productos', 'stock', 'clientes'])
   })
 
   it('sin roles no ve nada', () => {
@@ -84,6 +95,7 @@ describe('computeVisibleModules()', () => {
       'stock',
       'insumos',
       'produccion',
+      'clientes',
       'usuarios',
       'auditoria',
     ])

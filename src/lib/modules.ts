@@ -1,4 +1,4 @@
-import { Boxes, Package, PackageOpen, ShieldCheck, Users } from 'lucide-react'
+import { Boxes, Factory, Package, PackageOpen, ShieldCheck, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Role } from './roles'
 
@@ -71,6 +71,15 @@ export const ALL_MODULES: MenuModule[] = [
     label: 'Insumos',
     href: '/modulos/insumos',
     icono: PackageOpen,
+    roles: ['admin', 'pos', 'contador'],
+  },
+  // El `seller` no lo ve: no toca la planta. El `contador` sí — necesita saber
+  // cuánto se produjo para cerrar los números, aunque no pueda cerrar el día.
+  {
+    id: 'produccion',
+    label: 'Producción',
+    href: '/modulos/produccion',
+    icono: Factory,
     roles: ['admin', 'pos', 'contador'],
   },
   { id: 'usuarios', label: 'Usuarios', href: '/modulos/usuarios', icono: Users, roles: ['admin'] },

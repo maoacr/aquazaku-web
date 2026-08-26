@@ -170,3 +170,91 @@ export interface MovimientoDeInsumo {
   registradoPor: string | null
   createdAt: string
 }
+
+/* ── Producción y agua — M4 ─────────────────────────────────────────────── */
+
+/**
+ * Un cierre del día — `GET /produccion`.
+ *
+ * No se edita ni se borra (RN-PRD-08): mueve el agua, el stock y los insumos
+ * de una vez, y cambiarlo después dejaría los tres saldos sin explicación. Una
+ * corrección es un ajuste posterior, con motivo y responsable.
+ *
+ * `caudalGpm` y `litrosProcesados` van juntos o van los dos en `null`: sin
+ * caudal medido no hay litros procesados que calcular, y la base lo obliga con
+ * un CHECK. Un cierre sin ellos sigue siendo válido — el envasado se sabe
+ * aunque el procesamiento no.
+ */
+export interface CierreDeProduccion {
+  id: string
+  /** `YYYY-MM-DD`. Uno por día — RN-PRD-22. */
+  fecha: string
+  minutosProcesando: number
+  /** `numeric` en la base, así que llega como string. `null` hasta medirlo. */
+  caudalGpm: string | null
+  litrosProcesados: number | null
+  pacas600: number
+  pacas300: number
+  botellonesLlenados: number
+  botellonesLavados: number
+  /** Lo que salió del tanque procesado ese día. Guardado, no recalculado. */
+  litrosConsumidos: number
+  nivelObservado: NivelDeTanque | null
+  registradoPor: string | null
+  createdAt: string
+}
+
+export type Tanque = 'crudo' | 'procesado'
+
+/** Los cinco niveles que el ojo distingue — RN-PRD-11. No hay medidor. */
+export type NivelDeTanque = 'vacio' | 'un_cuarto' | 'medio' | 'tres_cuartos' | 'lleno'
+
+/** El saldo de un tanque — `GET /tanques`. */
+export interface SaldoDeAgua {
+  tanque: Tanque
+  /** Lo que dice el libro. **Este manda** — RN-PRD-14. */
+  litros: number
+  capacidad: number
+  /** El nivel al que corresponde ese saldo, para poder compararlo con el ojo. */
+  nivelCalculado: NivelDeTanque
+}
+
+/**
+ * El resultado de comparar el libro contra lo que se vio —
+ * `GET /tanques/reconciliacion`. **No escribe nada.**
+ */
+export interface Reconciliacion {
+  tanque: Tanque
+  litrosCalculados: number
+  nivelCalculado: NivelDeTanque
+  nivelObservado: NivelDeTanque
+  /** El rango de litros que representa el nivel observado. */
+  banda: { nivel: NivelDeTanque; desde: number; hasta: number }
+  cuadra: boolean
+  /** Litros hasta el CENTRO de la banda. Es una sugerencia, no una corrección. */
+  ajusteSugerido: number
+}
+
+/**
+ * Los números con los que el cierre calcula — `GET /produccion/parametros`.
+ *
+ * Existen como endpoint para que la vista previa NO copie `3.785` ni `0.7`.
+ * Los dos están marcados para cambiar —el galón puede ser imperial (pregunta
+ * 4) y el rendimiento es RN-PRD-12, que se revisa cuando se mida de verdad— y
+ * una pantalla que promete el número viejo hace que se confirme creyendo otra
+ * cosa.
+ */
+export interface ParametrosDeProduccion {
+  litrosPorGalon: number
+  /** Fracción utilizable del agua cruda. `0.7` = 70 %. */
+  rendimiento: number
+  /** Qué se consume por cada botellón envasado, uno de cada uno. */
+  insumosPorBotellon: string[]
+}
+
+/** Lo que devuelve `POST /produccion/cierres`. */
+export interface ResultadoDelCierre {
+  cierre: CierreDeProduccion
+  /** Un lote por producto envasado — RN-PRD-23. */
+  lotes: { codigo: string; productoId: string; cantidad: number }[]
+}

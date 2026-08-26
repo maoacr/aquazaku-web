@@ -17,7 +17,9 @@ describe('computeVisibleModules()', () => {
     // Necesita el inventario para cerrar los números, no solo la bitácora.
     // La auditoría es la MISMA que ve el admin: qué filas trae cada uno lo
     // decide `api/` según la sesión, no la ruta por la que se entró.
-    expect(ids).toEqual(['productos', 'stock', 'insumos', 'auditoria'])
+    // M4 le suma producción: cierra los libros y necesita saber cuánto se
+     // produjo, aunque no pueda cerrar el día ni ver los tanques.
+    expect(ids).toEqual(['productos', 'stock', 'insumos', 'produccion', 'auditoria'])
   })
 
   /**
@@ -38,6 +40,8 @@ describe('computeVisibleModules()', () => {
       'productos',
       'stock',
       'insumos',
+      // M4: es quien opera la planta, así que es quien registra el cierre.
+      'produccion',
     ])
   })
 
@@ -75,7 +79,14 @@ describe('computeVisibleModules()', () => {
   it('multi-rol ve la unión de los módulos de todos sus roles', () => {
     const ids = computeVisibleModules(['admin', 'contador']).map((m) => m.id)
 
-    expect(ids).toEqual(['productos', 'stock', 'insumos', 'usuarios', 'auditoria'])
+    expect(ids).toEqual([
+      'productos',
+      'stock',
+      'insumos',
+      'produccion',
+      'usuarios',
+      'auditoria',
+    ])
   })
 
   it('multi-rol no duplica un módulo que dos roles comparten', () => {

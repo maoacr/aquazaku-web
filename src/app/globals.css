@@ -1921,3 +1921,26 @@ textarea.aq-campo {
   --aq-estado-error-borde:  var(--aq-error-700);
   }
 }
+
+/* ═══ Toasts ═══════════════════════════════════════════════════════════════
+ *
+ * Sileo inyecta `[data-sileo-title] { text-transform: capitalize }` en tiempo
+ * de ejecución. En inglés pasa desapercibido; en español convierte «Cierre
+ * registrado» en «Cierre Registrado», que se lee como el rótulo de un
+ * formulario oficial y no como una confirmación que alguien le está dando a
+ * otra persona.
+ *
+ * ── Por qué el selector va repetido ────────────────────────────────────────
+ *
+ * La regla de sileo se inserta en un `<style>` en tiempo de ejecución, así que
+ * queda DESPUÉS de esta hoja en el orden del documento. Con la misma
+ * especificidad ganaría la suya. Repetir el atributo sube la especificidad a
+ * (0,2,0) sin cambiar a qué elementos aplica, y así el orden deja de importar.
+ *
+ * Es preferible a `!important`, que el proyecto no usa en ninguna parte: un
+ * `!important` acá invitaría al siguiente, y en dos meses nadie sabría cuál
+ * regla gana.
+ */
+[data-sileo-title][data-sileo-title] {
+  text-transform: none;
+}

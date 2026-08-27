@@ -10,7 +10,12 @@ import { nivelDeVerificacion } from '@/components/clientes/tarjetas-de-clientes'
 import { Cifra } from '@/components/stock/cifra'
 import { Estado } from '@/components/ui/estado'
 import { apiServerFetch } from '@/lib/api-server'
-import type { DeudaDeCliente, FichaDeCliente, MetodoDeVerificacion } from '@/lib/api-types'
+import type {
+  Base,
+  CarteraDeCliente,
+  FichaDeCliente,
+  MetodoDeVerificacion,
+} from '@/lib/api-types'
 import { siPuedeVerlo } from '@/lib/permiso-opcional'
 
 /** Qué significa cada método, en palabras — RN-CLI-14. */
@@ -50,11 +55,28 @@ export default async function FichaDeClientePage({
    * Las dos van en paralelo: son independientes y encadenarlas sumaría una
    * espera sin ganar nada.
    */
-  const [cliente, cartera] = await Promise.all([
+  const [cliente, cartera, botellones] = await Promise.all([
     apiServerFetch<FichaDeCliente>(`/clientes/${id}`),
-    siPuedeVerlo(apiServerFetch<DeudaDeCliente>(`/clientes/${id}/deuda`)),
+    siPuedeVerlo(apiServerFetch<CarteraDeCliente>(`/clientes/${id}/deuda`)),
+    siPuedeVerlo(apiServerFetch<{ enPoderDelCliente: number }>(`/clientes/${id}/botellones`)),
   ])
   const nivel = nivelDeVerificacion(cliente)
+
+  /*
+   * Las bases cuelgan de la DIRECCIÓN, no del cliente (`RN-BAS-03`), así que hay
+   * que preguntarle a cada una. Van en paralelo entre sí; son independientes.
+   *
+   * Esa granularidad no es un detalle de implementación: una base hay que ir a
+   * buscarla a un lugar concreto, y sin saber a cuál el préstamo deja de ser
+   * reclamable.
+   */
+  const basesPorDireccion = await Promise.all(
+    cliente.direcciones.map(async (direccion) => ({
+      direccion,
+      bases: (await siPuedeVerlo(apiServerFetch<Base[]>(`/direcciones/${direccion.id}/bases`))) ?? [],
+    })),
+  )
+  const totalDeBases = basesPorDireccion.reduce((suma, d) => suma + d.bases.length, 0)
 
   return (
     <div className="grid gap-6">
@@ -121,12 +143,29 @@ export default async function FichaDeClientePage({
             desde="ventas a crédito menos cobros"
             alerta={cartera !== null && Number(cartera.deuda) > 0}
           />
-          <Cuenta termino="Botellones" valor={cliente.saldos.botellones} desde="entregas" />
-          <Cuenta termino="Bases prestadas" valor={cliente.saldos.bases} desde="préstamos" />
+          {/*
+            Los tres que M5 dejó en «sin registrar todavía». M7 los llenó, y cada
+            uno viene de un lugar distinto a propósito: los botellones se cuentan
+            por CLIENTE porque son fungibles; las bases por DIRECCIÓN porque hay
+            que ir a buscarlas.
+          */}
+          <Cuenta
+            termino="Botellones"
+            valor={botellones?.enPoderDelCliente ?? null}
+            desde="entregas menos retornos"
+          />
+          <Cuenta
+            termino="Bases prestadas"
+            valor={cliente.direcciones.length > 0 ? totalDeBases : null}
+            desde="préstamos por dirección"
+          />
           <Cuenta
             termino="Cargos pendientes"
-            valor={cliente.saldos.cargosPendientes}
+            valor={
+              cartera ? `$${Number(cartera.cargosPendientes).toLocaleString('es-CO')}` : null
+            }
             desde="daños a una base"
+            alerta={cartera !== null && Number(cartera.cargosPendientes) > 0}
           />
         </dl>
       </section>
@@ -151,6 +190,25 @@ export default async function FichaDeClientePage({
                   {d.indicaciones ? (
                     <p className="mt-0.5 text-[13px] text-tenue">{d.indicaciones}</p>
                   ) : null}
+
+                  {/*
+                    Las bases van DEBAJO de su dirección y no en una lista
+                    aparte. Es lo que hace reclamable el préstamo: la pregunta
+                    que el operario se hace es «¿a cuál de sus tres locales voy a
+                    buscar la A-0913?».
+                  */}
+                  {(basesPorDireccion.find((b) => b.direccion.id === d.id)?.bases ?? []).map(
+                    (base) => (
+                      <p key={base.id} className="mt-1.5 flex items-center gap-2 text-[13px]">
+                        <Cifra tono={base.estado === 'danada' ? 'alerta' : 'secundario'}>
+                          {base.idSticker}
+                        </Cifra>
+                        <span className="text-tenue">
+                          {base.estado === 'danada' ? 'base dañada, con recargo' : 'base prestada'}
+                        </span>
+                      </p>
+                    ),
+                  )}
                 </div>
               </li>
             ))}

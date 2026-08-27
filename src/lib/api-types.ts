@@ -400,8 +400,68 @@ export interface Cobro {
   createdAt: string
 }
 
-/** `GET /clientes/:id/deuda` — el número que M5 dejó en `null`. */
-export interface DeudaDeCliente {
+
+/* ── Retornables — M7 ───────────────────────────────────────────────────── */
+
+/**
+ * El estado del parque de botellones — `GET /botellones`.
+ *
+ * La ley de conservación (`RN-ENV-02`) viaja en la respuesta a propósito: el
+ * dominio pidió que fallara **ruidosamente**, y un endpoint que la calcula sin
+ * decirla la deja tan silenciosa como no calcularla.
+ */
+export interface ParqueDeBotellones {
+  enBodega: number
+  /** Lo que suman todos los tenedores: la bodega más cada cliente. */
+  enPoderDeAlguien: number
+  /** Compras más ajustes, menos descartes. */
+  registrados: number
+  cuadra: boolean
+  /** Cuántos faltan (negativo) o sobran (positivo). Cero cuando cuadra. */
+  diferencia: number
+}
+
+export type EstadoDeBase = 'sana' | 'danada'
+
+/**
+ * Una base — el activo que SÍ tiene identidad.
+ *
+ * `direccionId` en `null` es la bodega: una base está en **exactamente un
+ * lugar** (`RN-BAS-04`), y la bodega es uno de esos lugares.
+ */
+export interface Base {
+  id: string
+  /** El ID impreso en el sticker físico — RN-BAS-10. */
+  idSticker: string
+  estado: EstadoDeBase
+  direccionId: string | null
+  danadaPor: string | null
+  danadaEn: string | null
+  recargoVentaId: string | null
+  activa: boolean
+  createdAt: string
+}
+
+export type TipoMovimientoBase = 'alta' | 'prestamo' | 'retorno' | 'dano' | 'descarte'
+
+export interface MovimientoDeBase {
+  id: number
+  baseId: string
+  tipo: TipoMovimientoBase
+  direccionId: string | null
+  motivo: string | null
+  registradoPor: string | null
+  createdAt: string
+}
+
+/**
+ * `GET /clientes/:id/deuda` — los DOS saldos de plata de RN-CLI-06.
+ *
+ * `deuda` nace de haber comprado; `cargosPendientes` nace de haber roto algo
+ * prestado. Se reclaman distinto, así que se cuentan distinto.
+ */
+export interface CarteraDeCliente {
   deuda: string
+  cargosPendientes: string
   cobros: Cobro[]
 }

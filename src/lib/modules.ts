@@ -1,4 +1,14 @@
-import { Boxes, Contact, Factory, Package, PackageOpen, Receipt, ShieldCheck, Users } from 'lucide-react'
+import {
+  Box,
+  Boxes,
+  Contact,
+  Factory,
+  Package,
+  PackageOpen,
+  Receipt,
+  ShieldCheck,
+  Users,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Role } from './roles'
 
@@ -99,6 +109,15 @@ export const ALL_MODULES: MenuModule[] = [
     label: 'Ventas',
     href: '/modulos/ventas',
     icono: Receipt,
+    roles: ['admin', 'pos', 'seller', 'contador'],
+  },
+  // El `seller` los VE y no los opera: quien entrega en la calle trabaja por
+  // ruta, y las rutas son M8. Lo dice la matriz, no esta lista.
+  {
+    id: 'retornables',
+    label: 'Retornables',
+    href: '/modulos/retornables',
+    icono: Box,
     roles: ['admin', 'pos', 'seller', 'contador'],
   },
   { id: 'usuarios', label: 'Usuarios', href: '/modulos/usuarios', icono: Users, roles: ['admin'] },

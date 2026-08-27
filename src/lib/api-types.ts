@@ -333,3 +333,75 @@ export interface FichaDeCliente extends Cliente {
     cargosPendientes: number | null
   }
 }
+
+/* ── Ventas — M6 ────────────────────────────────────────────────────────── */
+
+export type MedioDePago = 'efectivo' | 'transferencia' | 'credito'
+export type EstadoDeVenta = 'confirmada' | 'anulada'
+export type CanalDeVenta = 'mostrador' | 'whatsapp' | 'ruta'
+
+export interface Venta {
+  id: string
+  clienteId: string | null
+  tipoClienteAlMomento: TipoDeCliente | null
+  medioDePago: MedioDePago
+  canal: CanalDeVenta
+  estado: EstadoDeVenta
+  /** `numeric` en la base: llega como string y se compara como string. */
+  total: string
+  codigoDescuentoId: string | null
+  requiereFacturaElectronica: boolean
+  registradoPor: string | null
+  createdAt: string
+  anuladaPor: string | null
+  anuladaEn: string | null
+  motivoAnulacion: string | null
+}
+
+/**
+ * Una línea — RN-VEN-04 y RN-VEN-12.
+ *
+ * Los cuatro números están **congelados**: el precio de lista cambia, el tipo
+ * del cliente cambia, los códigos vencen y el piso se mueve. Sin congelarlos, un
+ * comprobante de hace seis meses se reinterpretaría con los valores de hoy.
+ */
+export interface LineaDeVenta {
+  id: string
+  ventaId: string
+  productoId: string
+  loteId: string
+  cantidad: number
+  precioListaAplicado: string
+  descuentoMonto: string
+  precioMinimoAplicado: string
+  precioFinal: string
+}
+
+export interface ResultadoDeVenta {
+  venta: Venta
+  lineas: {
+    loteCodigo: string
+    productoCodigo: string
+    cantidad: number
+    precioFinal: string
+    aplicadoParcialmente: boolean
+  }[]
+  /** El descuento se recortó contra el piso. La venta NO se rechazó. */
+  descuentoAplicadoParcialmente: boolean
+}
+
+export interface Cobro {
+  id: string
+  clienteId: string
+  monto: string
+  medioDePago: 'efectivo' | 'transferencia'
+  observaciones: string | null
+  registradoPor: string | null
+  createdAt: string
+}
+
+/** `GET /clientes/:id/deuda` — el número que M5 dejó en `null`. */
+export interface DeudaDeCliente {
+  deuda: string
+  cobros: Cobro[]
+}

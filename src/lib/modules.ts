@@ -1,4 +1,4 @@
-import { Boxes, Contact, Factory, Package, PackageOpen, ShieldCheck, Users } from 'lucide-react'
+import { Boxes, Contact, Factory, Package, PackageOpen, Receipt, ShieldCheck, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Role } from './roles'
 
@@ -90,6 +90,16 @@ export const ALL_MODULES: MenuModule[] = [
     href: '/modulos/clientes',
     icono: Contact,
     roles: ['admin', 'seller', 'pos', 'contador'],
+  },
+  // Los cuatro roles ven ventas, pero no las mismas: `pos` y `seller` ven las
+  // propias y el `contador` todas, y eso lo recorta `api/` con la matriz
+  // (RN-ACC-03). El menú solo dice quién entra.
+  {
+    id: 'ventas',
+    label: 'Ventas',
+    href: '/modulos/ventas',
+    icono: Receipt,
+    roles: ['admin', 'pos', 'seller', 'contador'],
   },
   { id: 'usuarios', label: 'Usuarios', href: '/modulos/usuarios', icono: Users, roles: ['admin'] },
   // Admin y contador ven la MISMA auditoría. Qué filas trae cada uno lo decide

@@ -20,7 +20,16 @@ describe('computeVisibleModules()', () => {
     // M4 le suma producción: cierra los libros y necesita saber cuánto se
      // produjo, aunque no pueda cerrar el día ni ver los tanques.
     // M5 le suma clientes: la cartera es suya.
-    expect(ids).toEqual(['productos', 'stock', 'insumos', 'produccion', 'clientes', 'auditoria'])
+    // M6 le suma ventas: cierra los numeros y necesita ver la cartera.
+    expect(ids).toEqual([
+      'productos',
+      'stock',
+      'insumos',
+      'produccion',
+      'clientes',
+      'ventas',
+      'auditoria',
+    ])
   })
 
   /**
@@ -39,6 +48,8 @@ describe('computeVisibleModules()', () => {
       'productos',
       'stock',
       'clientes',
+      // M6: vende en la calle. Ve las SUYAS — eso lo recorta `api/`.
+      'ventas',
     ])
   })
 
@@ -51,6 +62,8 @@ describe('computeVisibleModules()', () => {
       'produccion',
       // M5: atiende el mostrador, así que registra y verifica clientes.
       'clientes',
+      // M6: y es quien cobra.
+      'ventas',
     ])
   })
 
@@ -61,14 +74,14 @@ describe('computeVisibleModules()', () => {
    * Se reescribe como lista para que crezca a conciencia: agregar un módulo que
    * vean los cuatro roles obliga a tocar acá y decir por qué.
    */
-  it('los módulos que ven los cuatro roles son catálogo, stock y clientes', () => {
+  it('los módulos que ven los cuatro roles son catálogo, stock, clientes y ventas', () => {
     const paraTodos = ALL_MODULES.filter((m) =>
       (['admin', 'seller', 'pos', 'contador'] as Role[]).every((rol) => m.roles.includes(rol)),
     )
 
     // M5 suma el tercero: el `seller` los consigue, el `pos` los atiende en el
     // mostrador y el `contador` los necesita para la cartera.
-    expect(paraTodos.map((m) => m.id)).toEqual(['productos', 'stock', 'clientes'])
+    expect(paraTodos.map((m) => m.id)).toEqual(['productos', 'stock', 'clientes', 'ventas'])
   })
 
   it('sin roles no ve nada', () => {
@@ -96,6 +109,7 @@ describe('computeVisibleModules()', () => {
       'insumos',
       'produccion',
       'clientes',
+      'ventas',
       'usuarios',
       'auditoria',
     ])

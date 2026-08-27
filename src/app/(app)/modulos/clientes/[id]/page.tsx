@@ -10,7 +10,8 @@ import { nivelDeVerificacion } from '@/components/clientes/tarjetas-de-clientes'
 import { Cifra } from '@/components/stock/cifra'
 import { Estado } from '@/components/ui/estado'
 import { apiServerFetch } from '@/lib/api-server'
-import type { FichaDeCliente, MetodoDeVerificacion } from '@/lib/api-types'
+import type { DeudaDeCliente, FichaDeCliente, MetodoDeVerificacion } from '@/lib/api-types'
+import { siPuedeVerlo } from '@/lib/permiso-opcional'
 
 /** Qué significa cada método, en palabras — RN-CLI-14. */
 const METODO: Record<MetodoDeVerificacion, string> = {
@@ -38,7 +39,21 @@ export default async function FichaDeClientePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const cliente = await apiServerFetch<FichaDeCliente>(`/clientes/${id}`)
+
+  /*
+   * ── La deuda se pide aparte, y puede no venir ────────────────────────────
+   *
+   * Vive bajo `cobros:ver` y no bajo `clientes:ver`: es información de cartera,
+   * y quien ve un cliente no necesariamente ve lo que debe. El 403 decide, como
+   * en el tablero — sin copiar la matriz acá.
+   *
+   * Las dos van en paralelo: son independientes y encadenarlas sumaría una
+   * espera sin ganar nada.
+   */
+  const [cliente, cartera] = await Promise.all([
+    apiServerFetch<FichaDeCliente>(`/clientes/${id}`),
+    siPuedeVerlo(apiServerFetch<DeudaDeCliente>(`/clientes/${id}/deuda`)),
+  ])
   const nivel = nivelDeVerificacion(cliente)
 
   return (
@@ -92,7 +107,20 @@ export default async function FichaDeClientePage({
         </div>
 
         <dl className="grid gap-4 sm:grid-cols-4">
-          <Cuenta termino="Deuda" valor={cliente.saldos.deuda} desde="ventas a crédito" />
+          {/*
+            La deuda YA tiene de dónde salir: es la primera de las cuatro que
+            M6 llenó. Las otras tres siguen esperando a M7.
+
+            Se muestra en pesos y no como una cantidad suelta: es plata, y una
+            cifra sin `$` al lado de tres cifras de unidades se lee como
+            unidades.
+          */}
+          <Cuenta
+            termino="Deuda"
+            valor={cartera ? `$${Number(cartera.deuda).toLocaleString('es-CO')}` : null}
+            desde="ventas a crédito menos cobros"
+            alerta={cartera !== null && Number(cartera.deuda) > 0}
+          />
           <Cuenta termino="Botellones" valor={cliente.saldos.botellones} desde="entregas" />
           <Cuenta termino="Bases prestadas" valor={cliente.saldos.bases} desde="préstamos" />
           <Cuenta
@@ -166,10 +194,13 @@ function Cuenta({
   termino,
   valor,
   desde,
+  alerta = false,
 }: {
   termino: string
-  valor: number | null
+  /** Ya formateado cuando es plata. `null` es «todavía no hay de dónde». */
+  valor: number | string | null
   desde: string
+  alerta?: boolean
 }) {
   return (
     <div>
@@ -178,7 +209,9 @@ function Cuenta({
         {valor === null ? (
           <p className="text-[14px] text-tenue">Sin registrar todavía</p>
         ) : (
-          <Cifra tamano="grande">{valor.toLocaleString('es-CO')}</Cifra>
+          <Cifra tamano="grande" tono={alerta ? 'alerta' : 'principal'}>
+            {typeof valor === 'number' ? valor.toLocaleString('es-CO') : valor}
+          </Cifra>
         )}
         <p className="mt-1 text-[13px] text-tenue">de {desde}</p>
       </dd>

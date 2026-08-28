@@ -465,3 +465,11 @@ export interface CarteraDeCliente {
   cargosPendientes: string
   cobros: Cobro[]
 }
+
+/** ¿Alcanzan las bases hasta el próximo pedido? — RN-BAS-13. */
+export interface DisponibilidadDeBases {
+  libres: number
+  prestadasEnLaVentana: number
+  diasDeEntrega: number
+  alcanza: boolean
+}

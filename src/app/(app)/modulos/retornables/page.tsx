@@ -4,6 +4,7 @@ import {
   ListaDeBases,
   PrestarBase,
 } from '@/components/retornables/bases'
+import { AvisoDeBases } from '@/components/retornables/aviso-de-bases'
 import { EstadoDelParque } from '@/components/retornables/estado-del-parque'
 import {
   AjustarBotellones,
@@ -17,6 +18,7 @@ import type {
   Base,
   Cliente,
   Direccion,
+  DisponibilidadDeBases,
   FichaDeCliente,
   ParqueDeBotellones,
 } from '@/lib/api-types'
@@ -35,7 +37,7 @@ import type {
  * más urgente.
  */
 export default async function RetornablesPage() {
-  const [parque, bases, clientes, proximo] = await Promise.all([
+  const [parque, bases, clientes, proximo, disponibilidad] = await Promise.all([
     apiServerFetch<ParqueDeBotellones>('/botellones'),
     apiServerFetch<Base[]>('/bases'),
     apiServerFetch<Cliente[]>('/clientes'),
@@ -45,6 +47,7 @@ export default async function RetornablesPage() {
      * arme igual sin copiar acá la matriz de permisos — RN-ACC-02.
      */
     siPuedeVerlo(apiServerFetch<{ proximo: string }>('/bases/proximo-codigo')),
+    apiServerFetch<DisponibilidadDeBases>('/bases/disponibilidad'),
   ])
   const leidoEn = new Date()
 
@@ -85,6 +88,7 @@ export default async function RetornablesPage() {
         <h2 className="aq-micro text-tenue">
           {bases.length === 1 ? '1 base' : `${bases.length} bases`}
         </h2>
+        <AvisoDeBases disponibilidad={disponibilidad} hayBases={bases.length > 0} />
         <ListaDeBases bases={bases} direcciones={direcciones} />
         <SelloDeHora leidoEn={leidoEn} />
       </section>

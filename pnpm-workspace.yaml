@@ -2,5 +2,10 @@
 # sin declarar. Se aprueban de a uno, nunca en bloque.
 #
 # msw: su postinstall copia el service worker que usa el modo browser.
+#
+# unrs-resolver: el resolvedor nativo que usa el lint. Su postinstall enlaza el
+# binario de la plataforma. Localmente no se nota que falta declararlo —
+# `node_modules` ya está resuelto— pero en una imagen limpia el install falla.
 allowBuilds:
   msw: true
+  unrs-resolver: true

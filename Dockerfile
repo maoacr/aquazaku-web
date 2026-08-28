@@ -1,25 +1,26 @@
 # Aquazaku · web
 #
-# Tres etapas, y cada una existe por una razón concreta.
+# ── Por qué NO usa `output: 'standalone'` ───────────────────────────────────
 #
-# ── 1. deps ─────────────────────────────────────────────────────────────────
+# `standalone` es la forma recomendada y produce una imagen mucho más chica: un
+# servidor con solo los módulos que el runtime usa de verdad. Se intentó, y no
+# funciona con la estructura de `node_modules` que arma pnpm.
 #
-# Instala TODO, incluidas las dependencias de desarrollo: `next build` necesita
-# TypeScript y Tailwind. Va en su propia capa porque el lockfile casi nunca
-# cambia y el código sí — sin esta separación cada deploy reinstala de cero.
+# El trazador copió de `@swc/helpers` únicamente el directorio `cjs/`, y el
+# `require-hook` de Next resuelve el camino ESM. La imagen se construye sin una
+# queja y el servidor muere al arrancar:
 #
-# ── 2. build ────────────────────────────────────────────────────────────────
+#   Cannot find module '.../@swc/helpers/esm/_interop_require_default.js'
 #
-# `output: 'standalone'` deja en `.next/standalone` un servidor con solo los
-# módulos que el runtime usa de verdad.
+# `--node-linker=hoisted` tampoco alcanza: pnpm mantiene el almacén virtual en
+# `.pnpm` y el trazador sigue resolviendo por ahí. Ir copiando a mano los
+# directorios que falten es jugar a las escondidas con una lista que cambia con
+# cada dependencia.
 #
-# ── 3. runtime ──────────────────────────────────────────────────────────────
-#
-# No instala `node_modules`: copia lo que la etapa anterior ya resolvió. Y
-# copia `public` y `.next/static` A MANO, porque `standalone` NO los incluye:
-# asume que los sirve un CDN. Acá no hay CDN. Sin ese paso la app levanta y
-# responde, pero sin estilos ni fuentes — un fallo que parece de CSS y es de
-# empaquetado.
+# Se copia `node_modules` entero y se corre `next start`. La imagen pesa unos
+# cientos de megas más, y para un servidor que atiende a ocho personas eso es
+# una descarga única contra una clase entera de fallos que solo aparecen en
+# producción.
 #
 # ── Las variables NO se hornean en la imagen ────────────────────────────────
 #
@@ -31,7 +32,9 @@
 FROM node:22-alpine AS deps
 RUN corepack enable && corepack prepare pnpm@11.21.0 --activate
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+# `pnpm-workspace.yaml` va sí o sí: es donde vive `allowBuilds`, y sin él pnpm
+# rechaza los postinstall de msw y del resolvedor del lint, y el install falla.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 FROM node:22-alpine AS build
@@ -51,17 +54,21 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# El servidor mínimo que genera `standalone`, con sus dependencias adentro.
-COPY --from=build --chown=node:node /app/.next/standalone ./
-# Lo que `standalone` deja afuera a propósito.
-COPY --from=build --chown=node:node /app/.next/static ./.next/static
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/.next ./.next
 COPY --from=build --chown=node:node /app/public ./public
+COPY --from=build --chown=node:node /app/package.json ./package.json
+COPY --from=build --chown=node:node /app/next.config.ts ./next.config.ts
 
 USER node
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "server.js"]
+# Se invoca el binario directo, sin pnpm. `pnpm start` dispara un chequeo del
+# estado de las dependencias que abre un subproceso y falla en un contenedor sin
+# el árbol de trabajo completo — un fallo de la herramienta de desarrollo, no de
+# la aplicación, y que solo aparece al arrancar.
+CMD ["node_modules/.bin/next", "start"]

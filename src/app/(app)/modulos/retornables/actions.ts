@@ -131,3 +131,37 @@ export async function retornarBaseAction(
 }
 
 export type { EstadoDeFormulario }
+
+/**
+ * Comprar bases — RN-BAS-10.
+ *
+ * El aviso dice el RANGO, no «listo». Quien acaba de registrar veinte bases
+ * tiene que ir a imprimir veinte stickers, y el dato que necesita para eso es
+ * desde qué número hasta cuál.
+ */
+export async function comprarBasesAction(
+  _previo: EstadoDeFormulario,
+  formData: FormData,
+): Promise<EstadoDeFormulario> {
+  const cantidad = Number(formData.get('cantidad') ?? 0)
+
+  const res = await apiServerFetchRaw('/bases/compra', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cantidad }),
+  })
+
+  if (!res.ok) return { error: await mensajeDeError(res, 'No se pudo registrar la compra de bases.') }
+
+  const compradas = (await res.json()) as { idSticker: string }[]
+  const primera = compradas[0]?.idSticker
+  const ultima = compradas[compradas.length - 1]?.idSticker
+
+  revalidatePath('/modulos/retornables')
+
+  return exito(
+    compradas.length === 1
+      ? `Entró la base ${primera}.`
+      : `Entraron ${compradas.length} bases: de la ${primera} a la ${ultima}.`,
+  )
+}

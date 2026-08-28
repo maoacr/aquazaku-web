@@ -1,4 +1,9 @@
-import { DarDeAltaBase, ListaDeBases, PrestarBase } from '@/components/retornables/bases'
+import {
+  ComprarBases,
+  DarDeAltaBase,
+  ListaDeBases,
+  PrestarBase,
+} from '@/components/retornables/bases'
 import { EstadoDelParque } from '@/components/retornables/estado-del-parque'
 import {
   AjustarBotellones,
@@ -85,6 +90,7 @@ export default async function RetornablesPage() {
       </section>
 
       <PrestarBase bases={bases} direcciones={direcciones} />
+      <ComprarBases proximo={proximo?.proximo ?? null} />
       <DarDeAltaBase proximo={proximo?.proximo ?? null} />
     </div>
   )

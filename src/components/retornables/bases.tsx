@@ -3,6 +3,7 @@
 import { Box } from 'lucide-react'
 import { useActionState, useId } from 'react'
 import {
+  comprarBasesAction,
   darDeAltaBaseAction,
   type EstadoDeFormulario,
   prestarBaseAction,
@@ -99,6 +100,57 @@ function RetornarBase({ base }: { base: Base }) {
       >
         {enviando ? 'Registrando…' : 'Volvió a la bodega'}
       </button>
+    </form>
+  )
+}
+
+/**
+ * Comprar bases — RN-BAS-10.
+ *
+ * Espeja «Entraron botellones nuevos»: los dos activos entran al parque por una
+ * compra con cantidad. Cargar cuarenta de a una son cuarenta operaciones que
+ * pueden cortarse por la mitad, y con los stickers ya impresos el hueco queda
+ * en la caja, no en la pantalla.
+ *
+ * No pide sticker: una base comprada llega sin rotular. El sistema la numera y
+ * la respuesta dice desde qué número imprimir.
+ */
+export function ComprarBases({ proximo }: { proximo: string | null }) {
+  const [estado, accion, enviando] = useActionState(comprarBasesAction, INICIAL)
+  const idError = useId()
+
+  useAvisoDeExito(estado)
+
+  return (
+    <form key={estado.token ?? 'inicial'} action={accion} className="aq-tarjeta grid gap-4 p-5">
+      <div>
+        <h2 className="aq-titulo-tarjeta text-principal">Entraron bases nuevas</h2>
+        <p className="mt-1 text-[13px] text-tenue">
+          {proximo
+            ? `Se numeran solas desde la ${proximo}, en orden. Después se imprimen los stickers con esos números.`
+            : 'Se numeran solas, en orden. Después se imprimen los stickers con esos números.'}
+        </p>
+      </div>
+
+      <FormError id={idError}>{estado.error}</FormError>
+
+      <div className="flex flex-wrap items-end gap-4">
+        <label className="aq-etiqueta-campo">
+          <span>Cuántas</span>
+          <input
+            name="cantidad"
+            type="number"
+            required
+            min="1"
+            step="1"
+            className="aq-campo aq-cifra"
+          />
+        </label>
+
+        <button type="submit" disabled={enviando} className="aq-boton aq-boton-secundario">
+          {enviando ? 'Registrando…' : 'Registrar'}
+        </button>
+      </div>
     </form>
   )
 }

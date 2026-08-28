@@ -103,8 +103,23 @@ function RetornarBase({ base }: { base: Base }) {
   )
 }
 
-/** Alta de una base. El sticker es su identidad — RN-BAS-10. */
-export function DarDeAltaBase() {
+/**
+ * Alta de una base — RN-BAS-10.
+ *
+ * ── El número viene puesto, y se puede pisar ────────────────────────────────
+ *
+ * `proximo` llega del servidor, no se calcula acá. La regla —máximo + 1, sin
+ * reciclar descartados— vive en un solo lugar; una copia en este componente
+ * empezaría a proponer números ya tomados el día que la regla cambie, y el alta
+ * fallaría con un duplicado que el operario no pidió.
+ *
+ * Va como `defaultValue` y no como `placeholder` porque los dos caminos son
+ * reales y el más común hoy es **pisarlo**: Aquazaku tiene 40 bases con el
+ * rótulo pegado. Un placeholder obligaría a tipear siempre; un valor por
+ * defecto deja rotular una base nueva sin tocar el campo, y registrar una vieja
+ * escribiendo encima.
+ */
+export function DarDeAltaBase({ proximo }: { proximo: string | null }) {
   const [estado, accion, enviando] = useActionState(darDeAltaBaseAction, INICIAL)
   const idError = useId()
 
@@ -115,8 +130,9 @@ export function DarDeAltaBase() {
       <div>
         <h2 className="aq-titulo-tarjeta text-principal">Dar de alta una base</h2>
         <p className="mt-1 text-[13px] text-tenue">
-          El ID del sticker es lo único que la identifica. Sin él no se puede saber a cuál
-          dirección ir a buscarla.
+          {proximo
+            ? `Son cuatro dígitos. Si la base ya viene con el sticker pegado, escriba ese número encima del ${proximo}.`
+            : 'Son cuatro dígitos, con los ceros adelante: 0001, 0040, 0913.'}
         </p>
       </div>
 
@@ -129,8 +145,12 @@ export function DarDeAltaBase() {
             name="idSticker"
             required
             autoComplete="off"
-            placeholder="A-0913"
-            className="aq-campo aq-cifra uppercase"
+            inputMode="numeric"
+            pattern="\d{4}"
+            maxLength={4}
+            defaultValue={proximo ?? ''}
+            placeholder="0913"
+            className="aq-campo aq-cifra"
           />
         </label>
 

@@ -195,7 +195,7 @@ export default async function FichaDeClientePage({
                     Las bases van DEBAJO de su dirección y no en una lista
                     aparte. Es lo que hace reclamable el préstamo: la pregunta
                     que el operario se hace es «¿a cuál de sus tres locales voy a
-                    buscar la A-0913?».
+                    buscar la 0913?».
                   */}
                   {(basesPorDireccion.find((b) => b.direccion.id === d.id)?.bases ?? []).map(
                     (base) => (

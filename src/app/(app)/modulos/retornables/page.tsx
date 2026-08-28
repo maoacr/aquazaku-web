@@ -7,6 +7,7 @@ import {
 } from '@/components/retornables/movimientos-de-botellon'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch } from '@/lib/api-server'
+import { siPuedeVerlo } from '@/lib/permiso-opcional'
 import type {
   Base,
   Cliente,
@@ -29,10 +30,16 @@ import type {
  * más urgente.
  */
 export default async function RetornablesPage() {
-  const [parque, bases, clientes] = await Promise.all([
+  const [parque, bases, clientes, proximo] = await Promise.all([
     apiServerFetch<ParqueDeBotellones>('/botellones'),
     apiServerFetch<Base[]>('/bases'),
     apiServerFetch<Cliente[]>('/clientes'),
+    /*
+     * La propuesta del próximo sticker pide `bases:registrar`, y el `contador`
+     * solo tiene `ver`. `siPuedeVerlo` se traga ese 403 para que la pantalla se
+     * arme igual sin copiar acá la matriz de permisos — RN-ACC-02.
+     */
+    siPuedeVerlo(apiServerFetch<{ proximo: string }>('/bases/proximo-codigo')),
   ])
   const leidoEn = new Date()
 
@@ -78,7 +85,7 @@ export default async function RetornablesPage() {
       </section>
 
       <PrestarBase bases={bases} direcciones={direcciones} />
-      <DarDeAltaBase />
+      <DarDeAltaBase proximo={proximo?.proximo ?? null} />
     </div>
   )
 }

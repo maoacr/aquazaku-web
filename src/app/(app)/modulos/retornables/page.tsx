@@ -78,24 +78,42 @@ export default async function RetornablesPage() {
         </p>
       </header>
 
-      <EstadoDelParque parque={parque} />
+      {/*
+        Dos activos, DOS secciones, y cada una con todo lo suyo junto.
 
-      <EntregaYRetorno clientes={clientes} />
-      <ComprarBotellones />
-      <AjustarBotellones clientes={clientes} />
+        Antes las cuatro tarjetas de botellones venían primero y las de base
+        quedaban desperdigadas al final: prestar una base estaba en la posición
+        seis de siete, después de la lista, y nadie la encontraba.
 
-      <section className="grid gap-3">
-        <h2 className="aq-micro text-tenue">
-          {bases.length === 1 ? '1 base' : `${bases.length} bases`}
-        </h2>
-        <AvisoDeBases disponibilidad={disponibilidad} hayBases={bases.length > 0} />
-        <ListaDeBases bases={bases} direcciones={direcciones} />
-        <SelloDeHora leidoEn={leidoEn} />
+        El orden dentro de cada sección es el mismo: primero el estado —lo que
+        hay que mirar—, después lo que se hace todos los días, y al final lo que
+        pasa de vez en cuando (comprar, ajustar, dar de alta).
+      */}
+      <section className="grid gap-4">
+        <h2 className="aq-micro text-tenue">Botellones</h2>
+
+        <EstadoDelParque parque={parque} />
+
+        <EntregaYRetorno clientes={clientes} />
+        <ComprarBotellones />
+        <AjustarBotellones clientes={clientes} />
       </section>
 
-      <PrestarBase bases={bases} direcciones={direcciones} />
-      <ComprarBases proximo={proximo?.proximo ?? null} />
-      <DarDeAltaBase proximo={proximo?.proximo ?? null} />
+      <section className="grid gap-4">
+        <h2 className="aq-micro text-tenue">
+          Bases {bases.length > 0 ? `· ${bases.length}` : null}
+        </h2>
+
+        <AvisoDeBases disponibilidad={disponibilidad} hayBases={bases.length > 0} />
+
+        <PrestarBase bases={bases} direcciones={direcciones} />
+
+        <ListaDeBases bases={bases} direcciones={direcciones} />
+        <SelloDeHora leidoEn={leidoEn} />
+
+        <ComprarBases proximo={proximo?.proximo ?? null} />
+        <DarDeAltaBase proximo={proximo?.proximo ?? null} />
+      </section>
     </div>
   )
 }

@@ -130,6 +130,60 @@ export async function retornarBaseAction(
   )
 }
 
+/**
+ * Marcar una base como dañada — RN-BAS-08.
+ *
+ * ── El monto va explícito, y es la razón por la que este formulario existe ──
+ *
+ * La regla habla de un «valor de reposición configurable», pero el dominio no
+ * dice cuál es. Poner un default acá sería inventarlo, y sería peor que
+ * pedirlo: es plata que se le cobra a un cliente real.
+ *
+ * Cuando exista el módulo de configuración, ese valor pasa a ser el default de
+ * este campo — no su reemplazo.
+ */
+export async function marcarBaseDanadaAction(
+  _previo: EstadoDeFormulario,
+  formData: FormData,
+): Promise<EstadoDeFormulario> {
+  const baseId = String(formData.get('baseId') ?? '')
+
+  return enviar(
+    `/bases/${baseId}/dano`,
+    {
+      monto: String(formData.get('monto') ?? '').trim(),
+      motivo: String(formData.get('motivo') ?? ''),
+      medioDePago: String(formData.get('medioDePago') ?? 'efectivo'),
+    },
+    'No pudimos registrar el daño.',
+    (r) => {
+      const { base, recargo } = r as { base: { idSticker: string }; recargo: { total: string } }
+      return `Base ${base.idSticker} marcada como dañada. Se generó un recargo de $${recargo.total}.`
+    },
+  )
+}
+
+/**
+ * Descartar una base — RN-BAS-06.
+ *
+ * El motivo es obligatorio y no es burocracia: después de esto la base sale del
+ * parque y nadie vuelve a preguntar por ella. Este texto es lo único que queda
+ * para entender qué pasó dentro de tres meses.
+ */
+export async function descartarBaseAction(
+  _previo: EstadoDeFormulario,
+  formData: FormData,
+): Promise<EstadoDeFormulario> {
+  const baseId = String(formData.get('baseId') ?? '')
+
+  return enviar(
+    `/bases/${baseId}/descarte`,
+    { motivo: String(formData.get('motivo') ?? '') },
+    'No pudimos descartar la base.',
+    (r) => `Base ${r.idSticker} fuera del parque. Su historial y sus cargos siguen ahí.`,
+  )
+}
+
 export type { EstadoDeFormulario }
 
 /**

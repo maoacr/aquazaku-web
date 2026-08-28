@@ -1,6 +1,6 @@
 'use client'
 
-import { Minus, Plus, Trash2 } from 'lucide-react'
+import { Minus, Plus } from 'lucide-react'
 import { useActionState, useId, useState } from 'react'
 import { type EstadoDeVenta, registrarVentaAction } from '@/app/(app)/modulos/ventas/actions'
 import { FormError } from '@/components/auth/form-error'

@@ -30,6 +30,8 @@ describe('computeVisibleModules()', () => {
       'ventas',
       // M7: la cartera incluye lo que el cliente tiene prestado, no solo lo que debe.
       'retornables',
+      // M9: el contador ve a quién se le compra, pero no registra compras.
+      'proveedores',
       'auditoria',
     ])
   })
@@ -71,6 +73,9 @@ describe('computeVisibleModules()', () => {
       'ventas',
       // M7: entrega botellones y presta bases desde el mostrador.
       'retornables',
+      // M9: recibe la mercadería, así que registra la compra. Dar de alta un
+      // proveedor NO: eso es una decisión del negocio, no del mostrador.
+      'proveedores',
     ])
   })
 
@@ -124,6 +129,7 @@ describe('computeVisibleModules()', () => {
       'clientes',
       'ventas',
       'retornables',
+      'proveedores',
       'usuarios',
       'auditoria',
     ])

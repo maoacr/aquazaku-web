@@ -7,6 +7,7 @@ import {
   PackageOpen,
   Receipt,
   ShieldCheck,
+  Truck,
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -119,6 +120,18 @@ export const ALL_MODULES: MenuModule[] = [
     href: '/modulos/retornables',
     icono: Box,
     roles: ['admin', 'pos', 'seller', 'contador'],
+  },
+  /*
+   * El `seller` NO entra: no ve proveedores ni registra compras. La matriz de
+   * `api/` dice lo mismo, y esta lista es solo la cara visible de eso —
+   * RN-ACC-02: la UI oculta, la API prohíbe.
+   */
+  {
+    id: 'proveedores',
+    label: 'Proveedores',
+    href: '/modulos/proveedores',
+    icono: Truck,
+    roles: ['admin', 'pos', 'contador'],
   },
   { id: 'usuarios', label: 'Usuarios', href: '/modulos/usuarios', icono: Users, roles: ['admin'] },
   // Admin y contador ven la MISMA auditoría. Qué filas trae cada uno lo decide

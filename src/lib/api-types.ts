@@ -473,3 +473,35 @@ export interface DisponibilidadDeBases {
   diasDeEntrega: number
   alcanza: boolean
 }
+
+// ── Proveedores y compras — M9 ───────────────────────────────────────────────
+
+export interface Proveedor {
+  id: string
+  nombre: string
+  nit: string | null
+  contacto: string | null
+  activo: boolean
+  createdAt: string
+}
+
+export interface Compra {
+  id: string
+  proveedorId: string
+  medioDePago: 'efectivo' | 'transferencia' | 'credito'
+  /** Solo a crédito — RN-PRO-07. */
+  venceEl: string | null
+  pagada: boolean
+  total: string
+  estado: 'recibida' | 'anulada'
+  createdAt: string
+}
+
+/** Una compra a crédito que ya pasó su fecha — RN-PRO-07. */
+export interface CompraVencida {
+  id: string
+  proveedor: string
+  total: string
+  venceEl: string
+  diasDeAtraso: number
+}

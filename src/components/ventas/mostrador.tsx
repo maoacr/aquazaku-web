@@ -53,6 +53,7 @@ export function Mostrador({
   const [medioDePago, setMedioDePago] = useState('efectivo')
   const [codigo, setCodigo] = useState('')
   const [requiereFactura, setRequiereFactura] = useState(false)
+  const [sinVacio, setSinVacio] = useState(0)
 
   useAvisoDeExito(estado)
   useLimpiezaAlRegistrar(estado.token, () => {
@@ -94,6 +95,25 @@ export function Mostrador({
     return suma + (producto ? Number(precioDe(producto)) * item.cantidad : 0)
   }, 0)
 
+  /*
+   * ── Los envases que salen del parque — RN-ENV-03 ──────────────────────────
+   *
+   * Solo cuentan los productos de presentación `botellon`: una paca de bolsas
+   * no lleva ningún activo retornable, y preguntar por vacíos ahí sería ruido.
+   */
+  const botellonesEnCarrito = items.reduce((suma, item) => {
+    const producto = productos.find((p) => p.id === item.productoId)
+    return suma + (producto?.presentacion === 'botellon' ? item.cantidad : 0)
+  }, 0)
+
+  /*
+   * Se recorta solo cuando el carrito baja: dejar un `sinVacio` mayor que los
+   * botellones vendidos haría que el servidor rechace con un número que la
+   * pantalla ya sabía que estaba mal.
+   */
+  const salenSinVacio = Math.min(sinVacio, botellonesEnCarrito)
+  const botellonSinCliente = salenSinVacio > 0 && !clienteId
+
   const excedidos = items.filter((i) => i.cantidad > vendibleDe(i.productoId))
   const creditoSinCliente = medioDePago === 'credito' && !clienteId
 
@@ -103,6 +123,7 @@ export function Mostrador({
       <input type="hidden" name="clienteId" value={clienteId} />
       <input type="hidden" name="medioDePago" value={medioDePago} />
       <input type="hidden" name="requiereFactura" value={requiereFactura ? 'si' : 'no'} />
+      <input type="hidden" name="botellonesSinVacio" value={salenSinVacio} />
 
       <div>
         <h2 className="aq-titulo-tarjeta text-principal">Registrar una venta</h2>
@@ -226,6 +247,47 @@ export function Mostrador({
         </label>
       </div>
 
+      {botellonesEnCarrito > 0 ? (
+        <div className="rounded-lg border border-sutil p-4">
+          <p className="text-[13px] text-principal">
+            {botellonesEnCarrito === 1
+              ? '¿Trajo el botellón vacío?'
+              : `¿Trajo los ${botellonesEnCarrito} botellones vacíos?`}
+          </p>
+          {/*
+            La recarga normal es un intercambio y no mueve nada, así que el
+            default es «sí»: el caso común no cuesta ningún clic.
+
+            Lo que se pregunta es CUÁNTOS no trajo, y no un sí/no, porque en el
+            mostrador se dice «vendí tres, trajo dos» — y eso es UN envase que
+            sale, no tres ni ninguno.
+          */}
+          <p className="mt-1 text-[13px] text-tenue">
+            Si se lleva alguno sin devolver el vacío, queda anotado a su nombre. No se le cobra:
+            el envase sigue siendo de la planta.
+          </p>
+
+          <label className="aq-etiqueta-campo mt-3">
+            <span>Se lleva sin devolver</span>
+            <input
+              type="number"
+              min={0}
+              max={botellonesEnCarrito}
+              value={salenSinVacio}
+              onChange={(e) => setSinVacio(Number(e.target.value))}
+              className="aq-campo aq-cifra w-24"
+            />
+          </label>
+
+          {botellonSinCliente ? (
+            <p className="mt-3 text-[13px] text-alerta">
+              Un botellón que sale sin vacío queda a cargo de alguien. Elija el cliente arriba: sin
+              nombre no hay a quién reclamárselo.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <label className="aq-ficha">
         <input
           type="checkbox"
@@ -276,7 +338,7 @@ export function Mostrador({
 
       <button
         type="submit"
-        disabled={enviando || items.length === 0}
+        disabled={enviando || items.length === 0 || botellonSinCliente}
         className="aq-boton aq-boton-primario aq-boton-grande justify-self-start"
       >
         {enviando ? 'Registrando…' : 'Cobrar'}

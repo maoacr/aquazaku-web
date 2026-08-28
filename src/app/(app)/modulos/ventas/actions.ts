@@ -55,6 +55,15 @@ export async function registrarVentaAction(
   const clienteId = String(formData.get('clienteId') ?? '')
   const codigo = String(formData.get('codigoDescuento') ?? '').trim()
 
+  /*
+   * Cuántos botellones salen SIN vacío de contrapartida — RN-ENV-03.
+   *
+   * Solo viaja cuando es mayor que cero: el caso común es el intercambio, que
+   * no mueve el parque, y mandar un `0` en cada venta ensuciaría la bitácora
+   * con un campo que casi nunca dice nada.
+   */
+  const sinVacio = Number(formData.get('botellonesSinVacio') ?? 0)
+
   const res = await apiServerFetchRaw('/ventas', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -63,6 +72,7 @@ export async function registrarVentaAction(
       ...(clienteId && { clienteId }),
       items,
       ...(codigo && { codigoDescuento: codigo }),
+      ...(sinVacio > 0 && { botellonesSinVacio: sinVacio }),
       requiereFacturaElectronica: formData.get('requiereFactura') === 'si',
     }),
   })

@@ -3,6 +3,7 @@ import {
   Boxes,
   Contact,
   Factory,
+  FileSpreadsheet,
   Package,
   PackageOpen,
   Receipt,
@@ -132,6 +133,18 @@ export const ALL_MODULES: MenuModule[] = [
     href: '/modulos/proveedores',
     icono: Truck,
     roles: ['admin', 'pos', 'contador'],
+  },
+  /*
+   * M11. Solo `admin` y `contador`: la pantalla muestra el total facturado y
+   * quién debe cuánto, y la matriz separa `reportes:financieros` de
+   * `operativos` justamente para que el `pos` no vea la plata del negocio.
+   */
+  {
+    id: 'reportes',
+    label: 'Reportes',
+    href: '/modulos/reportes',
+    icono: FileSpreadsheet,
+    roles: ['admin', 'contador'],
   },
   { id: 'usuarios', label: 'Usuarios', href: '/modulos/usuarios', icono: Users, roles: ['admin'] },
   // Admin y contador ven la MISMA auditoría. Qué filas trae cada uno lo decide

@@ -505,3 +505,48 @@ export interface CompraVencida {
   venceEl: string
   diasDeAtraso: number
 }
+
+// ── Contador — M11 ───────────────────────────────────────────────────────────
+
+/**
+ * Los cinco movimientos de PLATA — RN-CON-04.
+ *
+ * Nombre propio para no chocar con `TipoDeMovimiento`, que es el de stock. Son
+ * dos ejes distintos: uno mueve producto, el otro mueve dinero.
+ */
+export type TipoDeMovimientoDePlata = 'venta' | 'recargo' | 'cobro' | 'devolucion' | 'compra'
+
+export interface MovimientoDePlata {
+  fecha: string
+  tipo: TipoDeMovimientoDePlata
+  /** El cliente o el proveedor. `null` en la venta de mostrador sin cliente. */
+  contraparte: string | null
+  monto: string
+  /** `+1` entra plata, `−1` sale. */
+  signo: 1 | -1
+  medioDePago: 'efectivo' | 'transferencia' | 'credito' | null
+  documentoId: string
+  detalle: string | null
+}
+
+export interface Extracto {
+  desde: string
+  hasta: string
+  movimientos: MovimientoDePlata[]
+  totales: {
+    entradas: string
+    salidas: string
+    neto: string
+    porMedioDePago: { efectivo: string; transferencia: string; credito: string }
+    /** RN-CON-03: `false` si la descomposición no suma al total. */
+    cuadra: boolean
+  }
+}
+
+export interface CarteraDeCliente {
+  clienteId: string
+  cliente: string
+  documento: string
+  total: string
+  tramos: Record<string, string>
+}

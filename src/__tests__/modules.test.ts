@@ -32,6 +32,8 @@ describe('computeVisibleModules()', () => {
       'retornables',
       // M9: el contador ve a quién se le compra, pero no registra compras.
       'proveedores',
+      // M11: extracto y cartera. `reportes:financieros` — la plata del negocio.
+      'reportes',
       'auditoria',
     ])
   })
@@ -130,6 +132,7 @@ describe('computeVisibleModules()', () => {
       'ventas',
       'retornables',
       'proveedores',
+      'reportes',
       'usuarios',
       'auditoria',
     ])

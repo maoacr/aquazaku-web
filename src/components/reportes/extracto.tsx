@@ -1,7 +1,8 @@
 import { AlertTriangle, CalendarSearch } from 'lucide-react'
 import { Cifra } from '@/components/stock/cifra'
 import { Vacio } from '@/components/ui/vacio'
-import type { Extracto, MovimientoDePlata, TipoDeMovimientoDePlata } from '@/lib/api-types'
+import type { Extracto, MovimientoDePlata } from '@/lib/api-types'
+import { type Columna, columnasVisibles } from './columnas'
 
 /**
  * El extracto de movimientos — RN-CON-03, 04 y 06.
@@ -11,16 +12,14 @@ import type { Extracto, MovimientoDePlata, TipoDeMovimientoDePlata } from '@/lib
  * reconstruirlo a mano, que es lo que hace hoy.
  */
 
-/** Nombrados por lo que SON para quien lee, no por su valor en la base. */
-const NOMBRE: Record<TipoDeMovimientoDePlata, string> = {
-  venta: 'Venta',
-  recargo: 'Recargo por daño',
-  cobro: 'Cobro',
-  devolucion: 'Devolución',
-  compra: 'Compra',
-}
-
-export function TablaDeExtracto({ extracto }: { extracto: Extracto }) {
+export function TablaDeExtracto({
+  extracto,
+  columnas,
+}: {
+  extracto: Extracto
+  /** Lo que el contador eligió llevarse. Sin nada elegido, las de siempre. */
+  columnas?: string
+}) {
   if (extracto.movimientos.length === 0) {
     return (
       <Vacio
@@ -34,21 +33,26 @@ export function TablaDeExtracto({ extracto }: { extracto: Extracto }) {
     )
   }
 
+  const visibles = columnasVisibles(columnas)
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-[14px]">
         <thead>
           <tr className="border-b border-sutil text-left">
-            <th className="aq-micro py-2 pr-4 text-tenue">Fecha</th>
-            <th className="aq-micro py-2 pr-4 text-tenue">Movimiento</th>
-            <th className="aq-micro py-2 pr-4 text-tenue">Con quién</th>
-            <th className="aq-micro py-2 pr-4 text-tenue">Medio</th>
-            <th className="aq-micro py-2 pr-4 text-right text-tenue">Monto</th>
+            {visibles.map((c) => (
+              <th
+                key={c.clave}
+                className={`aq-micro py-2 pr-4 text-tenue ${c.numerica ? 'text-right' : ''}`}
+              >
+                {c.etiqueta}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {extracto.movimientos.map((m) => (
-            <Fila key={`${m.tipo}-${m.documentoId}`} movimiento={m} />
+            <Fila key={`${m.tipo}-${m.documentoId}`} movimiento={m} columnas={visibles} />
           ))}
         </tbody>
       </table>
@@ -56,27 +60,25 @@ export function TablaDeExtracto({ extracto }: { extracto: Extracto }) {
   )
 }
 
-function Fila({ movimiento: m }: { movimiento: MovimientoDePlata }) {
+function Fila({ movimiento: m, columnas }: { movimiento: MovimientoDePlata; columnas: Columna[] }) {
   return (
     <tr className="border-b border-sutil/50">
-      <td className="aq-cifra py-2 pr-4 text-secundario">{m.fecha}</td>
-      <td className="py-2 pr-4 text-principal">
-        {NOMBRE[m.tipo]}
-        {m.detalle ? <span className="block text-[13px] text-tenue">{m.detalle}</span> : null}
-      </td>
-      {/*
-        La venta de mostrador sin cliente NO es un dato que falte: `cliente_id`
-        es nullable a propósito (RN-VEN). Poner un guion lo dice sin sugerir que
-        alguien se olvidó de cargarlo.
-      */}
-      <td className="py-2 pr-4 text-secundario">{m.contraparte ?? '—'}</td>
-      <td className="py-2 pr-4 text-tenue">{m.medioDePago ?? '—'}</td>
-      <td className="aq-cifra py-2 pr-4 text-right tabular-nums">
-        <span className={m.signo === 1 ? 'text-principal' : 'text-alerta'}>
-          {m.signo === 1 ? '' : '−'}
-          {m.monto}
-        </span>
-      </td>
+      {columnas.map((c) => (
+        <td
+          key={c.clave}
+          className={
+            c.numerica
+              ? `aq-cifra py-2 pr-4 text-right tabular-nums ${
+                  m.signo === 1 ? 'text-principal' : 'text-alerta'
+                }`
+              : 'py-2 pr-4 text-secundario'
+          }
+        >
+          {/* El menos tipográfico solo en pantalla: en el CSV va el guion ASCII,
+              que es lo único que una hoja de cálculo lee como número negativo. */}
+          {c.numerica ? c.valor(m).replace('-', '\u2212') : c.valor(m)}
+        </td>
+      ))}
     </tr>
   )
 }

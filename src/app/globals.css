@@ -2077,3 +2077,72 @@ textarea.aq-campo {
 [data-sileo-title][data-sileo-title] {
   text-transform: none;
 }
+
+/**
+ * ── Impresión: el PDF del contador — RN-CON-08 ──────────────────────────────
+ *
+ * El PDF no lo genera el servidor: lo genera el navegador con «Imprimir →
+ * Guardar como PDF». Una librería de PDF sería una dependencia pesada para
+ * volver a dibujar a mano una tabla que ya existe, y ese dibujo empezaría a
+ * separarse de la pantalla desde el primer cambio.
+ *
+ * El precio es que la hoja de impresión tiene que existir y estar bien. Estas
+ * reglas son ese precio.
+ */
+@media print {
+  /*
+   * ── Lo que rompe una impresión sin que nadie lo note ──────────────────────
+   *
+   * El armazón es una app: `h-dvh` y un `<main>` con scroll propio. Un
+   * contenedor con `overflow` imprime SOLO lo que se ve — el resto no sale
+   * cortado con una advertencia, sale ausente.
+   *
+   * El resultado es una hoja con las primeras diez filas y pinta de estar
+   * completa. Por eso esto va primero: es lo único de acá que produce un
+   * documento equivocado en vez de uno feo.
+   */
+  .aq-armazon {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .aq-armazon > main {
+    min-height: 0;
+    overflow: visible;
+  }
+
+  /* Menú, cabecera y pie no van al papel: ocupan media hoja y no dicen nada. */
+  .aq-armazon > *:not(main) {
+    display: none;
+  }
+
+  /*
+   * Siempre en claro. En modo oscuro el papel saldría negro — gasta el tóner de
+   * una oficina entera y se lee peor que la pantalla.
+   */
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  /* El encabezado se repite en cada hoja: sin esto, de la página dos en
+     adelante hay columnas de números sin nombre. */
+  thead {
+    display: table-header-group;
+  }
+
+  /* Una fila partida a la mitad entre dos hojas es un movimiento que hay que
+     leer en dos pedazos, y el monto suele quedar del otro lado. */
+  tr {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 1.5cm;
+  }
+}

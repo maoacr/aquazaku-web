@@ -550,3 +550,11 @@ export interface CarteraDeCliente {
   total: string
   tramos: Record<string, string>
 }
+
+/** Un mes del resumen — M11, RN-CON-07. */
+export interface Mes {
+  /** `YYYY-MM`. */
+  mes: string
+  totales: Extracto['totales']
+  porTipo: Record<TipoDeMovimientoDePlata, string>
+}

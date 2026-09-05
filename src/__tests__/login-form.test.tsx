@@ -74,10 +74,59 @@ describe('<LoginForm />', () => {
 })
 
 describe('<LoginPage />', () => {
-  it('renderiza el formulario', () => {
-    render(<LoginPage />)
+  const pagina = async (params: { aviso?: string } = {}) =>
+    render(await LoginPage({ searchParams: Promise.resolve(params) }))
+
+  it('renderiza el formulario', async () => {
+    await pagina()
 
     expect(screen.getByRole('heading', { level: 1, name: 'Iniciar sesión' })).toBeInTheDocument()
+  })
+
+  /**
+   * ── El aviso que sobrevive al redirect ────────────────────────────────────
+   *
+   * Cambiar la contraseña te devuelve al login. Sin una línea que lo explique,
+   * esa pantalla se lee como «algo salió mal, volvé a empezar».
+   *
+   * El emisor existía desde el primer día —`redirect('/login?…')`— y el
+   * receptor no. La señal se mandó al vacío sin que nada fallara: ni un test,
+   * ni un tipo, ni un log.
+   */
+  it('muestra el aviso que dejó el cambio de contraseña', async () => {
+    await pagina({ aviso: 'password-changed' })
+
+    expect(screen.getByRole('status')).toHaveTextContent('Su contraseña se cambió')
+  })
+
+  it('y el de restablecerla, que es otro camino', async () => {
+    await pagina({ aviso: 'password-reset' })
+
+    expect(screen.getByRole('status')).toHaveTextContent('Su contraseña se restableció')
+  })
+
+  it('sin aviso no muestra nada: no deja un hueco vacío', async () => {
+    await pagina()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  /*
+   * El valor lo escribe quien arma el enlace, y cualquiera puede armar uno. Sin
+   * la tabla de claves, `?aviso=Su+cuenta+fue+bloqueada` saldría con la
+   * tipografía del sistema y se leería como si lo dijera Aquazaku.
+   */
+  it('un texto arbitrario en la URL NO se muestra', async () => {
+    await pagina({ aviso: 'Su cuenta fue bloqueada, llame a este número' })
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByText(/bloqueada/)).not.toBeInTheDocument()
+  })
+
+  it('una clave desconocida tampoco', async () => {
+    await pagina({ aviso: 'password-inventado' })
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })
 

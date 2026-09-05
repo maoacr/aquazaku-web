@@ -116,7 +116,7 @@ describe('resetPasswordAction()', () => {
   it('manda a login con el aviso de exito', async () => {
     await expect(resetPasswordAction({}, form(DATOS))).rejects.toThrow('NEXT_REDIRECT')
 
-    expect(redirect).toHaveBeenCalledWith('/login?toast=password-reset')
+    expect(redirect).toHaveBeenCalledWith('/login?aviso=password-reset')
   })
 
   it('rechaza si la confirmacion no coincide, sin llamar a api/', async () => {
@@ -189,7 +189,15 @@ describe('changePasswordAction()', () => {
   it('manda a login, porque el cambio cierra la sesion actual', async () => {
     await expect(changePasswordAction({}, form(DATOS))).rejects.toThrow('NEXT_REDIRECT')
 
-    expect(redirect).toHaveBeenCalledWith('/login?toast=password-changed')
+    /*
+     * Este test verificaba que la señal se MANDA. Durante meses nadie la
+     * escuchaba: `/login` no leía el parámetro y la confirmación no aparecía
+     * nunca. El test seguía en verde.
+     *
+     * Verificar que emitiste un mensaje no verifica que alguien lo reciba. El
+     * otro extremo se prueba en `login-form.test.tsx`.
+     */
+    expect(redirect).toHaveBeenCalledWith('/login?aviso=password-changed')
   })
 
   it('exige la contrasena actual', async () => {

@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { conAviso } from '@/lib/avisos-de-navegacion'
 import { apiServerFetchRaw } from '@/lib/api-server'
 import { cuerpoDeError, mensajeRateLimit, validarPasswordNueva } from '@/lib/form-errors'
 
@@ -45,5 +46,5 @@ export async function resetPasswordAction(
 
   // No se reenvía cookie: resetear NO deja la sesión abierta. Además api/ borra
   // todas las sesiones del usuario, que es el punto de recuperar una cuenta.
-  redirect('/login?toast=password-reset')
+  redirect(conAviso('/login', 'password-reset'))
 }

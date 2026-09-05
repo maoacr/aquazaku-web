@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { conAviso } from '@/lib/avisos-de-navegacion'
 import { apiServerFetchRaw } from '@/lib/api-server'
 import { cuerpoDeError, mensajeRateLimit, validarPasswordNueva } from '@/lib/form-errors'
 
@@ -58,5 +59,5 @@ export async function changePasswordAction(
   // (Task 7). Es deliberado: si alguien te robó la sesión y recuperás la
   // cuenta, sin eso el atacante se queda adentro. Por lo mismo, mandar al
   // dashboard sería mentir — la sesión ya no existe.
-  redirect('/login?toast=password-changed')
+  redirect(conAviso('/login', 'password-changed'))
 }

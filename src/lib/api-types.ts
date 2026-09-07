@@ -558,3 +558,33 @@ export interface Mes {
   totales: Extracto['totales']
   porTipo: Record<TipoDeMovimientoDePlata, string>
 }
+
+/**
+ * Los lotes de un producto, con el umbral que decide cuál «vence pronto».
+ *
+ * El umbral viaja con el dato porque configurarlo es de `admin` pero mirarlo es
+ * de quien ve stock: el `pos` no tiene `configuracion:ver`, y aun así la
+ * pantalla tiene que pintar bien.
+ */
+export interface LotesDeProducto {
+  lotes: LoteConSaldo[]
+  diasDeAvisoDeVencimiento: number
+}
+
+/**
+ * Un umbral de alerta — M12.
+ *
+ * La etiqueta, la ayuda y los límites viajan con el valor para que la pantalla
+ * no los copie: un parámetro nuevo aparece en la administración con solo
+ * agregarlo en una migración.
+ */
+export interface Parametro {
+  clave: string
+  valor: number
+  minimo: number
+  maximo: number
+  etiqueta: string
+  ayuda: string
+  unidad: string
+  actualizadoEn: string
+}

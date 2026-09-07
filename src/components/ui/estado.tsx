@@ -121,7 +121,6 @@ const CANALES = {
  * ser un parámetro y esta constante se va — no se queda como «default», que es
  * como nacen los dos lugares donde configurar lo mismo.
  */
-export const DIAS_DE_AVISO_DE_VENCIMIENTO = 7
 
 /**
  * `hoy` llega por parámetro y no de `new Date()` a propósito: el servidor y el
@@ -131,10 +130,14 @@ export const DIAS_DE_AVISO_DE_VENCIMIENTO = 7
  * Las fechas son `YYYY-MM-DD`, así que comparar como texto ordena igual que
  * comparar como fecha — sin construir un `Date` que arrastre husos.
  */
-export function estadoDeVencimiento(fechaVencimiento: string, hoy: string): Tono {
+export function estadoDeVencimiento(
+  fechaVencimiento: string,
+  hoy: string,
+  diasDeAviso: number,
+): Tono {
   if (fechaVencimiento < hoy) return 'expuesto'
 
-  return diasEntre(hoy, fechaVencimiento) <= DIAS_DE_AVISO_DE_VENCIMIENTO ? 'justo' : 'cubierto'
+  return diasEntre(hoy, fechaVencimiento) <= diasDeAviso ? 'justo' : 'cubierto'
 }
 
 /** Días de calendario entre dos `YYYY-MM-DD`, contados en UTC para no arrastrar husos. */

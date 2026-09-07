@@ -1,4 +1,5 @@
 import {
+  BellRing,
   Box,
   Boxes,
   Contact,
@@ -155,6 +156,18 @@ export const ALL_MODULES: MenuModule[] = [
     href: '/modulos/auditoria',
     icono: ShieldCheck,
     roles: ['admin', 'contador'],
+  },
+  /*
+   * Solo `admin`: configurar cuándo avisa el sistema es una decisión del
+   * negocio, no de la operación. El `pos` VE las alertas —el umbral viaja con
+   * el dato que lo usa— pero no las mueve.
+   */
+  {
+    id: 'alertas',
+    label: 'Alertas',
+    href: '/modulos/alertas',
+    icono: BellRing,
+    roles: ['admin'],
   },
 ]
 

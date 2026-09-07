@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
-  DIAS_DE_AVISO_DE_VENCIMIENTO,
   Estado,
   ICONO_DE_ESTADO,
   TEXTO_DE_VENCIMIENTO,
@@ -136,33 +135,52 @@ function nombreLucide(icono: (typeof ICONO_DE_ESTADO)[Tono]): string {
  * El vencimiento como estado del semáforo.
  *
  * `RN-STK-08` fija la vida útil en 30 días y bloquea lo vencido; el aviso previo
- * lo fija `RN-STK-11`. El test no valida el número: valida
- * que la frontera esté donde la constante dice, sea cual sea.
+ * lo fija `RN-STK-11`.
+ *
+ * ── El umbral ya no es una constante ────────────────────────────────────────
+ *
+ * Era `DIAS_DE_AVISO_DE_VENCIMIENTO = 7` en este módulo. Ahora se configura
+ * desde la administración y **viaja con los lotes** (M12): el número correcto
+ * depende de la rotación real y moverlo no puede exigir un despliegue.
+ *
+ * Por eso el test lo pasa por parámetro y prueba la FRONTERA, no el número: la
+ * regla es «dentro de la ventana avisa, fuera no», valga la ventana lo que
+ * valga.
  */
 describe('el vencimiento se traduce a un estado', () => {
   const hoy = '2026-08-22'
+  const VENTANA = 7
 
   it('un lote que ya venció está expuesto', () => {
-    expect(estadoDeVencimiento('2026-08-21', hoy)).toBe('expuesto')
+    expect(estadoDeVencimiento('2026-08-21', hoy, VENTANA)).toBe('expuesto')
   })
 
   it('el día del vencimiento todavía NO está vencido', () => {
     // Vence «el» 22, no «antes del» 22: ese día el producto se puede vender.
-    expect(estadoDeVencimiento(hoy, hoy)).not.toBe('expuesto')
+    expect(estadoDeVencimiento(hoy, hoy, VENTANA)).not.toBe('expuesto')
   })
 
   it('dentro de la ventana de aviso está justo', () => {
-    expect(estadoDeVencimiento(sumarDias(hoy, DIAS_DE_AVISO_DE_VENCIMIENTO), hoy)).toBe('justo')
+    expect(estadoDeVencimiento(sumarDias(hoy, VENTANA), hoy, VENTANA)).toBe('justo')
   })
 
   it('un día después de la ventana ya está cubierto', () => {
-    expect(estadoDeVencimiento(sumarDias(hoy, DIAS_DE_AVISO_DE_VENCIMIENTO + 1), hoy)).toBe(
-      'cubierto',
-    )
+    expect(estadoDeVencimiento(sumarDias(hoy, VENTANA + 1), hoy, VENTANA)).toBe('cubierto')
   })
 
   it('los tres estados tienen texto propio', () => {
     expect(new Set(Object.values(TEXTO_DE_VENCIMIENTO)).size).toBe(3)
+  })
+
+  /*
+   * Lo que M12 compra: con la ventana en 14, un lote a 10 días ya avisa. Con la
+   * anterior de 7, ese mismo lote se veía tranquilo.
+   */
+  it('mover la ventana mueve la frontera, sin desplegar nada', () => {
+    const aDiezDias = sumarDias(hoy, 10)
+
+    expect(estadoDeVencimiento(aDiezDias, hoy, 7)).toBe('cubierto')
+    expect(estadoDeVencimiento(aDiezDias, hoy, 14)).toBe('justo')
   })
 
   /**
@@ -171,7 +189,7 @@ describe('el vencimiento se traduce a un estado', () => {
    * en una pantalla y vigente en la otra.
    */
   it('no depende del reloj de quien lo ejecuta', () => {
-    const conUnHoyInventado = estadoDeVencimiento('2030-01-01', '2029-12-31')
+    const conUnHoyInventado = estadoDeVencimiento('2030-01-01', '2029-12-31', VENTANA)
 
     expect(conUnHoyInventado).toBe('justo')
   })

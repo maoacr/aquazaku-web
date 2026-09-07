@@ -9,7 +9,20 @@ import { Cifra } from './cifra'
  * Ese orden ES el FIFO: no es una preferencia de presentación, es la regla
  * hecha lista. El primero de la tabla es el que va a salir en la próxima venta.
  */
-export function TablaDeLotes({ lotes, hoy }: { lotes: LoteConSaldo[]; hoy: string }) {
+export function TablaDeLotes({
+  lotes,
+  hoy,
+  diasDeAviso,
+}: {
+  lotes: LoteConSaldo[]
+  hoy: string
+  /*
+   * Llega por prop y no de una constante: el umbral se configura desde la
+   * administración (RN-STK-11) y viaja con los lotes, así que la pantalla
+   * nunca puede quedar pintando con un número viejo.
+   */
+  diasDeAviso: number
+}) {
   if (lotes.length === 0) {
     return (
       <p className="aq-tarjeta px-4 py-12 text-center text-secundario">
@@ -31,7 +44,7 @@ export function TablaDeLotes({ lotes, hoy }: { lotes: LoteConSaldo[]; hoy: strin
         </thead>
         <tbody>
           {lotes.map((lote, indice) => {
-            const estado = estadoDeVencimiento(lote.fechaVencimiento, hoy)
+            const estado = estadoDeVencimiento(lote.fechaVencimiento, hoy, diasDeAviso)
             const vencido = estado === 'expuesto'
 
             return (

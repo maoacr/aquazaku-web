@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { AjusteDeLote, DescarteDeLote } from '@/components/stock/formularios'
 import { TablaDeLotes } from '@/components/stock/tabla-lotes'
 import { apiServerFetch, getServerUser } from '@/lib/api-server'
-import type { LoteConSaldo, ResumenDeStock } from '@/lib/api-types'
+import type { LotesDeProducto, LoteConSaldo, ResumenDeStock } from '@/lib/api-types'
 
 /**
  * Los lotes de un producto, en orden FIFO.
@@ -17,8 +17,8 @@ export default async function LotesDeProductoPage({
 }: PageProps<'/modulos/stock/[productoId]'>) {
   const { productoId } = await params
 
-  const [lotes, productos, usuario] = await Promise.all([
-    apiServerFetch<LoteConSaldo[]>(`/stock/${productoId}/lotes`),
+  const [conUmbral, productos, usuario] = await Promise.all([
+    apiServerFetch<LotesDeProducto>(`/stock/${productoId}/lotes`),
     apiServerFetch<ResumenDeStock[]>('/stock'),
     getServerUser(),
   ])
@@ -46,10 +46,10 @@ export default async function LotesDeProductoPage({
         </p>
       </header>
 
-      <TablaDeLotes lotes={lotes} hoy={hoy} />
+      <TablaDeLotes lotes={conUmbral.lotes} hoy={hoy} diasDeAviso={conUmbral.diasDeAvisoDeVencimiento} />
 
-      {puedeAjustar ? <AjusteDeLote lotes={lotes} /> : null}
-      {puedeDescartar ? <DescarteDeLote lotes={lotes} /> : null}
+      {puedeAjustar ? <AjusteDeLote lotes={conUmbral.lotes} /> : null}
+      {puedeDescartar ? <DescarteDeLote lotes={conUmbral.lotes} /> : null}
     </div>
   )
 }

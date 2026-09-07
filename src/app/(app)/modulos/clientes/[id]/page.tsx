@@ -2,6 +2,7 @@ import { ArrowLeft, MapPin } from 'lucide-react'
 import Link from 'next/link'
 import {
   AgregarDireccion,
+  TelefonosDelCliente,
   CambiarEstado,
   ConfigurarCredito,
   VerificarDocumento,
@@ -170,6 +171,23 @@ export default async function FichaDeClientePage({
         </dl>
       </section>
 
+      {/*
+        Los teléfonos van ANTES de las direcciones: la pregunta más frecuente
+        sobre un cliente abierto es «¿cómo lo llamo?», no «¿dónde vive?». Quien
+        entra desde la cartera viene justamente a eso.
+      */}
+      <section className="aq-tarjeta grid gap-4 p-5">
+        <div>
+          <h2 className="aq-titulo-tarjeta text-principal">Teléfonos</h2>
+          <p className="mt-1 text-[13px] text-tenue">
+            Toque un número para llamar. Uno por cada persona que atiende: el dueño y el local
+            no son el mismo contacto.
+          </p>
+        </div>
+
+        <TelefonosDelCliente clienteId={cliente.id} telefonos={cliente.telefonos} />
+      </section>
+
       <section className="aq-tarjeta grid gap-4 p-5">
         <div>
           <h2 className="aq-titulo-tarjeta text-principal">Direcciones</h2>
@@ -186,7 +204,13 @@ export default async function FichaDeClientePage({
                 <MapPin aria-hidden className="mt-0.5 size-4 shrink-0 text-icono" />
                 <div className="min-w-0">
                   <p className="text-[14px] font-medium text-principal">{d.etiqueta}</p>
-                  <p className="text-[14px] text-secundario">{d.direccion}</p>
+                  {/*
+                    `legible` la arma `api`, no esta pantalla: la nomenclatura
+                    se compone en un solo lugar. Si cada vista la armara, en
+                    tres meses habría tres formatos y quien maneja el camión los
+                    leería como direcciones distintas.
+                  */}
+                  <p className="text-[14px] text-secundario">{d.legible}</p>
                   {d.indicaciones ? (
                     <p className="mt-0.5 text-[13px] text-tenue">{d.indicaciones}</p>
                   ) : null}

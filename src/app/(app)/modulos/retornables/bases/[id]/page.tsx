@@ -56,7 +56,7 @@ export default async function HistorialDeBasePage({
   const lugarDe = (direccionId: string | null) => {
     if (!direccionId) return null
     const d = direcciones.find((x) => x.id === direccionId)
-    return d ? `${d.cliente.nombre} — ${d.etiqueta}, ${d.direccion}` : null
+    return d ? `${d.cliente.nombre} — ${d.etiqueta}, ${d.legible}` : null
   }
 
   return (

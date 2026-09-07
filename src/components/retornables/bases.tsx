@@ -71,7 +71,7 @@ export function ListaDeBases({
               */}
               <p className="text-[14px] text-secundario">
                 {direccion
-                  ? `${direccion.etiqueta} — ${direccion.direccion}`
+                  ? `${direccion.etiqueta} — ${direccion.legible}`
                   : 'En la bodega, lista para prestar'}
               </p>
 

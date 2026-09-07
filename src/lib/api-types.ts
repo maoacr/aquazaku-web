@@ -307,12 +307,49 @@ export interface AvisoDeCruce {
   mensaje: string
 }
 
+export interface Telefono {
+  id: string
+  numero: string
+  /** «celular del dueño», «el local», «la señora del frente». */
+  etiqueta: string | null
+  activo: boolean
+}
+
 export interface Direccion {
   id: string
   clienteId: string
+  /** Lo único obligatorio: es lo que el operador busca en la lista. */
   etiqueta: string
-  direccion: string
+
+  /*
+   * Todo lo de ubicación es opcional. Aquazaku reparte en pueblos donde hay
+   * direcciones que son «Vereda La Peña, casa de tabla azul» y no se dejan
+   * descomponer — exigir la estructura bloquearía un cliente real.
+   */
+  viaTipo: string | null
+  viaNumero: string | null
+  viaLetra: string | null
+  placaNumero: string | null
+  placaLetra: string | null
+  placaSegundo: string | null
+  placaLetraFinal: string | null
+  complemento: string | null
+  municipio: string | null
+  departamento: string | null
+  direccion: string | null
   indicaciones: string | null
+  latitud: string | null
+  longitud: string | null
+
+  /**
+   * Cómo se escribe, ya armada por `api`.
+   *
+   * Viaja con el dato porque la función que la compone vive allá y `web` no
+   * puede importarla. Si cada pantalla la armara, en tres meses habría tres
+   * formatos y quien maneja el camión los leería como direcciones distintas.
+   */
+  legible: string
+
   activa: boolean
   createdAt: string
 }
@@ -326,6 +363,8 @@ export interface Direccion {
  */
 export interface FichaDeCliente extends Cliente {
   direcciones: Direccion[]
+  /** M14: viajan con la ficha — quien abre un cliente para llamarlo ya tiene el número. */
+  telefonos: Telefono[]
   saldos: {
     deuda: number | null
     botellones: number | null

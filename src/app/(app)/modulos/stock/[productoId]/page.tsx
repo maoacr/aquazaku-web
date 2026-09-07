@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { AjusteDeLote, DescarteDeLote } from '@/components/stock/formularios'
 import { TablaDeLotes } from '@/components/stock/tabla-lotes'
 import { apiServerFetch, getServerUser } from '@/lib/api-server'
-import type { LotesDeProducto, LoteConSaldo, ResumenDeStock } from '@/lib/api-types'
+import type { LotesDeProducto, ResumenDeStock } from '@/lib/api-types'
 
 /**
  * Los lotes de un producto, en orden FIFO.

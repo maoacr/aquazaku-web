@@ -25,8 +25,22 @@ const DIRECCION: Direccion & { cliente: Cliente } = {
   id: 'dir-1',
   clienteId: 'cli-1',
   etiqueta: 'El local',
-  direccion: 'Calle 30 #12-45',
+  // M14: la nomenclatura va por partes, y `legible` la arma `api`.
+  viaTipo: 'CL',
+  viaNumero: '30',
+  viaLetra: null,
+  placaNumero: '12',
+  placaLetra: null,
+  placaSegundo: '45',
+  placaLetraFinal: null,
+  complemento: null,
+  municipio: 'Campo de la Cruz',
+  departamento: null,
+  direccion: null,
   indicaciones: null,
+  latitud: null,
+  longitud: null,
+  legible: 'CL 30 # 12 - 45, Campo de la Cruz',
   activa: true,
   createdAt: '2026-08-27T12:00:00.000Z',
   cliente: {
@@ -110,6 +124,6 @@ describe('dónde está la base', () => {
   it('prestada muestra la dirección concreta', () => {
     pintar(base({ direccionId: 'dir-1' }))
 
-    expect(screen.getByText(/Calle 30 #12-45/)).toBeTruthy()
+    expect(screen.getByText(/CL 30 # 12 - 45/)).toBeTruthy()
   })
 })

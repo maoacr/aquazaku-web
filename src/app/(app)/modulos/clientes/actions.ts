@@ -115,16 +115,51 @@ export async function agregarDireccionAction(
   formData: FormData,
 ): Promise<EstadoDeFormulario> {
   const id = String(formData.get('clienteId') ?? '')
-  const indicaciones = String(formData.get('indicaciones') ?? '').trim()
+
+  /*
+   * Los campos vacíos NO se mandan.
+   *
+   * `api` distingue «no lo cargaron» de «lo cargaron vacío»: mandar `''` haría
+   * que una dirección en blanco pase el control de la base diciendo que tiene
+   * municipio. Acá se filtran una vez, en lugar de que cada campo se acuerde.
+   */
+  const texto = (campo: string): string | undefined => {
+    const valor = String(formData.get(campo) ?? '').trim()
+    return valor === '' ? undefined : valor
+  }
+
+  const cuerpo: Record<string, unknown> = { etiqueta: texto('etiqueta') }
+
+  for (const campo of [
+    'viaTipo',
+    'viaNumero',
+    'viaLetra',
+    'placaNumero',
+    'placaLetra',
+    'placaSegundo',
+    'placaLetraFinal',
+    'complemento',
+    'municipio',
+    'departamento',
+    'direccion',
+    'indicaciones',
+  ]) {
+    const valor = texto(campo)
+    if (valor !== undefined) cuerpo[campo] = valor
+  }
+
+  // Las coordenadas van de a dos: media coordenada no ubica nada.
+  const lat = texto('latitud')
+  const lng = texto('longitud')
+  if (lat !== undefined && lng !== undefined) {
+    cuerpo.latitud = Number(lat)
+    cuerpo.longitud = Number(lng)
+  }
 
   const res = await apiServerFetchRaw(`/clientes/${id}/direcciones`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      etiqueta: String(formData.get('etiqueta') ?? '').trim(),
-      direccion: String(formData.get('direccion') ?? '').trim(),
-      ...(indicaciones && { indicaciones }),
-    }),
+    body: JSON.stringify(cuerpo),
   })
 
   if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos agregar la dirección.') }
@@ -154,3 +189,46 @@ export async function cambiarEstadoAction(
 }
 
 export type { EstadoDeFormulario }
+
+/**
+ * Un teléfono del cliente — M14.
+ *
+ * Salió de la primera demo: se había construido la cartera por edad para saber a
+ * quién llamar primero, y no había a qué número llamar.
+ */
+export async function agregarTelefonoAction(
+  _previo: EstadoDeFormulario,
+  formData: FormData,
+): Promise<EstadoDeFormulario> {
+  const id = String(formData.get('clienteId') ?? '')
+  const etiqueta = String(formData.get('etiqueta') ?? '').trim()
+
+  const res = await apiServerFetchRaw(`/clientes/${id}/telefonos`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      numero: String(formData.get('numero') ?? '').trim(),
+      ...(etiqueta && { etiqueta }),
+    }),
+  })
+
+  if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos agregar el teléfono.') }
+
+  revalidatePath(`${RUTA}/${id}`)
+  return exito('Teléfono agregado.')
+}
+
+export async function desactivarTelefonoAction(
+  _previo: EstadoDeFormulario,
+  formData: FormData,
+): Promise<EstadoDeFormulario> {
+  const clienteId = String(formData.get('clienteId') ?? '')
+  const res = await apiServerFetchRaw(`/telefonos/${formData.get('id')}/desactivar`, {
+    method: 'PATCH',
+  })
+
+  if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos quitar el teléfono.') }
+
+  revalidatePath(`${RUTA}/${clienteId}`)
+  return exito('Teléfono quitado.')
+}

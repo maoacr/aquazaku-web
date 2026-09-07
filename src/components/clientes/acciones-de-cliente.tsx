@@ -12,7 +12,8 @@ import {
   verificarDocumentoAction,
 } from '@/app/(app)/modulos/clientes/actions'
 import { FormError } from '@/components/auth/form-error'
-import type { FichaDeCliente, Telefono } from '@/lib/api-types'
+import { CamposDeDireccion } from './campos-de-direccion'
+import type { Departamento, FichaDeCliente, Municipio, Telefono } from '@/lib/api-types'
 import { useAvisoDeExito } from '@/lib/formulario-cliente'
 
 const INICIAL: EstadoDeFormulario = {}
@@ -143,35 +144,21 @@ export function ConfigurarCredito({ cliente }: { cliente: FichaDeCliente }) {
 }
 
 /**
- * Los tipos de vía que se usan en Colombia.
+ * Agregar una dirección — RN-CLI-07 y M14.
  *
- * Va como `datalist` y no como `select`: la lista cubre lo común, y quien tenga
- * una vía que no está —«Anillo Vial», «Km 3»— la escribe igual. Un desplegable
- * cerrado bloquearía una dirección REAL, que es exactamente lo que este diseño
- * vino a evitar.
+ * Los campos viven en `CamposDeDireccion`, compartidos con la edición.
+ * Duplicados, en un mes tendrían campos distintos: se agrega uno al alta, nadie
+ * se acuerda de la edición, y editar una dirección le borra el dato nuevo.
  */
-const TIPOS_DE_VIA = ['CL', 'KR', 'TV', 'DG', 'AV', 'AC', 'AK', 'CIRCUNVALAR', 'VDA', 'KM']
-
-/**
- * Una dirección es una entidad, no un campo de texto — RN-CLI-07 y M14.
- *
- * ── Ningún campo de ubicación es obligatorio ────────────────────────────────
- *
- * Aquazaku reparte en Campo de la Cruz y en pueblos vecinos. La nomenclatura
- * `CL 45 A # 12 B - 34` es urbana: hay direcciones que son «Vereda La Peña,
- * casa de tabla azul» y no se dejan descomponer.
- *
- * Exigir la estructura bloquearía el registro de un cliente real, y el operador
- * inventaría `CL 1 # 1-1` para poder guardar. Lo único obligatorio es la
- * etiqueta, porque es lo que se busca en la lista.
- *
- * ── Por qué la nomenclatura va en UNA línea ─────────────────────────────────
- *
- * Son siete campos. Apilados con su etiqueta cada uno, el formulario se ve como
- * un trámite y nadie lo completa. En una sola línea —con el `#` y el `-` entre
- * medio— se lee como la dirección que es.
- */
-export function AgregarDireccion({ clienteId }: { clienteId: string }) {
+export function AgregarDireccion({
+  clienteId,
+  departamentos,
+  municipios,
+}: {
+  clienteId: string
+  departamentos: Departamento[]
+  municipios: Municipio[]
+}) {
   const [estado, accion, enviando] = useActionState(agregarDireccionAction, INICIAL)
   const idError = useId()
 
@@ -182,101 +169,7 @@ export function AgregarDireccion({ clienteId }: { clienteId: string }) {
       <input type="hidden" name="clienteId" value={clienteId} />
       <FormError id={idError}>{estado.error}</FormError>
 
-      <label className="aq-etiqueta-campo">
-        <span>Cómo la llaman</span>
-        <input
-          name="etiqueta"
-          required
-          placeholder="La casa, el negocio, la sucursal norte"
-          className="aq-campo"
-        />
-      </label>
-
-      <fieldset className="grid gap-2">
-        <legend className="aq-etiqueta-campo mb-1">
-          <span>
-            Dirección <span className="font-normal normal-case">(si la tiene)</span>
-          </span>
-        </legend>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            name="viaTipo"
-            list="tipos-de-via"
-            placeholder="CL"
-            aria-label="Tipo de vía"
-            className="aq-campo w-24 uppercase"
-          />
-          <datalist id="tipos-de-via">
-            {TIPOS_DE_VIA.map((t) => (
-              <option key={t} value={t} />
-            ))}
-          </datalist>
-
-          <input name="viaNumero" placeholder="45" aria-label="Número de la vía" className="aq-campo w-20" />
-          <input name="viaLetra" placeholder="A" aria-label="Letra de la vía" className="aq-campo w-14 uppercase" />
-
-          <span aria-hidden className="px-1 text-tenue">#</span>
-
-          <input name="placaNumero" placeholder="12" aria-label="Número de la placa" className="aq-campo w-20" />
-          <input name="placaLetra" placeholder="B" aria-label="Letra de la placa" className="aq-campo w-14 uppercase" />
-
-          <span aria-hidden className="px-1 text-tenue">–</span>
-
-          <input name="placaSegundo" placeholder="34" aria-label="Segundo número" className="aq-campo w-20" />
-          <input
-            name="placaLetraFinal"
-            placeholder="C"
-            aria-label="Letra final"
-            className="aq-campo w-14 uppercase"
-          />
-        </div>
-
-        <input
-          name="complemento"
-          placeholder="Apto 302, torre B, local 4 (opcional)"
-          aria-label="Complemento"
-          className="aq-campo"
-        />
-      </fieldset>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="aq-etiqueta-campo">
-          <span>Municipio, pueblo o vereda</span>
-          <input name="municipio" placeholder="Campo de la Cruz" className="aq-campo" />
-        </label>
-
-        <label className="aq-etiqueta-campo">
-          <span>Departamento</span>
-          <input name="departamento" placeholder="Atlántico" className="aq-campo" />
-        </label>
-      </div>
-
-      {/*
-        La salida para lo que no se descompone. No es un campo de respaldo: para
-        media Colombia rural ES la dirección.
-      */}
-      <label className="aq-etiqueta-campo">
-        <span>
-          Si no se puede escribir así <span className="font-normal normal-case">(escríbala como es)</span>
-        </span>
-        <input
-          name="direccion"
-          placeholder="Vereda La Peña, casa de tabla azul"
-          className="aq-campo"
-        />
-      </label>
-
-      <label className="aq-etiqueta-campo">
-        <span>
-          Cómo llegar <span className="font-normal normal-case">(opcional)</span>
-        </span>
-        <input
-          name="indicaciones"
-          placeholder="Al lado de la panadería, portón verde"
-          className="aq-campo"
-        />
-      </label>
+      <CamposDeDireccion departamentos={departamentos} municipios={municipios} />
 
       <button
         type="submit"

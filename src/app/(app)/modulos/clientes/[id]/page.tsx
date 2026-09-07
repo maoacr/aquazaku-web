@@ -1,4 +1,5 @@
 import { ArrowLeft, MapPin } from 'lucide-react'
+import { EditarDireccion } from '@/components/clientes/editar-direccion'
 import Link from 'next/link'
 import {
   AgregarDireccion,
@@ -12,6 +13,8 @@ import { Cifra } from '@/components/stock/cifra'
 import { Estado } from '@/components/ui/estado'
 import { apiServerFetch } from '@/lib/api-server'
 import type {
+  Departamento,
+  Municipio,
   Base,
   CarteraDeCliente,
   FichaDeCliente,
@@ -56,10 +59,17 @@ export default async function FichaDeClientePage({
    * Las dos van en paralelo: son independientes y encadenarlas sumaría una
    * espera sin ganar nada.
    */
-  const [cliente, cartera, botellones] = await Promise.all([
+  const [cliente, cartera, botellones, departamentos, municipios] = await Promise.all([
     apiServerFetch<FichaDeCliente>(`/clientes/${id}`),
     siPuedeVerlo(apiServerFetch<CarteraDeCliente>(`/clientes/${id}/deuda`)),
     siPuedeVerlo(apiServerFetch<{ enPoderDelCliente: number }>(`/clientes/${id}/botellones`)),
+    /*
+     * El catálogo del DANE baja por props, no se pide desde el navegador: son
+     * 10 KB comprimidos y así el formulario filtra sin esperar un viaje —y sin
+     * un `fetch()` en el cliente, que el patrón BFF prohíbe (ADR-0002).
+     */
+    apiServerFetch<Departamento[]>('/geografia/departamentos'),
+    apiServerFetch<Municipio[]>('/geografia/municipios'),
   ])
   const nivel = nivelDeVerificacion(cliente)
 
@@ -202,18 +212,21 @@ export default async function FichaDeClientePage({
             {cliente.direcciones.map((d) => (
               <li key={d.id} className="flex items-start gap-2.5 rounded-lg border border-sutil p-3">
                 <MapPin aria-hidden className="mt-0.5 size-4 shrink-0 text-icono" />
-                <div className="min-w-0">
-                  <p className="text-[14px] font-medium text-principal">{d.etiqueta}</p>
+                <div className="min-w-0 flex-1">
                   {/*
-                    `legible` la arma `api`, no esta pantalla: la nomenclatura
-                    se compone en un solo lugar. Si cada vista la armara, en
-                    tres meses habría tres formatos y quien maneja el camión los
-                    leería como direcciones distintas.
+                    La dirección entera es el objetivo del toque, no un ícono al
+                    costado: un lápiz de dieciséis píxeles se falla con el pulgar,
+                    y esto se usa desde un celular al lado de una llenadora.
+
+                    `legible` la arma `api`: la nomenclatura se compone en un
+                    solo lugar.
                   */}
-                  <p className="text-[14px] text-secundario">{d.legible}</p>
-                  {d.indicaciones ? (
-                    <p className="mt-0.5 text-[13px] text-tenue">{d.indicaciones}</p>
-                  ) : null}
+                  <EditarDireccion
+                    clienteId={cliente.id}
+                    direccion={d}
+                    departamentos={departamentos}
+                    municipios={municipios}
+                  />
 
                   {/*
                     Las bases van DEBAJO de su dirección y no en una lista
@@ -241,7 +254,11 @@ export default async function FichaDeClientePage({
           <p className="text-[14px] text-tenue">Todavía no tiene direcciones cargadas.</p>
         )}
 
-        <AgregarDireccion clienteId={cliente.id} />
+        <AgregarDireccion
+          clienteId={cliente.id}
+          departamentos={departamentos}
+          municipios={municipios}
+        />
       </section>
 
       {cliente.verificacionEstado !== 'verificado' ? (

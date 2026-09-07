@@ -627,3 +627,20 @@ export interface Parametro {
   unidad: string
   actualizadoEn: string
 }
+
+/** Un departamento del catálogo del DANE — M14. */
+export interface Departamento {
+  /** Código DANE de dos dígitos. */
+  codigo: string
+  nombre: string
+}
+
+/** Un municipio del catálogo del DANE, con sus coordenadas — M14. */
+export interface Municipio {
+  codigo: string
+  departamento: string
+  nombre: string
+  /** Del DANE: sirve para centrar el mapa en el municipio elegido. */
+  lat: number
+  lng: number
+}

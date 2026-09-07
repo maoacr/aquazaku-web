@@ -110,19 +110,30 @@ export async function configurarCreditoAction(
   )
 }
 
-export async function agregarDireccionAction(
-  _previo: EstadoDeFormulario,
-  formData: FormData,
-): Promise<EstadoDeFormulario> {
-  const id = String(formData.get('clienteId') ?? '')
+/** Los campos de ubicación, en un solo lugar: el alta y la edición mandan lo mismo. */
+const CAMPOS_DE_DIRECCION = [
+  'viaTipo',
+  'viaNumero',
+  'viaLetra',
+  'placaNumero',
+  'placaLetra',
+  'placaSegundo',
+  'placaLetraFinal',
+  'complemento',
+  'municipio',
+  'departamento',
+  'direccion',
+  'indicaciones',
+] as const
 
-  /*
-   * Los campos vacíos NO se mandan.
-   *
-   * `api` distingue «no lo cargaron» de «lo cargaron vacío»: mandar `''` haría
-   * que una dirección en blanco pase el control de la base diciendo que tiene
-   * municipio. Acá se filtran una vez, en lugar de que cada campo se acuerde.
-   */
+/**
+ * Arma el cuerpo de una dirección desde el formulario.
+ *
+ * Los campos vacíos NO se mandan: `api` distingue «no lo cargaron» de «lo
+ * cargaron vacío», y mandar `''` haría que una dirección en blanco pase el
+ * control de la base diciendo que tiene municipio.
+ */
+function cuerpoDeDireccion(formData: FormData): Record<string, unknown> {
   const texto = (campo: string): string | undefined => {
     const valor = String(formData.get(campo) ?? '').trim()
     return valor === '' ? undefined : valor
@@ -130,20 +141,7 @@ export async function agregarDireccionAction(
 
   const cuerpo: Record<string, unknown> = { etiqueta: texto('etiqueta') }
 
-  for (const campo of [
-    'viaTipo',
-    'viaNumero',
-    'viaLetra',
-    'placaNumero',
-    'placaLetra',
-    'placaSegundo',
-    'placaLetraFinal',
-    'complemento',
-    'municipio',
-    'departamento',
-    'direccion',
-    'indicaciones',
-  ]) {
+  for (const campo of CAMPOS_DE_DIRECCION) {
     const valor = texto(campo)
     if (valor !== undefined) cuerpo[campo] = valor
   }
@@ -156,10 +154,19 @@ export async function agregarDireccionAction(
     cuerpo.longitud = Number(lng)
   }
 
+  return cuerpo
+}
+
+export async function agregarDireccionAction(
+  _previo: EstadoDeFormulario,
+  formData: FormData,
+): Promise<EstadoDeFormulario> {
+  const id = String(formData.get('clienteId') ?? '')
+
   const res = await apiServerFetchRaw(`/clientes/${id}/direcciones`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(cuerpo),
+    body: JSON.stringify(cuerpoDeDireccion(formData)),
   })
 
   if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos agregar la dirección.') }
@@ -231,4 +238,51 @@ export async function desactivarTelefonoAction(
 
   revalidatePath(`${RUTA}/${clienteId}`)
   return exito('Teléfono quitado.')
+}
+
+/**
+ * Editar una dirección — M14.
+ *
+ * Manda la dirección ENTERA, no los campos que cambiaron: lo que el operador
+ * borró llega ausente y se guarda ausente. Con un merge parcial, vaciar un
+ * campo sería imposible.
+ */
+export async function editarDireccionAction(
+  _previo: EstadoDeFormulario,
+  formData: FormData,
+): Promise<EstadoDeFormulario> {
+  const clienteId = String(formData.get('clienteId') ?? '')
+
+  const res = await apiServerFetchRaw(`/direcciones/${formData.get('id')}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cuerpoDeDireccion(formData)),
+  })
+
+  if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos guardar la dirección.') }
+
+  revalidatePath(`${RUTA}/${clienteId}`)
+  return exito('Dirección actualizada.')
+}
+
+/**
+ * Dar de baja una dirección.
+ *
+ * Se DESACTIVA, no se borra: puede tener bases prestadas, y el préstamo dejaría
+ * de ser reclamable si la dirección desapareciera.
+ */
+export async function desactivarDireccionAction(
+  _previo: EstadoDeFormulario,
+  formData: FormData,
+): Promise<EstadoDeFormulario> {
+  const clienteId = String(formData.get('clienteId') ?? '')
+
+  const res = await apiServerFetchRaw(`/direcciones/${formData.get('id')}/desactivar`, {
+    method: 'PATCH',
+  })
+
+  if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos dar de baja la dirección.') }
+
+  revalidatePath(`${RUTA}/${clienteId}`)
+  return exito('Dirección dada de baja.')
 }

@@ -1,7 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { AgregarDireccion, TelefonosDelCliente } from '@/components/clientes/acciones-de-cliente'
-import type { Telefono } from '@/lib/api-types'
+import type { Departamento, Municipio, Telefono } from '@/lib/api-types'
+
+const DEPARTAMENTOS: Departamento[] = [{ codigo: '08', nombre: 'Atlántico' }]
+const MUNICIPIOS: Municipio[] = [
+  { codigo: '08137', departamento: '08', nombre: 'Campo de la Cruz', lat: 10.378, lng: -74.881 },
+]
 
 vi.mock('@/app/(app)/modulos/clientes/actions', () => ({
   agregarDireccionAction: vi.fn(),
@@ -23,7 +28,7 @@ vi.mock('@/app/(app)/modulos/clientes/actions', () => ({
 
 describe('el formulario de dirección', () => {
   it('solo la etiqueta es obligatoria', () => {
-    render(<AgregarDireccion clienteId="cli-1" />)
+    render(<AgregarDireccion clienteId="cli-1" departamentos={DEPARTAMENTOS} municipios={MUNICIPIOS} />)
 
     const requeridos = screen
       .getAllByRole('textbox')
@@ -34,7 +39,7 @@ describe('el formulario de dirección', () => {
   })
 
   it('tiene los siete campos de la nomenclatura', () => {
-    render(<AgregarDireccion clienteId="cli-1" />)
+    render(<AgregarDireccion clienteId="cli-1" departamentos={DEPARTAMENTOS} municipios={MUNICIPIOS} />)
 
     for (const campo of ['Tipo de vía', 'Número de la vía', 'Letra de la vía', 'Número de la placa']) {
       expect(screen.getByLabelText(campo)).toBeInTheDocument()
@@ -46,7 +51,7 @@ describe('el formulario de dirección', () => {
    * media Colombia rural ES la dirección.
    */
   it('y la salida para lo que no se descompone', () => {
-    render(<AgregarDireccion clienteId="cli-1" />)
+    render(<AgregarDireccion clienteId="cli-1" departamentos={DEPARTAMENTOS} municipios={MUNICIPIOS} />)
 
     expect(screen.getByPlaceholderText(/Vereda La Peña/)).toBeInTheDocument()
   })
@@ -57,7 +62,7 @@ describe('el formulario de dirección', () => {
    * dirección real.
    */
   it('el tipo de vía sugiere pero no obliga', () => {
-    render(<AgregarDireccion clienteId="cli-1" />)
+    render(<AgregarDireccion clienteId="cli-1" departamentos={DEPARTAMENTOS} municipios={MUNICIPIOS} />)
 
     expect(screen.getByLabelText('Tipo de vía')).toHaveAttribute('list', 'tipos-de-via')
   })

@@ -2146,3 +2146,57 @@ textarea.aq-campo {
     margin: 1.5cm;
   }
 }
+
+/**
+ * ── Campos angostos: la nomenclatura de una dirección ──────────────────────
+ *
+ * `CL`, `45`, `A`, `12` — dos o tres caracteres. Con el `width: 100%` de
+ * `.aq-campo` cada uno ocupa el ancho de la página, y siete campos así se leen
+ * como siete preguntas distintas en vez de como una dirección.
+ *
+ * Van acá y no como utilidades en el componente porque `.aq-campo` ya fija el
+ * ancho: una utilidad de Tailwind con la misma especificidad depende del orden
+ * de las capas, y eso es exactamente el tipo de detalle que se rompe solo al
+ * actualizar una dependencia.
+ *
+ * Los anchos están en `ch` para que sigan a la tipografía: si cambia la fuente,
+ * el campo sigue midiendo lo que mide su contenido.
+ */
+.aq-campo-via {
+  width: 8ch;
+}
+
+.aq-campo-numero {
+  width: 6ch;
+}
+
+.aq-campo-letra {
+  width: 4.5ch;
+}
+
+/**
+ * ── El modal ───────────────────────────────────────────────────────────────
+ *
+ * `<dialog>` viene con estilos del navegador que no son los del sistema: borde
+ * gris, ancho ajustado al contenido y un fondo que no respeta el tema.
+ *
+ * El `::backdrop` va con color explícito: por defecto es casi transparente, y
+ * un modal que no oscurece lo de atrás se lee como un panel más de la pantalla
+ * — quien lo mire va a intentar tocar lo que hay debajo.
+ */
+.aq-modal {
+  margin: auto;
+  width: min(42rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 4rem);
+  overflow-y: auto;
+  border: 1px solid var(--aq-tarjeta-fondo-canto);
+  border-radius: var(--aq-radio-lg);
+  /* Opaco, no la tarjeta translúcida: debajo hay contenido y se vería a través. */
+  background: var(--aq-superficie-elevada);
+  color: var(--aq-texto-principal);
+  padding: 0;
+}
+
+.aq-modal::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}

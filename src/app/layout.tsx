@@ -29,6 +29,9 @@ const plexMono = IBM_Plex_Mono({
   display: 'swap',
 })
 
+// PREVIEW-ENV-TEST: 2026-09-08 — verificador del feature preview environments.
+// Si esto aparece en production compilada, el ciclo Vercel preview + Railway staging funciona.
+
 export const metadata: Metadata = {
   title: 'Aquazaku',
   description: 'Sistema de gestión de Aquazaku: ventas, stock, clientes y proveedores.',

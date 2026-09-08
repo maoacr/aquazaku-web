@@ -29,7 +29,7 @@ const plexMono = IBM_Plex_Mono({
   display: 'swap',
 })
 
-// PREVIEW-ENV-TEST: 2026-09-08 — verificador del feature preview environments.
+// PREVIEW-ENV-TEST round 2: 2026-09-08 — trigger redeploy para aplicar 0015_audit_revoke en production.
 // Si esto aparece en production compilada, el ciclo Vercel preview + Railway staging funciona.
 
 export const metadata: Metadata = {

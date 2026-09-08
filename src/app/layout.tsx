@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sileo'
 import { atributoDeTema, leerTema } from '@/lib/tema'
 import './globals.css'
@@ -77,6 +78,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
           theme={tema === 'sistema' ? 'system' : tema === 'oscuro' ? 'dark' : 'light'}
           offset={{ bottom: '5.5rem', right: '1rem' }}
         />
+        <Analytics />
       </body>
     </html>
   )

@@ -94,9 +94,9 @@ export default async function RetornablesPage() {
 
         <EstadoDelParque parque={parque} />
 
-        <EntregaYRetorno clientes={clientes} />
+        <EntregaYRetorno />
         <ComprarBotellones />
-        <AjustarBotellones clientes={clientes} />
+        <AjustarBotellones />
       </section>
 
       <section className="grid gap-4">

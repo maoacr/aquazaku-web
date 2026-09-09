@@ -1,8 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { apiServerFetchRaw } from '@/lib/api-server'
-import type { AvisoDeCruce } from '@/lib/api-types'
+import { apiServerFetch, apiServerFetchRaw } from '@/lib/api-server'
+import type { AvisoDeCruce, Cliente } from '@/lib/api-types'
 import { cuerpoDeError } from '@/lib/form-errors'
 import { type EstadoDeFormulario, exito } from '@/lib/formulario'
 
@@ -285,4 +285,36 @@ export async function desactivarDireccionAction(
 
   revalidatePath(`${RUTA}/${clienteId}`)
   return exito('Dirección dada de baja.')
+}
+
+/**
+ * Buscar un cliente por su número de documento.
+ *
+ * ── Por qué es una acción y no un fetch del navegador ───────────────────────
+ *
+ * Se llama desde un componente cliente en cada tecla, y aun así el navegador
+ * nunca toca `api/`: la acción corre en el servidor y viaja con la cookie de
+ * sesión — ADR-0002. Es la única forma de pedir datos bajo demanda sin abrir
+ * una segunda puerta a la API.
+ *
+ * ── Qué NO hace ─────────────────────────────────────────────────────────────
+ *
+ * No revalida ni escribe nada, así que no devuelve `EstadoDeFormulario`: no hay
+ * éxito que avisar. Y no filtra ni recorta la respuesta — el mínimo de tres
+ * caracteres y el tope de coincidencias los decide `api/`, que es quien puede
+ * hacerlo sin traerse la tabla entera.
+ *
+ * Un error acá devuelve la lista vacía a propósito. Quien escribe una cédula en
+ * el mostrador no puede quedar bloqueado porque una consulta falló: ve que no
+ * aparece nadie y sigue —a mano, o registrando al cliente—. El error igual
+ * queda en el log del servidor con su `x-request-id`.
+ */
+export async function buscarClientesAction(documento: string): Promise<Cliente[]> {
+  try {
+    return await apiServerFetch<Cliente[]>(
+      `/clientes?documento=${encodeURIComponent(documento)}`,
+    )
+  } catch {
+    return []
+  }
 }

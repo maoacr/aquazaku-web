@@ -2175,6 +2175,30 @@ textarea.aq-campo {
 }
 
 /**
+ * Un campo con un icono adentro, a la izquierda.
+ *
+ * ── Por qué esto NO puede vivir en el componente ────────────────────────────
+ *
+ * La primera versión ponía `pl-9` de Tailwind sobre `.aq-campo`, y no pasaba
+ * nada: `.aq-campo` declara `padding: 0 0.75rem` en una regla **sin capa**, y
+ * las utilidades de Tailwind viven en `@layer utilities`. La regla sin capa
+ * gana, siempre.
+ *
+ * El resultado era el texto arrancando a 12 px con el icono terminando en 28:
+ * quince píxeles de superposición. Ningún test lo vio —jsdom no hace layout— y
+ * en el código se leía perfecto. Apareció mirando la pantalla.
+ *
+ * Es la misma trampa que ya se documentó para `position` unas mil líneas más
+ * arriba, en otra propiedad. Por eso la variante se declara acá: es el único
+ * lugar donde puede ganar.
+ *
+ * El hueco son los 12 px del canal, más los 16 del icono, más 8 de aire.
+ */
+.aq-campo-con-icono {
+  padding-left: 2.25rem;
+}
+
+/**
  * ── El modal ───────────────────────────────────────────────────────────────
  *
  * `<dialog>` viene con estilos del navegador que no son los del sistema: borde
@@ -2199,4 +2223,77 @@ textarea.aq-campo {
 
 .aq-modal::backdrop {
   background: rgb(0 0 0 / 0.45);
+}
+
+/**
+ * Un panel que flota sobre el contenido: el desplegable de una búsqueda.
+ *
+ * ── Por qué no sirve ninguna de las superficies que ya había ────────────────
+ *
+ * Se midieron las tres, en el navegador:
+ *
+ * | Clase              | Fondo                       | ¿Tapa? |
+ * | ------------------ | --------------------------- | ------ |
+ * | `.aq-menu-vidrio`  | `rgba(120, 225, 215, 0.14)` | no     |
+ * | `.aq-tarjeta`      | `rgba(12, 26, 34, 0.5)`     | no     |
+ * | `.aq-vidrio-panel` | `rgba(14, 22, 28, 0.82)`    | no     |
+ *
+ * Las tres son vidrio a propósito, y funcionan sobre el fondo de la pantalla.
+ * Sobre un formulario no: con el desplegable abierto se leían «Cómo paga» y
+ * «VERANO2026» **a través** de la lista de clientes.
+ *
+ * Es exactamente la razón por la que `.aq-modal` es opaco, tres reglas más
+ * arriba. La diferencia es que aquello se decidió al escribirlo y esto se
+ * descubrió abriendo la pantalla: en el código se leía bien.
+ *
+ * ── Y por qué NO declara `position` ─────────────────────────────────────────
+ *
+ * Porque quien la use la va a poner sobre el elemento que flota, y esta regla
+ * va sin capa: un `position: relative` acá le ganaría al `absolute` de
+ * Tailwind y el panel dejaría de flotar. Es el mismo defecto documentado para
+ * `.aq-panel-marca`, y ya pasó cuatro veces.
+ *
+ * Quien la use pone DOS elementos: uno que posiciona, y este, que se ve.
+ */
+.aq-panel-flotante {
+  border: 1px solid var(--aq-tarjeta-fondo-canto);
+  border-radius: var(--aq-radio-md);
+  background: var(--aq-superficie-elevada);
+  color: var(--aq-texto-principal);
+  box-shadow:
+    0 10px 28px -12px var(--aq-tarjeta-sombra),
+    0 2px 4px -2px var(--aq-tarjeta-contacto);
+}
+
+/**
+ * La fila bajo el cursor o bajo las flechas.
+ *
+ * El color del texto lo pone la fila y lo HEREDAN los renglones: así el
+ * resaltado puede cambiarlo. Si cada renglón trajera su propia clase de color,
+ * el resaltado no podría tocarlo y quedaría texto tenue sobre fondo de acento.
+ *
+ * Los números son medidos, no elegidos. Sobre `--aq-menu-activo`:
+ *
+ * | Color                  | Contraste |
+ * | ---------------------- | --------- |
+ * | `--aq-menu-texto`      | 8,43      |
+ * | `--aq-menu-apagado`    | 5,54      |
+ * | `--aq-texto-tenue`     | **3,65**  |
+ *
+ * El último es el que estaba, y no llega al 4,5 que pide WCAG AA. En pantalla
+ * eso era el documento del cliente ilegible justo en la fila que la persona
+ * está por elegir.
+ */
+.aq-panel-flotante-resaltado {
+  background: var(--aq-menu-activo);
+  color: var(--aq-menu-texto);
+}
+
+/** El renglón de apoyo: el documento, debajo o al lado del nombre. */
+.aq-panel-flotante-secundario {
+  color: var(--aq-texto-tenue);
+}
+
+.aq-panel-flotante-resaltado .aq-panel-flotante-secundario {
+  color: var(--aq-menu-apagado);
 }

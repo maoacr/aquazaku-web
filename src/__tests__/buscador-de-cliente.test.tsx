@@ -6,9 +6,11 @@ import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
 import type { Cliente } from '@/lib/api-types'
 
 const buscarClientesAction = vi.fn()
+const crearClienteRapidoAction = vi.fn()
 
 vi.mock('@/app/(app)/modulos/clientes/actions', () => ({
   buscarClientesAction: (documento: string) => buscarClientesAction(documento),
+  crearClienteRapidoAction: (datos: unknown) => crearClienteRapidoAction(datos),
 }))
 
 /**
@@ -65,6 +67,66 @@ const pasaElDebounce = () => new Promise((r) => setTimeout(r, 400))
 beforeEach(() => {
   buscarClientesAction.mockReset()
   buscarClientesAction.mockResolvedValue([])
+  crearClienteRapidoAction.mockReset()
+  HTMLDialogElement.prototype.showModal ??= function () {
+    this.setAttribute('open', '')
+  }
+  HTMLDialogElement.prototype.close ??= function () {
+    this.removeAttribute('open')
+  }
+})
+
+/**
+ * ── Por qué este bloque entra por la puerta y no por la ventana ─────────────
+ *
+ * El test del alta rápida monta el diálogo con `documentoInicial` ya puesto, y
+ * así pasaba en verde con el defecto adentro: el campo llegaba vacío en la app
+ * real. `useState(documentoInicial)` solo mira ese valor la primera vez que el
+ * componente se monta, y montado desde el arranque esa primera vez es con la
+ * búsqueda vacía.
+ *
+ * Se encontró abriendo la pantalla. Estos tests recorren el camino de verdad —
+ * escribir, no encontrar a nadie, abrir el alta— porque es el único donde el
+ * orden de los montajes es el real.
+ */
+describe('registrar desde la búsqueda', () => {
+  it('la opción aparece solo cuando ya se buscó y no vino nadie', async () => {
+    const usuario = userEvent.setup()
+    buscarClientesAction.mockResolvedValue([cliente()])
+
+    render(<Anfitrion />)
+    await usuario.type(screen.getByRole('combobox'), '1043')
+    await screen.findByRole('option', { name: /Pedro/ })
+
+    expect(screen.queryByRole('button', { name: /Registrar a esta persona/ })).toBeNull()
+  })
+
+  it('el documento que se acaba de escribir llega al alta', async () => {
+    const usuario = userEvent.setup()
+
+    render(<Anfitrion />)
+    await usuario.type(screen.getByRole('combobox'), '5551234')
+    await usuario.click(await screen.findByRole('button', { name: /Registrar a esta persona/ }))
+
+    expect(screen.getByRole('textbox', { name: /Número de documento/ })).toHaveValue('5551234')
+  })
+
+  it('el cliente registrado queda elegido, con el carrito intacto', async () => {
+    const usuario = userEvent.setup()
+    crearClienteRapidoAction.mockResolvedValue({
+      cliente: cliente({ id: 'recien-creado', nombre: 'Rosa Elena Padilla' }),
+    })
+
+    render(<Anfitrion />)
+    await usuario.type(screen.getByRole('combobox'), '5551234')
+    await usuario.click(await screen.findByRole('button', { name: /Registrar a esta persona/ }))
+
+    await usuario.type(screen.getByRole('textbox', { name: /Nombre/ }), 'Rosa Elena Padilla')
+    await usuario.click(screen.getByRole('button', { name: /Registrar y continuar/ }))
+
+    expect(await screen.findByText('Rosa Elena Padilla')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).toBeNull()
+  })
 })
 
 describe('no consulta lo que no vale la pena consultar', () => {

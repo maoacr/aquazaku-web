@@ -65,7 +65,7 @@ export function TarjetasDeUsuarios({ usuarios }: { usuarios: UsuarioListado[] })
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por nombre o email"
-            className="aq-campo pl-9"
+            className="aq-campo aq-campo-con-icono"
           />
         </label>
 

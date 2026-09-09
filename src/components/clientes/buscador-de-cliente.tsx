@@ -1,8 +1,9 @@
 'use client'
 
-import { Search, X } from 'lucide-react'
+import { Search, UserPlus, X } from 'lucide-react'
 import { useId, useRef, useState, useTransition } from 'react'
 import { buscarClientesAction } from '@/app/(app)/modulos/clientes/actions'
+import { AltaRapidaDeCliente } from '@/components/clientes/alta-rapida'
 import type { Cliente } from '@/lib/api-types'
 
 /**
@@ -74,6 +75,7 @@ export function BuscadorDeCliente({
   elegido: Cliente | null
   onElegir: (cliente: Cliente | null) => void
 }) {
+  const [registrando, setRegistrando] = useState(false)
   const idCampo = useId()
   const idLista = useId()
   const idAyuda = useId()
@@ -271,6 +273,38 @@ export function BuscadorDeCliente({
           </div>
         ) : null}
       </div>
+
+      {/*
+        Registrar va FUERA del `listbox`.
+
+        Adentro, un `<button>` entre `role="option"` rompe el patrón: un lector
+        de pantalla anuncia «lista de 3» y el tercero no es una opción. Además
+        las flechas lo saltarían, porque el resaltado recorre resultados.
+
+        Aparece solo cuando ya se buscó y no vino nadie — que es el momento en
+        que registrar es la respuesta y no una distracción.
+      */}
+      {abierto && !buscando && resultados.length === 0 ? (
+        <button
+          type="button"
+          onClick={() => setRegistrando(true)}
+          className="aq-boton aq-boton-secundario aq-boton-compacto justify-self-start"
+        >
+          <UserPlus aria-hidden className="size-4" />
+          Registrar a esta persona
+        </button>
+      ) : null}
+
+      <AltaRapidaDeCliente
+        abierto={registrando}
+        cerrar={() => setRegistrando(false)}
+        documentoInicial={consulta}
+        alRegistrar={(cliente) => {
+          setTexto('')
+          setResultados([])
+          onElegir(cliente)
+        }}
+      />
 
       <p id={idAyuda} className="font-normal normal-case text-[13px] text-tenue">
         {consulta.length > 0 && consulta.length < MINIMO

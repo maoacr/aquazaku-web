@@ -318,3 +318,60 @@ export async function buscarClientesAction(documento: string): Promise<Cliente[]
     return []
   }
 }
+
+/** Lo que devuelve el alta rápida: o el cliente, o por qué no se pudo. */
+export interface ResultadoDeAltaRapida {
+  cliente?: Cliente
+  error?: string
+  /** El cruce CC/NIT. No impide nada: el cliente quedó creado igual. */
+  aviso?: string
+}
+
+/**
+ * Registrar un cliente sin salir de donde se está.
+ *
+ * ── Por qué existe además de `crearClienteAction` ───────────────────────────
+ *
+ * Aquella es la del formulario de la pantalla de clientes: recibe `FormData` y
+ * devuelve un mensaje. Sirve para eso y no para esto.
+ *
+ * Acá hace falta otra cosa. Quien está cobrando una venta descubre a mitad de
+ * camino que esta persona se lleva un botellón sin devolver el vacío, y
+ * entonces —RN-ENV-09— hay que registrarla. Mandarla a la pantalla de clientes
+ * le vacía el carrito. Así que se registra ahí mismo, y para poder elegir al
+ * cliente recién creado hace falta que la acción **devuelva el cliente**, no un
+ * texto de éxito.
+ *
+ * El teléfono viaja en el mismo pedido a propósito: `POST /clientes/:id/
+ * telefonos` pide `clientes:editar` y el `pos` no lo tiene. Ver `DatosDeAlta`
+ * en el servicio de `api/`.
+ */
+export async function crearClienteRapidoAction(datos: {
+  nombre: string
+  tipo: 'residencial' | 'comercial'
+  tipoDocumento: 'CC' | 'NIT'
+  numeroDocumento: string
+  telefono?: { numero: string; etiqueta?: string }
+}): Promise<ResultadoDeAltaRapida> {
+  const res = await apiServerFetchRaw('/clientes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(datos),
+  })
+
+  if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos registrar al cliente.') }
+
+  const creado = (await res.json()) as Cliente & { aviso: AvisoDeCruce | null }
+
+  revalidatePath(RUTA)
+
+  return {
+    cliente: creado,
+    /*
+     * El cruce NO cancela el alta: el mismo número puede ser una CC y el NIT de
+     * esa misma persona. Se avisa para que quien está en el mostrador decida,
+     * pero el cliente ya está creado y se puede seguir cobrando.
+     */
+    ...(creado.aviso && { aviso: creado.aviso.mensaje }),
+  }
+}

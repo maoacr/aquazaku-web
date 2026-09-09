@@ -36,14 +36,106 @@ const FIN_DE_PALABRA = '(?![a-záéíóúüñ])'
 /**
  * Imperativos voseantes: el verbo con tilde en la última sílaba.
  *
- * `probá`, `elegí`, `poné`, `revisá`. La lista es de raíces y no de un patrón
- * genérico `\w+á` porque en español hay muchísimas palabras que terminan así y
- * no son imperativos —«está», «acá», «allá», «quizá»—.
+ * ── Por qué NO es una lista de verbos ───────────────────────────────────────
+ *
+ * Era una lista de cuarenta y tres raíces —`prob`, `eleg`, `pon`…— y dejó pasar
+ * **«Repetí la contraseña nueva»**, en la primera pantalla que ve todo el mundo
+ * al entrar por primera vez. `repet` no estaba, y no había forma de saberlo:
+ * la lista de verbos del español no se termina de escribir nunca.
+ *
+ * Así que la carga se invierte. Se sospecha de **toda** palabra que termine en
+ * tilde, y se anotan las que legítimamente lo hacen. Esa lista sí es corta y sí
+ * se cierra: en español no hay muchas.
+ *
+ * El costo de equivocarse cambió de lado, que es lo importante. Antes, olvidar
+ * un verbo dejaba pasar voseo en silencio. Ahora, olvidar una excepción rompe
+ * el test y alguien la agrega en treinta segundos.
  */
-const IMPERATIVO_VOSEANTE = new RegExp(
-  `\\b(?:revis|eleg|ingres|prob|volv|esper|pon|and|mir|ped|avis|recarg|carg|dej|ten|fij|segu|escrib|complet|confirm|guard|anul|busc|cambi|actualiz|registr|us|abr|cerr|toc|hac|sac|sum|rest|agreg|quit|habl|copi|mand|llam|firm|acept|rechaz|descart|ajust)(?:á|é|í)${FIN_DE_PALABRA}`,
-  'i',
-)
+const NO_SON_VOSEO = new Set([
+  // Interrogativos. `qué` es, de lejos, el más común en esta interfaz: casi
+  // todas las etiquetas de motivo empiezan con «Qué pasó».
+  'qué',
+  'cuál',
+  'quién',
+  'cuándo',
+  'cómo',
+  'dónde',
+  // Primera persona. «Olvidé mi contraseña» lo dice el usuario, no la app.
+  'olvidé',
+  // Verbos y adverbios de todos los días.
+  'está',
+  'acá',
+  'allá',
+  'aquí',
+  'ahí',
+  'así',
+  'quizá',
+  'ojalá',
+  'además',
+  'atrás',
+  'detrás',
+  'jamás',
+  'sí',
+  'mí',
+  // Sustantivos.
+  'café',
+  'sofá',
+  'menú',
+  'papá',
+  'mamá',
+  // Nombres propios que aparecen en este producto.
+  'bogotá',
+  'panamá',
+  'atlántico',
+  /*
+   * ── El futuro en usted también termina en tilde ──────────────────────────
+   *
+   * «tendrá que entrar de nuevo» es correcto y suena igual de acentuado que
+   * «probá». No hay regla que los separe: se intentó pedir que sacarle la `á`
+   * dejara un infinitivo —`quedará` → `quedar`— y choca con los imperativos
+   * más comunes: `mirá` deja `mir`, que termina en «ir», y `esperá` deja
+   * `esper`, que termina en «er».
+   *
+   * Así que van acá. La lista va a crecer cuando el producto escriba en
+   * futuro, y va a crecer **rompiendo el test**, que es exactamente lo que se
+   * busca: el defecto anterior era pasar en verde con voseo adentro.
+   */
+  'esté',
+  'será',
+  'habrá',
+  'tendrá',
+  'podrá',
+  'deberá',
+  'hará',
+  'dirá',
+  'vendrá',
+  'saldrá',
+  'pondrá',
+  'sabrá',
+  'querrá',
+])
+
+/** Palabras que terminan en tilde: el universo de sospechosos. */
+const TERMINA_EN_TILDE = /\b([a-záéíóúüñ]{2,}[áéí])(?![a-záéíóúüñ])/gi
+
+/**
+ * ── Ojo con `\b` y las tildes ───────────────────────────────────────────────
+ *
+ * En JavaScript, `\b` se define contra `\w`, que es `[A-Za-z0-9_]`. Una `á`
+ * **no** es un carácter de palabra, así que entre `á` y un espacio no hay
+ * frontera: `/\bprobá\b/` no coincide nunca con «probá de nuevo».
+ *
+ * Es una trampa silenciosa —el mismo patrón en Python SÍ funciona, porque ahí
+ * `á` cuenta como letra— y el precio es un guardián que pasa en verde mientras
+ * la app entera vosea. Por eso el cierre es `(?![…])`: «que no siga una letra».
+ */
+function imperativoVoseante(linea: string): string | null {
+  for (const [, palabra] of linea.matchAll(TERMINA_EN_TILDE)) {
+    if (!NO_SON_VOSEO.has(palabra!.toLowerCase())) return palabra!
+  }
+
+  return null
+}
 
 /** Formas verbales de vos: `podés`, `tenés`, `sabés`. */
 const VERBO_VOSEANTE = new RegExp(
@@ -60,11 +152,17 @@ const TUTEO = new RegExp(
 /** Pronombres y posesivos de tú/vos: `tu`, `tus`, `vos`, `tuyo`. */
 const POSESIVO = /\b(?:tu|tus|vos|ti|tuyo|tuya|tuyos|tuyas|contigo)\b/i
 
-const REGLAS: Array<[string, RegExp]> = [
-  ['imperativo voseante', IMPERATIVO_VOSEANTE],
-  ['verbo voseante', VERBO_VOSEANTE],
-  ['tuteo', TUTEO],
-  ['posesivo de tú/vos', POSESIVO],
+const buscarCon = (regla: RegExp) => (linea: string) => regla.exec(linea)?.[0] ?? null
+
+/**
+ * Una regla es una función y no una expresión regular porque la del imperativo
+ * ya no puede serlo: necesita descartar excepciones palabra por palabra.
+ */
+const REGLAS: Array<[string, (linea: string) => string | null]> = [
+  ['imperativo voseante', imperativoVoseante],
+  ['verbo voseante', buscarCon(VERBO_VOSEANTE)],
+  ['tuteo', buscarCon(TUTEO)],
+  ['posesivo de tú/vos', buscarCon(POSESIVO)],
 ]
 
 /**
@@ -100,12 +198,12 @@ describe('la interfaz habla de usted', () => {
       lineas.forEach((linea, i) => {
         if (VOZ_DE_DESARROLLADOR.some((frase) => linea.includes(frase))) return
 
-        for (const [nombre, regla] of REGLAS) {
-          const encontrado = regla.exec(linea)
-          if (!encontrado) continue
+        for (const [nombre, buscar] of REGLAS) {
+          const encontrado = buscar(linea)
+          if (encontrado === null) continue
 
           hallazgos.push(
-            `${archivo.replace(process.cwd(), '')}:${i + 1} — ${nombre}: «${encontrado[0]}» en «${linea.trim().slice(0, 80)}»`,
+            `${archivo.replace(process.cwd(), '')}:${i + 1} — ${nombre}: «${encontrado}» en «${linea.trim().slice(0, 80)}»`,
           )
         }
       })
@@ -120,9 +218,11 @@ describe('la interfaz habla de usted', () => {
    */
   it('las reglas detectan lo que dicen detectar', () => {
     // Este es el caso que atrapó el bug de `\b` con tildes.
-    expect(IMPERATIVO_VOSEANTE.test('Probá de nuevo')).toBe(true)
-    expect(IMPERATIVO_VOSEANTE.test('Elegí una presentación')).toBe(true)
-    expect(IMPERATIVO_VOSEANTE.test('recargá para ver el último')).toBe(true)
+    expect(imperativoVoseante('Probá de nuevo')).toBe('Probá')
+    expect(imperativoVoseante('Elegí una presentación')).toBe('Elegí')
+    expect(imperativoVoseante('recargá para ver el último')).toBe('recargá')
+    // El que se escapó de la lista de verbos y llegó a producción.
+    expect(imperativoVoseante('Repetí la contraseña nueva')).toBe('Repetí')
     expect(VERBO_VOSEANTE.test('no tenés permiso')).toBe(true)
     expect(TUTEO.test('¿olvidaste tu contraseña?')).toBe(true)
     expect(POSESIVO.test('revise tus roles')).toBe(true)
@@ -140,8 +240,8 @@ describe('la interfaz habla de usted', () => {
       'El café de la planta',
       'Más allá del vencimiento',
     ]) {
-      for (const [, regla] of REGLAS) {
-        expect(regla.test(inocente), `«${inocente}» marcado por ${regla}`).toBe(false)
+      for (const [nombre, buscar] of REGLAS) {
+        expect(buscar(inocente), `«${inocente}» marcado por ${nombre}`).toBeNull()
       }
     }
   })

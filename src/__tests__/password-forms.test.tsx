@@ -96,13 +96,13 @@ describe('<ResetPasswordForm />', () => {
     render(<ResetPasswordForm token="tok" />)
 
     expect(screen.getByLabelText('Contraseña nueva')).toBeInTheDocument()
-    expect(screen.getByLabelText('Repetí la contraseña nueva')).toBeInTheDocument()
+    expect(screen.getByLabelText('Repita la contraseña nueva')).toBeInTheDocument()
   })
 
   it('enmascara ambos campos y exige el mínimo del spec', () => {
     render(<ResetPasswordForm token="tok" />)
 
-    for (const label of ['Contraseña nueva', 'Repetí la contraseña nueva']) {
+    for (const label of ['Contraseña nueva', 'Repita la contraseña nueva']) {
       expect(screen.getByLabelText(label)).toHaveAttribute('type', 'password')
       expect(screen.getByLabelText(label)).toHaveAttribute('minlength', '8')
     }
@@ -154,7 +154,7 @@ describe('<ChangePasswordForm />', () => {
 
     await user.type(screen.getByLabelText('Contraseña actual'), 'vieja')
     await user.type(screen.getByLabelText('Contraseña nueva'), 'nuevaClave1')
-    await user.type(screen.getByLabelText('Repetí la contraseña nueva'), 'nuevaClave1')
+    await user.type(screen.getByLabelText('Repita la contraseña nueva'), 'nuevaClave1')
     await user.click(screen.getByRole('button', { name: /cambiar contraseña/i }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('La contraseña actual no es correcta.')

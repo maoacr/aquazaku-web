@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Departamento, Direccion, Municipio } from '@/lib/api-types'
+import { UbicacionEnMapa } from './ubicacion-en-mapa'
 
 /**
  * Los campos de una dirección — M14.
@@ -44,6 +45,13 @@ export function CamposDeDireccion({
   municipios: Municipio[]
 }) {
   const v = (campo: keyof Direccion) => (inicial?.[campo] as string | null) ?? undefined
+
+  /*
+   * El municipio vive acá y no dentro de `Geografia` porque el mapa lo
+   * necesita: se abre centrado en el pueblo que la persona escribió, con las
+   * coordenadas del DANE que ya viajan en el catálogo.
+   */
+  const [municipio, setMunicipio] = useState(inicial?.municipio ?? '')
 
   return (
     <>
@@ -143,7 +151,12 @@ export function CamposDeDireccion({
         />
       </fieldset>
 
-      <Geografia inicial={inicial} departamentos={departamentos} municipios={municipios} />
+      <Geografia
+        inicial={inicial}
+        departamentos={departamentos}
+        municipios={municipios}
+        alElegirMunicipio={setMunicipio}
+      />
 
       {/*
         La salida para lo que no se descompone. No es un campo de respaldo: para
@@ -173,6 +186,12 @@ export function CamposDeDireccion({
           className="aq-campo"
         />
       </label>
+
+      <UbicacionEnMapa
+        inicial={inicial}
+        municipios={municipios}
+        municipioElegido={municipio}
+      />
     </>
   )
 }
@@ -201,10 +220,13 @@ function Geografia({
   inicial,
   departamentos,
   municipios,
+  alElegirMunicipio,
 }: {
   inicial?: Direccion
   departamentos: Departamento[]
   municipios: Municipio[]
+  /** Sube al padre para que el mapa se abra en el pueblo correcto. */
+  alElegirMunicipio: (nombre: string) => void
 }) {
   const [departamento, setDepartamento] = useState(inicial?.departamento ?? '')
 
@@ -244,6 +266,7 @@ function Geografia({
           name="municipio"
           list="municipios"
           defaultValue={inicial?.municipio ?? undefined}
+          onChange={(e) => alElegirMunicipio(e.target.value)}
           placeholder="Campo de la Cruz"
           className="aq-campo"
         />

@@ -5,6 +5,7 @@ import { useActionState, useId, useState } from 'react'
 import { type EstadoDeVenta, registrarVentaAction } from '@/app/(app)/modulos/ventas/actions'
 import { FormError } from '@/components/auth/form-error'
 import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
+import { EntregaDeBase } from '@/components/retornables/entrega-de-base'
 import { Cifra } from '@/components/stock/cifra'
 import type { Cliente, Producto, ResumenDeStock } from '@/lib/api-types'
 import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
@@ -210,6 +211,12 @@ export function Mostrador({
         onElegir={setCliente}
         sinCliente="Sin cliente se cobra la lista residencial."
       />
+
+      {/*
+        La base va justo debajo del cliente porque depende de él: se presta a
+        una de SUS direcciones, y sin cliente no tiene dónde apuntar.
+      */}
+      <EntregaDeBase cliente={cliente} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="aq-etiqueta-campo">

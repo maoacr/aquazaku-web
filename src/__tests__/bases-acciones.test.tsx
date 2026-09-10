@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ListaDeBases } from '@/components/retornables/bases'
-import type { Base, Cliente, Direccion } from '@/lib/api-types'
+import type { Base } from '@/lib/api-types'
 
 /**
  * Qué se le ofrece hacer a una base, según dónde esté — RN-BAS-04, 06 y 08.
@@ -21,32 +21,19 @@ import type { Base, Cliente, Direccion } from '@/lib/api-types'
  * nota con una base en el estado contrario.
  */
 
-const DIRECCION: Direccion & { cliente: Cliente } = {
-  id: 'dir-1',
-  clienteId: 'cli-1',
-  etiqueta: 'El local',
-  // M14: la nomenclatura va por partes, y `legible` la arma `api`.
-  viaTipo: 'CL',
-  viaNumero: '30',
-  viaLetra: null,
-  placaNumero: '12',
-  placaLetra: null,
-  placaSegundo: '45',
-  placaLetraFinal: null,
-  complemento: null,
-  municipio: 'Campo de la Cruz',
-  departamento: null,
-  direccion: null,
-  indicaciones: null,
-  latitud: null,
-  longitud: null,
+/**
+ * Dónde está la base, tal como la manda `api`.
+ *
+ * Antes era una `Direccion` suelta que la pantalla tenía que cruzar contra la
+ * lista de direcciones de todos los clientes. Ahora viaja pegada a la base: es
+ * un atributo de la base —dónde está— y no una tabla que cada pantalla joinea.
+ */
+const UBICACION = {
+  direccionId: 'dir-1',
+  etiqueta: 'La casa',
   legible: 'CL 30 # 12 - 45, Campo de la Cruz',
-  activa: true,
-  createdAt: '2026-08-27T12:00:00.000Z',
-  cliente: {
-    id: 'cli-1',
-    nombre: 'Panadería del Centro',
-  } as Cliente,
+  clienteId: 'cli-1',
+  clienteNombre: 'Panadería del Centro',
 }
 
 const base = (extra: Partial<Base> = {}): Base =>
@@ -60,10 +47,11 @@ const base = (extra: Partial<Base> = {}): Base =>
     danadaEn: null,
     recargoVentaId: null,
     createdAt: '2026-08-27T12:00:00.000Z',
+    ubicacion: null,
     ...extra,
   }) as Base
 
-const pintar = (b: Base) => render(<ListaDeBases bases={[b]} direcciones={[DIRECCION]} />)
+const pintar = (b: Base) => render(<ListaDeBases bases={[b]} />)
 
 describe('una base EN LA BODEGA', () => {
   it('se puede descartar, y no dañar: no hay a quién cobrarle', () => {
@@ -82,7 +70,7 @@ describe('una base EN LA BODEGA', () => {
 
 describe('una base PRESTADA', () => {
   it('se puede devolver y dañar, pero no descartar', () => {
-    pintar(base({ direccionId: 'dir-1' }))
+    pintar(base({ direccionId: 'dir-1', ubicacion: UBICACION }))
 
     expect(screen.getByText('Volvió a la bodega')).toBeTruthy()
     expect(screen.getByText('Se rompió')).toBeTruthy()
@@ -95,7 +83,7 @@ describe('una base PRESTADA', () => {
    * la pantalla no tiene por qué ofrecerlo.
    */
   it('si ya está dañada, no se vuelve a dañar', () => {
-    pintar(base({ direccionId: 'dir-1', estado: 'danada' }))
+    pintar(base({ direccionId: 'dir-1', ubicacion: UBICACION, estado: 'danada' }))
 
     expect(screen.queryByText('Se rompió')).toBeNull()
     expect(screen.getByText('Volvió a la bodega')).toBeTruthy()
@@ -104,7 +92,7 @@ describe('una base PRESTADA', () => {
 
 describe('el historial', () => {
   it('está siempre, sin importar dónde esté la base', () => {
-    for (const b of [base(), base({ direccionId: 'dir-1' })]) {
+    for (const b of [base(), base({ direccionId: 'dir-1', ubicacion: UBICACION })]) {
       const { unmount } = pintar(b)
 
       expect(screen.getByText('Historial').getAttribute('href')).toBe(
@@ -122,7 +110,7 @@ describe('dónde está la base', () => {
    * es «¿a cuál de sus tres locales voy a buscar la 0913?» — RN-BAS-03.
    */
   it('prestada muestra la dirección concreta', () => {
-    pintar(base({ direccionId: 'dir-1' }))
+    pintar(base({ direccionId: 'dir-1', ubicacion: UBICACION }))
 
     expect(screen.getByText(/CL 30 # 12 - 45/)).toBeTruthy()
   })

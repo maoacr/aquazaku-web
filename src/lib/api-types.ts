@@ -429,6 +429,8 @@ export interface LineaDeVenta {
 }
 
 export interface ResultadoDeVenta {
+  /** La base que salió con la venta, si salió alguna — RN-BAS-03. */
+  basePrestada?: { idSticker: string }
   venta: Venta
   lineas: {
     loteCodigo: string
@@ -480,7 +482,25 @@ export type EstadoDeBase = 'sana' | 'danada'
  * `direccionId` en `null` es la bodega: una base está en **exactamente un
  * lugar** (`RN-BAS-04`), y la bodega es uno de esos lugares.
  */
+/** Dónde está una base prestada. `null` en bodega — RN-BAS-03. */
+export interface UbicacionDeBase {
+  direccionId: string
+  etiqueta: string
+  /** Ya armada por `api`, como el resto de las direcciones. */
+  legible: string
+  clienteId: string
+  clienteNombre: string
+}
+
 export interface Base {
+  /**
+   * Dónde está, resuelto por `api` con un JOIN.
+   *
+   * Antes la pantalla lo cruzaba contra la lista de direcciones de TODOS los
+   * clientes — una petición por cliente. Con mil, mil una peticiones para
+   * mostrar como mucho cuarenta.
+   */
+  ubicacion: UbicacionDeBase | null
   id: string
   /** El ID impreso en el sticker físico — RN-BAS-10. */
   idSticker: string

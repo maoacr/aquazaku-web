@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { apiServerFetch, apiServerFetchRaw } from '@/lib/api-server'
-import type { AvisoDeCruce, Cliente } from '@/lib/api-types'
+import type { AvisoDeCruce, Cliente, Direccion } from '@/lib/api-types'
 import { cuerpoDeError } from '@/lib/form-errors'
 import { type EstadoDeFormulario, exito } from '@/lib/formulario'
 
@@ -412,5 +412,30 @@ export async function crearClienteRapidoAction(datos: {
      * pero el cliente ya está creado y se puede seguir cobrando.
      */
     ...(creado.aviso && { aviso: creado.aviso.mensaje }),
+  }
+}
+
+/**
+ * Las direcciones de UN cliente, bajo demanda.
+ *
+ * ── El N+1 que esto reemplaza ───────────────────────────────────────────────
+ *
+ * Retornables armaba el desplegable de «a qué dirección» trayéndose las
+ * direcciones de TODOS los clientes: una petición por cliente, en cada carga de
+ * la pantalla. Con mil clientes son mil una peticiones para llenar una lista
+ * que además nadie puede recorrer.
+ *
+ * Acá se pide una sola, y recién cuando ya se sabe de quién. Es el mismo cambio
+ * de forma que la búsqueda por documento: no traer todo por si acaso.
+ *
+ * Devuelve lista vacía ante un error a propósito: quien está cobrando no puede
+ * quedar bloqueado porque una consulta falló. Ve que no hay direcciones y sigue
+ * sin la base — el error igual queda en el log con su `x-request-id`.
+ */
+export async function direccionesDeClienteAction(clienteId: string): Promise<Direccion[]> {
+  try {
+    return await apiServerFetch<Direccion[]>(`/clientes/${clienteId}/direcciones`)
+  } catch {
+    return []
   }
 }

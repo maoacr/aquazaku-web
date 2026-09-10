@@ -22,7 +22,7 @@ export function PasswordFields({ describedBy }: { describedBy?: string }) {
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
-        Repetí la contraseña nueva
+        Repita la contraseña nueva
         <input
           name="confirmacion"
           type="password"

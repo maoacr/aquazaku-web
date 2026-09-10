@@ -16,10 +16,7 @@ import { apiServerFetch } from '@/lib/api-server'
 import { siPuedeVerlo } from '@/lib/permiso-opcional'
 import type {
   Base,
-  Cliente,
-  Direccion,
   DisponibilidadDeBases,
-  FichaDeCliente,
   ParqueDeBotellones,
 } from '@/lib/api-types'
 
@@ -37,10 +34,9 @@ import type {
  * más urgente.
  */
 export default async function RetornablesPage() {
-  const [parque, bases, clientes, proximo, disponibilidad] = await Promise.all([
+  const [parque, bases, proximo, disponibilidad] = await Promise.all([
     apiServerFetch<ParqueDeBotellones>('/botellones'),
     apiServerFetch<Base[]>('/bases'),
-    apiServerFetch<Cliente[]>('/clientes'),
     /*
      * La propuesta del próximo sticker pide `bases:registrar`, y el `contador`
      * solo tiene `ver`. `siPuedeVerlo` se traga ese 403 para que la pantalla se
@@ -52,21 +48,17 @@ export default async function RetornablesPage() {
   const leidoEn = new Date()
 
   /*
-   * Las direcciones cuelgan de cada cliente, así que hay que preguntarle a cada
-   * uno. Van en paralelo — son independientes entre sí.
+   * ── Acá había un N+1 ──────────────────────────────────────────────────────
    *
-   * Se le pega el cliente a cada dirección porque en los desplegables «La casa»
-   * a secas no identifica nada: hay una por cliente.
+   * Esta página pedía las direcciones de CADA cliente, una petición por cada
+   * uno, para poder mostrar dónde está cada base y para llenar el desplegable
+   * de «a qué dirección». Con los cuarenta clientes de hoy pasa desapercibido;
+   * con mil son **mil una** peticiones cada vez que alguien abre Retornables,
+   * para mostrar como mucho cuarenta direcciones.
+   *
+   * Ahora son cero. `GET /bases` trae la ubicación de cada base con un JOIN, y
+   * el desplegable pide las direcciones del cliente que ya se eligió.
    */
-  const direcciones: (Direccion & { cliente: Cliente })[] = (
-    await Promise.all(
-      clientes.map(async (cliente) => {
-        const ficha = await apiServerFetch<FichaDeCliente>(`/clientes/${cliente.id}`)
-
-        return ficha.direcciones.map((direccion) => ({ ...direccion, cliente }))
-      }),
-    )
-  ).flat()
 
   return (
     <div className="grid gap-6">
@@ -94,9 +86,9 @@ export default async function RetornablesPage() {
 
         <EstadoDelParque parque={parque} />
 
-        <EntregaYRetorno clientes={clientes} />
+        <EntregaYRetorno />
         <ComprarBotellones />
-        <AjustarBotellones clientes={clientes} />
+        <AjustarBotellones />
       </section>
 
       <section className="grid gap-4">
@@ -106,9 +98,9 @@ export default async function RetornablesPage() {
 
         <AvisoDeBases disponibilidad={disponibilidad} hayBases={bases.length > 0} />
 
-        <PrestarBase bases={bases} direcciones={direcciones} />
+        <PrestarBase bases={bases} />
 
-        <ListaDeBases bases={bases} direcciones={direcciones} />
+        <ListaDeBases bases={bases} />
         <SelloDeHora leidoEn={leidoEn} />
 
         <ComprarBases proximo={proximo?.proximo ?? null} />

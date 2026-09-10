@@ -4,6 +4,8 @@ import { Minus, Plus } from 'lucide-react'
 import { useActionState, useId, useState } from 'react'
 import { type EstadoDeVenta, registrarVentaAction } from '@/app/(app)/modulos/ventas/actions'
 import { FormError } from '@/components/auth/form-error'
+import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
+import { EntregaDeBase } from '@/components/retornables/entrega-de-base'
 import { Cifra } from '@/components/stock/cifra'
 import type { Cliente, Producto, ResumenDeStock } from '@/lib/api-types'
 import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
@@ -39,17 +41,15 @@ const INICIAL: EstadoDeVenta = {}
 export function Mostrador({
   productos,
   stock,
-  clientes,
 }: {
   productos: Producto[]
   stock: ResumenDeStock[]
-  clientes: Cliente[]
 }) {
   const [estado, accion, enviando] = useActionState(registrarVentaAction, INICIAL)
   const idError = useId()
 
   const [carrito, setCarrito] = useState<Record<string, number>>({})
-  const [clienteId, setClienteId] = useState('')
+  const [cliente, setCliente] = useState<Cliente | null>(null)
   const [medioDePago, setMedioDePago] = useState('efectivo')
   const [codigo, setCodigo] = useState('')
   const [requiereFactura, setRequiereFactura] = useState(false)
@@ -58,13 +58,12 @@ export function Mostrador({
   useAvisoDeExito(estado)
   useLimpiezaAlRegistrar(estado.token, () => {
     setCarrito({})
-    setClienteId('')
+    setCliente(null)
     setMedioDePago('efectivo')
     setCodigo('')
     setRequiereFactura(false)
   })
 
-  const cliente = clientes.find((c) => c.id === clienteId)
   const vendibleDe = (id: string) => stock.find((s) => s.productoId === id)?.vendible ?? 0
 
   const cambiar = (id: string, delta: number) =>
@@ -112,15 +111,14 @@ export function Mostrador({
    * pantalla ya sabía que estaba mal.
    */
   const salenSinVacio = Math.min(sinVacio, botellonesEnCarrito)
-  const botellonSinCliente = salenSinVacio > 0 && !clienteId
+  const botellonSinCliente = salenSinVacio > 0 && !cliente
 
   const excedidos = items.filter((i) => i.cantidad > vendibleDe(i.productoId))
-  const creditoSinCliente = medioDePago === 'credito' && !clienteId
+  const creditoSinCliente = medioDePago === 'credito' && !cliente
 
   return (
     <form action={accion} className="aq-tarjeta grid gap-5 p-5">
       <input type="hidden" name="items" value={JSON.stringify(items)} />
-      <input type="hidden" name="clienteId" value={clienteId} />
       <input type="hidden" name="medioDePago" value={medioDePago} />
       <input type="hidden" name="requiereFactura" value={requiereFactura ? 'si' : 'no'} />
       <input type="hidden" name="botellonesSinVacio" value={salenSinVacio} />
@@ -201,25 +199,26 @@ export function Mostrador({
         </ul>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <label className="aq-etiqueta-campo">
-          <span>
-            Cliente <span className="font-normal normal-case">(opcional)</span>
-          </span>
-          <select
-            value={clienteId}
-            onChange={(e) => setClienteId(e.target.value)}
-            className="aq-campo"
-          >
-            <option value="">Sin cliente</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre} — {c.documento}
-              </option>
-            ))}
-          </select>
-        </label>
+      {/*
+        El cliente sale del grid y se queda con la fila entera.
 
+        Es el campo del que dependen el precio, el crédito y el botellón sin
+        vacío, y ahora además despliega resultados: en un tercio del ancho el
+        nombre y el documento no entran en la misma línea.
+      */}
+      <BuscadorDeCliente
+        elegido={cliente}
+        onElegir={setCliente}
+        sinCliente="Sin cliente se cobra la lista residencial."
+      />
+
+      {/*
+        La base va justo debajo del cliente porque depende de él: se presta a
+        una de SUS direcciones, y sin cliente no tiene dónde apuntar.
+      */}
+      <EntregaDeBase cliente={cliente} />
+
+      <div className="grid gap-4 sm:grid-cols-2">
         <label className="aq-etiqueta-campo">
           <span>Cómo paga</span>
           <select

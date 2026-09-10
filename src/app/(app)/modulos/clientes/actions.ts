@@ -1,8 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { apiServerFetchRaw } from '@/lib/api-server'
-import type { AvisoDeCruce } from '@/lib/api-types'
+import { apiServerFetch, apiServerFetchRaw } from '@/lib/api-server'
+import type { AvisoDeCruce, Cliente, Direccion } from '@/lib/api-types'
 import { cuerpoDeError } from '@/lib/form-errors'
 import { type EstadoDeFormulario, exito } from '@/lib/formulario'
 
@@ -36,30 +36,57 @@ async function mensajeDeError(res: Response, generico: string): Promise<string> 
 /** El alta puede traer un aviso de cruce CC/NIT, que no es un error. */
 export interface EstadoDeAlta extends EstadoDeFormulario {
   aviso?: AvisoDeCruce
+  /**
+   * El cliente recién creado.
+   *
+   * Viaja porque el alta no termina acá: con el cliente ya existiendo, la
+   * pantalla ofrece cargarle la dirección, y `POST /clientes/:id/direcciones`
+   * necesita ese id. Sin esto habría que salir a buscarlo.
+   */
+  cliente?: Cliente
 }
 
 export async function crearClienteAction(
   _previo: EstadoDeAlta,
   formData: FormData,
 ): Promise<EstadoDeAlta> {
+  /*
+   * El nombre viaja PARTIDO. `nombre` no existe como campo de entrada: en la
+   * base es una columna generada, y `api/` rechaza cualquier intento de
+   * escribirla. Lo que se manda es lo que la compone.
+   *
+   * Las cadenas vacías se omiten en vez de mandarse: un `apellidos: ''` no es
+   * «sin apellidos», es un dato en blanco, y el CHECK de la base lo rechaza.
+   */
+  const texto = (campo: string) => String(formData.get(campo) ?? '').trim()
+  const siHay = (campo: string) => (texto(campo) ? { [campo]: texto(campo) } : {})
+
+  const telefono = texto('telefono')
+
   const res = await apiServerFetchRaw('/clientes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      nombre: String(formData.get('nombre') ?? '').trim(),
+      ...siHay('nombreLibre'),
+      ...siHay('primerNombre'),
+      ...siHay('segundoNombre'),
+      ...siHay('apellidos'),
+      ...siHay('apodo'),
       tipo: String(formData.get('tipo') ?? 'residencial'),
       tipoDocumento: String(formData.get('tipoDocumento') ?? 'CC'),
-      numeroDocumento: String(formData.get('numeroDocumento') ?? '').trim(),
+      numeroDocumento: texto('numeroDocumento'),
+      ...(telefono && { telefono: { numero: telefono } }),
     }),
   })
 
   if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos crear el cliente.') }
 
-  const cliente = (await res.json()) as { nombre: string; documento: string; aviso: AvisoDeCruce | null }
+  const cliente = (await res.json()) as Cliente & { aviso: AvisoDeCruce | null }
 
   revalidatePath(RUTA)
   return {
     ...exito(`${cliente.nombre} quedó registrado con documento ${cliente.documento}.`),
+    cliente,
     ...(cliente.aviso && { aviso: cliente.aviso }),
   }
 }
@@ -285,4 +312,130 @@ export async function desactivarDireccionAction(
 
   revalidatePath(`${RUTA}/${clienteId}`)
   return exito('Dirección dada de baja.')
+}
+
+/**
+ * Buscar un cliente por su número de documento.
+ *
+ * ── Por qué es una acción y no un fetch del navegador ───────────────────────
+ *
+ * Se llama desde un componente cliente en cada tecla, y aun así el navegador
+ * nunca toca `api/`: la acción corre en el servidor y viaja con la cookie de
+ * sesión — ADR-0002. Es la única forma de pedir datos bajo demanda sin abrir
+ * una segunda puerta a la API.
+ *
+ * ── Qué NO hace ─────────────────────────────────────────────────────────────
+ *
+ * No revalida ni escribe nada, así que no devuelve `EstadoDeFormulario`: no hay
+ * éxito que avisar. Y no filtra ni recorta la respuesta — el mínimo de tres
+ * caracteres y el tope de coincidencias los decide `api/`, que es quien puede
+ * hacerlo sin traerse la tabla entera.
+ *
+ * Un error acá devuelve la lista vacía a propósito. Quien escribe una cédula en
+ * el mostrador no puede quedar bloqueado porque una consulta falló: ve que no
+ * aparece nadie y sigue —a mano, o registrando al cliente—. El error igual
+ * queda en el log del servidor con su `x-request-id`.
+ */
+export async function buscarClientesAction(documento: string): Promise<Cliente[]> {
+  try {
+    return await apiServerFetch<Cliente[]>(
+      `/clientes?documento=${encodeURIComponent(documento)}`,
+    )
+  } catch {
+    return []
+  }
+}
+
+/** Lo que devuelve el alta rápida: o el cliente, o por qué no se pudo. */
+export interface ResultadoDeAltaRapida {
+  cliente?: Cliente
+  error?: string
+  /** El cruce CC/NIT. No impide nada: el cliente quedó creado igual. */
+  aviso?: string
+}
+
+/**
+ * Registrar un cliente sin salir de donde se está.
+ *
+ * ── Por qué existe además de `crearClienteAction` ───────────────────────────
+ *
+ * Aquella es la del formulario de la pantalla de clientes: recibe `FormData` y
+ * devuelve un mensaje. Sirve para eso y no para esto.
+ *
+ * Acá hace falta otra cosa. Quien está cobrando una venta descubre a mitad de
+ * camino que esta persona se lleva un botellón sin devolver el vacío, y
+ * entonces —RN-ENV-09— hay que registrarla. Mandarla a la pantalla de clientes
+ * le vacía el carrito. Así que se registra ahí mismo, y para poder elegir al
+ * cliente recién creado hace falta que la acción **devuelva el cliente**, no un
+ * texto de éxito.
+ *
+ * El teléfono viaja en el mismo pedido a propósito: `POST /clientes/:id/
+ * telefonos` pide `clientes:editar` y el `pos` no lo tiene. Ver `DatosDeAlta`
+ * en el servicio de `api/`.
+ */
+export async function crearClienteRapidoAction(datos: {
+  /**
+   * El nombre viaja PARTIDO, igual que en el alta completa.
+   *
+   * `nombre` no existe como campo de entrada: en la base es una columna
+   * generada y `api/` rechaza cualquier intento de escribirla. Lo que se manda
+   * es lo que la compone — las partes para una persona, `nombreLibre` para un
+   * negocio, nunca las dos.
+   */
+  nombreLibre?: string
+  primerNombre?: string
+  segundoNombre?: string
+  apellidos?: string
+  apodo?: string
+  tipo: 'residencial' | 'comercial'
+  tipoDocumento: 'CC' | 'NIT'
+  numeroDocumento: string
+  telefono?: { numero: string; etiqueta?: string }
+}): Promise<ResultadoDeAltaRapida> {
+  const res = await apiServerFetchRaw('/clientes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(datos),
+  })
+
+  if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos registrar al cliente.') }
+
+  const creado = (await res.json()) as Cliente & { aviso: AvisoDeCruce | null }
+
+  revalidatePath(RUTA)
+
+  return {
+    cliente: creado,
+    /*
+     * El cruce NO cancela el alta: el mismo número puede ser una CC y el NIT de
+     * esa misma persona. Se avisa para que quien está en el mostrador decida,
+     * pero el cliente ya está creado y se puede seguir cobrando.
+     */
+    ...(creado.aviso && { aviso: creado.aviso.mensaje }),
+  }
+}
+
+/**
+ * Las direcciones de UN cliente, bajo demanda.
+ *
+ * ── El N+1 que esto reemplaza ───────────────────────────────────────────────
+ *
+ * Retornables armaba el desplegable de «a qué dirección» trayéndose las
+ * direcciones de TODOS los clientes: una petición por cliente, en cada carga de
+ * la pantalla. Con mil clientes son mil una peticiones para llenar una lista
+ * que además nadie puede recorrer.
+ *
+ * Acá se pide una sola, y recién cuando ya se sabe de quién. Es el mismo cambio
+ * de forma que la búsqueda por documento: no traer todo por si acaso.
+ *
+ * Devuelve lista vacía ante un error a propósito: quien está cobrando no puede
+ * quedar bloqueado porque una consulta falló. Ve que no hay direcciones y sigue
+ * sin la base — el error igual queda en el log con su `x-request-id`.
+ */
+export async function direccionesDeClienteAction(clienteId: string): Promise<Direccion[]> {
+  try {
+    return await apiServerFetch<Direccion[]>(`/clientes/${clienteId}/direcciones`)
+  } catch {
+    return []
+  }
 }

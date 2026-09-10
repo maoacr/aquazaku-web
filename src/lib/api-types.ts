@@ -276,7 +276,19 @@ export type MetodoDeVerificacion = 'seller_manual' | 'pos_manual' | 'admin_ofici
  */
 export interface Cliente {
   id: string
+  /**
+   * El nombre que se muestra. Lo **genera la base** a partir de las partes, o
+   * del nombre libre cuando no hay partes. Nunca se manda al crear ni al
+   * editar: se manda lo que lo compone.
+   */
   nombre: string
+  /** El de un negocio, o el de alguien cargado sin partir. */
+  nombreLibre: string | null
+  primerNombre: string | null
+  segundoNombre: string | null
+  apellidos: string | null
+  /** Como la conocen en el pueblo. No entra en `nombre`. */
+  apodo: string | null
   tipo: TipoDeCliente
   tipoDocumento: TipoDeDocumento
   /** El número base, normalizado: sin puntos, sin guion, sin DV. */
@@ -417,6 +429,8 @@ export interface LineaDeVenta {
 }
 
 export interface ResultadoDeVenta {
+  /** La base que salió con la venta, si salió alguna — RN-BAS-03. */
+  basePrestada?: { idSticker: string }
   venta: Venta
   lineas: {
     loteCodigo: string
@@ -468,7 +482,25 @@ export type EstadoDeBase = 'sana' | 'danada'
  * `direccionId` en `null` es la bodega: una base está en **exactamente un
  * lugar** (`RN-BAS-04`), y la bodega es uno de esos lugares.
  */
+/** Dónde está una base prestada. `null` en bodega — RN-BAS-03. */
+export interface UbicacionDeBase {
+  direccionId: string
+  etiqueta: string
+  /** Ya armada por `api`, como el resto de las direcciones. */
+  legible: string
+  clienteId: string
+  clienteNombre: string
+}
+
 export interface Base {
+  /**
+   * Dónde está, resuelto por `api` con un JOIN.
+   *
+   * Antes la pantalla lo cruzaba contra la lista de direcciones de TODOS los
+   * clientes — una petición por cliente. Con mil, mil una peticiones para
+   * mostrar como mucho cuarenta.
+   */
+  ubicacion: UbicacionDeBase | null
   id: string
   /** El ID impreso en el sticker físico — RN-BAS-10. */
   idSticker: string

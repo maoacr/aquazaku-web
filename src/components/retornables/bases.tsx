@@ -1,7 +1,7 @@
 'use client'
 
 import { Box } from 'lucide-react'
-import { useActionState, useId } from 'react'
+import { useActionState, useId, useState } from 'react'
 import {
   comprarBasesAction,
   darDeAltaBaseAction,
@@ -12,10 +12,12 @@ import {
   retornarBaseAction,
 } from '@/app/(app)/modulos/retornables/actions'
 import { FormError } from '@/components/auth/form-error'
+import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
+import { SelectorDeDireccion } from '@/components/retornables/entrega-de-base'
 import { Estado } from '@/components/ui/estado'
 import { Vacio } from '@/components/ui/vacio'
-import type { Base, Cliente, Direccion } from '@/lib/api-types'
-import { useAvisoDeExito } from '@/lib/formulario-cliente'
+import type { Base, Cliente } from '@/lib/api-types'
+import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
 
 const INICIAL: EstadoDeFormulario = {}
 
@@ -25,13 +27,7 @@ const INICIAL: EstadoDeFormulario = {}
  * Cada una se muestra con su sticker en mono, porque es un código que alguien va
  * a comparar contra el que está pegado en la base física.
  */
-export function ListaDeBases({
-  bases,
-  direcciones,
-}: {
-  bases: Base[]
-  direcciones: (Direccion & { cliente?: Cliente })[]
-}) {
+export function ListaDeBases({ bases }: { bases: Base[] }) {
   if (bases.length === 0) {
     return (
       <Vacio variante="primera-vez" icono={Box} titulo="Todavía no hay bases">
@@ -41,13 +37,10 @@ export function ListaDeBases({
     )
   }
 
-  const dondeEsta = (base: Base) =>
-    direcciones.find((d) => d.id === base.direccionId)
-
   return (
     <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {bases.map((base) => {
-        const direccion = dondeEsta(base)
+        const direccion = base.ubicacion
 
         return (
           <li key={base.id}>
@@ -373,21 +366,26 @@ export function DarDeAltaBase({ proximo }: { proximo: string | null }) {
  * Solo aparecen las bases que están en la bodega: una base está en exactamente
  * un lugar, y ofrecer una ya prestada prometería algo que el servidor rechaza.
  */
-export function PrestarBase({
-  bases,
-  direcciones,
-}: {
-  bases: Base[]
-  direcciones: (Direccion & { cliente?: Cliente })[]
-}) {
+export function PrestarBase({ bases }: { bases: Base[] }) {
   const [estado, accion, enviando] = useActionState(prestarBaseAction, INICIAL)
   const idError = useId()
 
+  /*
+   * El cliente se busca por documento y sus direcciones se piden después.
+   *
+   * Antes este desplegable listaba las direcciones de TODOS los clientes, y la
+   * pantalla las conseguía con una petición por cliente. Con mil clientes eran
+   * mil una peticiones en cada carga, para llenar una lista que además nadie
+   * puede recorrer buscando «La casa» entre mil «La casa».
+   */
+  const [cliente, setCliente] = useState<Cliente | null>(null)
+
   useAvisoDeExito(estado)
+  useLimpiezaAlRegistrar(estado.token, () => setCliente(null))
 
   const enBodega = bases.filter((b) => b.direccionId === null && b.estado === 'sana')
 
-  if (enBodega.length === 0 || direcciones.length === 0) return null
+  if (enBodega.length === 0) return null
 
   return (
     <form key={estado.token ?? 'inicial'} action={accion} className="aq-tarjeta grid gap-4 p-5">
@@ -414,19 +412,16 @@ export function PrestarBase({
           </select>
         </label>
 
-        <label className="aq-etiqueta-campo">
-          <span>A qué dirección</span>
-          <select name="direccionId" required defaultValue="" className="aq-campo">
-            <option value="">Elija una</option>
-            {direcciones.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.cliente?.nombre ? `${d.cliente.nombre} — ` : ''}
-                {d.etiqueta}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
+
+      <BuscadorDeCliente elegido={cliente} onElegir={setCliente} etiqueta="A quién" />
+
+      {/*
+        `EntregaDeBase` trae las direcciones del cliente elegido y emite
+        `baseDireccionId`. Acá se renombra al campo que espera esta acción — el
+        formulario es otro, el mecanismo es el mismo.
+      */}
+      <SelectorDeDireccion cliente={cliente} name="direccionId" />
 
       <button
         type="submit"

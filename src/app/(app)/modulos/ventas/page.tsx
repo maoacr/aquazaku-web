@@ -5,7 +5,7 @@ import { Estado } from '@/components/ui/estado'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { Vacio } from '@/components/ui/vacio'
 import { apiServerFetch } from '@/lib/api-server'
-import type { Cliente, Producto, ResumenDeStock, Venta } from '@/lib/api-types'
+import type { Producto, ResumenDeStock, Venta } from '@/lib/api-types'
 
 /**
  * Ventas — M6.
@@ -17,10 +17,16 @@ import type { Cliente, Producto, ResumenDeStock, Venta } from '@/lib/api-types'
  * copia de la regla acá.
  */
 export default async function VentasPage() {
-  const [productos, stock, clientes, ventas] = await Promise.all([
+  /*
+   * Los clientes NO se cargan acá.
+   *
+   * Antes venía la tabla entera para llenar un `<select>`: con quinientos, esta
+   * página descargaba quinientos registros para que alguien usara uno. Ahora el
+   * mostrador los busca por documento, y pide solo los que coinciden.
+   */
+  const [productos, stock, ventas] = await Promise.all([
     apiServerFetch<Producto[]>('/productos'),
     apiServerFetch<ResumenDeStock[]>('/stock'),
-    apiServerFetch<Cliente[]>('/clientes'),
     apiServerFetch<Venta[]>('/ventas'),
   ])
   const leidoEn = new Date()
@@ -34,11 +40,7 @@ export default async function VentasPage() {
         </p>
       </header>
 
-      <Mostrador
-        productos={productos.filter((p) => p.activo)}
-        stock={stock}
-        clientes={clientes}
-      />
+      <Mostrador productos={productos.filter((p) => p.activo)} stock={stock} />
 
       <section className="grid gap-3">
         <h2 className="aq-micro text-tenue">Últimas ventas</h2>

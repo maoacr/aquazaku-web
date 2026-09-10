@@ -8,6 +8,7 @@ import {
   type EstadoDeFormulario,
 } from '@/app/(app)/modulos/retornables/actions'
 import { FormError } from '@/components/auth/form-error'
+import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
 import type { Cliente } from '@/lib/api-types'
 import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
 
@@ -28,23 +29,22 @@ const INICIAL: EstadoDeFormulario = {}
  * primera entrega, y cuando devuelve envases sin llevarse otros.
  * :::
  */
-export function EntregaYRetorno({ clientes }: { clientes: Cliente[] }) {
+export function EntregaYRetorno() {
   const [estado, accion, enviando] = useActionState(entregarBotellonesAction, INICIAL)
   const idError = useId()
-  const [clienteId, setClienteId] = useState('')
+  const [cliente, setCliente] = useState<Cliente | null>(null)
   const [cantidad, setCantidad] = useState('')
   const [direccion, setDireccion] = useState<'entrega' | 'retorno'>('entrega')
 
   useAvisoDeExito(estado)
   useLimpiezaAlRegistrar(estado.token, () => {
-    setClienteId('')
+    setCliente(null)
     setCantidad('')
   })
 
   return (
     <form action={accion} className="aq-tarjeta grid gap-4 p-5">
       <input type="hidden" name="direccion" value={direccion} />
-      <input type="hidden" name="clienteId" value={clienteId} />
 
       <div>
         <h2 className="aq-titulo-tarjeta text-principal">Entrega y retorno</h2>
@@ -57,22 +57,9 @@ export function EntregaYRetorno({ clientes }: { clientes: Cliente[] }) {
       <FormError id={idError}>{estado.error}</FormError>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <label className="aq-etiqueta-campo sm:col-span-2">
-          <span>Cliente</span>
-          <select
-            required
-            value={clienteId}
-            onChange={(e) => setClienteId(e.target.value)}
-            className="aq-campo"
-          >
-            <option value="">Elija uno</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre} — {c.documento}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="sm:col-span-2">
+          <BuscadorDeCliente elegido={cliente} onElegir={setCliente} />
+        </div>
 
         <label className="aq-etiqueta-campo">
           <span>Cuántos</span>
@@ -105,9 +92,14 @@ export function EntregaYRetorno({ clientes }: { clientes: Cliente[] }) {
         ))}
       </div>
 
+      {/*
+        El `required` del viejo `<select>` no se puede repetir en un campo
+        oculto: el navegador no valida lo que no se ve. Sin este freno, el
+        formulario se enviaba sin cliente y el 422 llegaba del servidor.
+      */}
       <button
         type="submit"
-        disabled={enviando}
+        disabled={enviando || cliente === null}
         className="aq-boton aq-boton-primario justify-self-start"
       >
         {enviando ? 'Registrando…' : direccion === 'entrega' ? 'Registrar entrega' : 'Registrar retorno'}
@@ -162,11 +154,13 @@ export function ComprarBotellones() {
  * Por eso exige motivo: la ley de conservación después de un ajuste no dice
  * «todo cuadra», dice «alguien contó, decidió que cuadre así, y firmó».
  */
-export function AjustarBotellones({ clientes }: { clientes: Cliente[] }) {
+export function AjustarBotellones() {
   const [estado, accion, enviando] = useActionState(ajustarBotellonesAction, INICIAL)
   const idError = useId()
+  const [dondeEsta, setDondeEsta] = useState<Cliente | null>(null)
 
   useAvisoDeExito(estado)
+  useLimpiezaAlRegistrar(estado.token, () => setDondeEsta(null))
 
   return (
     <form key={estado.token ?? 'inicial'} action={accion} className="aq-tarjeta grid gap-4 p-5">
@@ -181,19 +175,12 @@ export function AjustarBotellones({ clientes }: { clientes: Cliente[] }) {
       <FormError id={idError}>{estado.error}</FormError>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <label className="aq-etiqueta-campo">
-          <span>
-            Dónde <span className="font-normal normal-case">(vacío = bodega)</span>
-          </span>
-          <select name="clienteId" defaultValue="" className="aq-campo">
-            <option value="">En la bodega</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
+        <BuscadorDeCliente
+          etiqueta="Dónde"
+          elegido={dondeEsta}
+          onElegir={setDondeEsta}
+          sinCliente="Sin cliente, el ajuste es en la bodega."
+        />
 
         <label className="aq-etiqueta-campo">
           <span>Diferencia</span>

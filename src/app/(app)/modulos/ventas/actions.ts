@@ -64,6 +64,19 @@ export async function registrarVentaAction(
    */
   const sinVacio = Number(formData.get('botellonesSinVacio') ?? 0)
 
+  /*
+   * La base viaja DENTRO de la venta — RN-BAS-03.
+   *
+   * Las dos cosas entran juntas o no entra ninguna: si el préstamo falla, la
+   * venta tampoco se hace. Es lo correcto — quien atiende todavía no cobró.
+   *
+   * Solo viaja si vienen los dos datos: el sticker sin dirección no se puede
+   * prestar (una base va a un lugar, no a una persona) y la dirección sin
+   * sticker no dice qué base.
+   */
+  const baseSticker = String(formData.get('baseSticker') ?? '').trim()
+  const baseDireccionId = String(formData.get('baseDireccionId') ?? '').trim()
+
   const res = await apiServerFetchRaw('/ventas', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -73,6 +86,8 @@ export async function registrarVentaAction(
       items,
       ...(codigo && { codigoDescuento: codigo }),
       ...(sinVacio > 0 && { botellonesSinVacio: sinVacio }),
+      ...(baseSticker &&
+        baseDireccionId && { base: { sticker: baseSticker, direccionId: baseDireccionId } }),
       requiereFacturaElectronica: formData.get('requiereFactura') === 'si',
     }),
   })
@@ -86,7 +101,12 @@ export async function registrarVentaAction(
 
   return {
     ...exito(
-      `Venta registrada por $${Number(resultado.venta.total).toLocaleString('es-CO')}.`,
+      `Venta registrada por $${Number(resultado.venta.total).toLocaleString('es-CO')}.` +
+        // Que la base salió queda dicho en el mismo aviso: es lo que quien
+        // atiende necesita confirmar antes de que el cliente se vaya.
+        (resultado.basePrestada
+          ? ` La base ${resultado.basePrestada.idSticker} quedó a su nombre.`
+          : ''),
     ),
     /*
      * El recorte contra el piso NO es un error: la venta se hizo. Va aparte

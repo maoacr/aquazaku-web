@@ -296,6 +296,52 @@ describe('los formularios se construyen con las primitivas del sistema', () => {
     expect(bloque(globales, '.aq-campo')).not.toMatch(/:focus/)
   })
 
+  /**
+   * ── El defecto que este test viene a impedir ──────────────────────────────
+   *
+   * `.aq-campo` declara `padding: 0 0.75rem` **sin capa**, y las utilidades de
+   * Tailwind viven en `@layer utilities`. Así que un `pl-9` sobre un
+   * `.aq-campo` no hace nada: la regla del sistema gana, siempre.
+   *
+   * Pasó con el buscador de clientes. El icono terminaba en 28 px y el texto
+   * arrancaba en 12: quince de superposición. En el código se leía perfecto, y
+   * ningún test lo vio, porque jsdom no hace layout — ahí todo mide cero. Se
+   * encontró abriendo la pantalla.
+   *
+   * Es el mismo defecto que ya está documentado para `position` y `display`, en
+   * otra propiedad. La diferencia es que aquellos rompían el armazón de forma
+   * visible; este se ve como un descuido de diseño y nadie sabe por qué pasa.
+   *
+   * La salida es la misma de siempre: la variante se declara en el sistema, con
+   * su nombre. Hay una para el icono —`.aq-campo-con-icono`— y para el próximo
+   * caso habrá otra.
+   */
+  it('nadie le cambia el padding a `.aq-campo` con una utilidad', () => {
+    const culpables = componentes.filter(({ contenido }) =>
+      /className="[^"]*\baq-campo\b[^"]*\bp[xlrtyb]?-\d/.test(contenido),
+    )
+
+    expect(
+      culpables.map((c) => c.ruta),
+      'el padding de `.aq-campo` va sin capa y le gana a Tailwind: ' +
+        'la utilidad no hace nada. Declare una variante en `globals.css`',
+    ).toEqual([])
+  })
+
+  it('la variante con icono deja lugar para el icono', () => {
+    const variante = bloque(globales, '.aq-campo-con-icono')
+    const campo = bloque(globales, '.aq-campo')
+
+    // 12 px de canal + 16 del icono: menos que eso y se pisan.
+    const hueco = Number.parseFloat(/padding-left:\s*([\d.]+)rem/.exec(variante)?.[1] ?? '0') * 16
+    expect(hueco).toBeGreaterThanOrEqual(28)
+
+    // Y tiene que declarar `padding-left`, no `padding`: un `padding` a secas
+    // le borraría el vertical que `.aq-campo` ya resolvió.
+    expect(campo).toMatch(/padding:/)
+    expect(variante).not.toMatch(/padding:\s/)
+  })
+
   it('el botón compacto solo se angosta, nunca se achica', () => {
     const compacto = bloque(globales, '.aq-boton-compacto')
 

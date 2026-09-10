@@ -36,30 +36,57 @@ async function mensajeDeError(res: Response, generico: string): Promise<string> 
 /** El alta puede traer un aviso de cruce CC/NIT, que no es un error. */
 export interface EstadoDeAlta extends EstadoDeFormulario {
   aviso?: AvisoDeCruce
+  /**
+   * El cliente recién creado.
+   *
+   * Viaja porque el alta no termina acá: con el cliente ya existiendo, la
+   * pantalla ofrece cargarle la dirección, y `POST /clientes/:id/direcciones`
+   * necesita ese id. Sin esto habría que salir a buscarlo.
+   */
+  cliente?: Cliente
 }
 
 export async function crearClienteAction(
   _previo: EstadoDeAlta,
   formData: FormData,
 ): Promise<EstadoDeAlta> {
+  /*
+   * El nombre viaja PARTIDO. `nombre` no existe como campo de entrada: en la
+   * base es una columna generada, y `api/` rechaza cualquier intento de
+   * escribirla. Lo que se manda es lo que la compone.
+   *
+   * Las cadenas vacías se omiten en vez de mandarse: un `apellidos: ''` no es
+   * «sin apellidos», es un dato en blanco, y el CHECK de la base lo rechaza.
+   */
+  const texto = (campo: string) => String(formData.get(campo) ?? '').trim()
+  const siHay = (campo: string) => (texto(campo) ? { [campo]: texto(campo) } : {})
+
+  const telefono = texto('telefono')
+
   const res = await apiServerFetchRaw('/clientes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      nombre: String(formData.get('nombre') ?? '').trim(),
+      ...siHay('nombreLibre'),
+      ...siHay('primerNombre'),
+      ...siHay('segundoNombre'),
+      ...siHay('apellidos'),
+      ...siHay('apodo'),
       tipo: String(formData.get('tipo') ?? 'residencial'),
       tipoDocumento: String(formData.get('tipoDocumento') ?? 'CC'),
-      numeroDocumento: String(formData.get('numeroDocumento') ?? '').trim(),
+      numeroDocumento: texto('numeroDocumento'),
+      ...(telefono && { telefono: { numero: telefono } }),
     }),
   })
 
   if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos crear el cliente.') }
 
-  const cliente = (await res.json()) as { nombre: string; documento: string; aviso: AvisoDeCruce | null }
+  const cliente = (await res.json()) as Cliente & { aviso: AvisoDeCruce | null }
 
   revalidatePath(RUTA)
   return {
     ...exito(`${cliente.nombre} quedó registrado con documento ${cliente.documento}.`),
+    cliente,
     ...(cliente.aviso && { aviso: cliente.aviso }),
   }
 }
@@ -347,7 +374,19 @@ export interface ResultadoDeAltaRapida {
  * en el servicio de `api/`.
  */
 export async function crearClienteRapidoAction(datos: {
-  nombre: string
+  /**
+   * El nombre viaja PARTIDO, igual que en el alta completa.
+   *
+   * `nombre` no existe como campo de entrada: en la base es una columna
+   * generada y `api/` rechaza cualquier intento de escribirla. Lo que se manda
+   * es lo que la compone — las partes para una persona, `nombreLibre` para un
+   * negocio, nunca las dos.
+   */
+  nombreLibre?: string
+  primerNombre?: string
+  segundoNombre?: string
+  apellidos?: string
+  apodo?: string
   tipo: 'residencial' | 'comercial'
   tipoDocumento: 'CC' | 'NIT'
   numeroDocumento: string

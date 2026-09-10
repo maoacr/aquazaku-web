@@ -276,7 +276,19 @@ export type MetodoDeVerificacion = 'seller_manual' | 'pos_manual' | 'admin_ofici
  */
 export interface Cliente {
   id: string
+  /**
+   * El nombre que se muestra. Lo **genera la base** a partir de las partes, o
+   * del nombre libre cuando no hay partes. Nunca se manda al crear ni al
+   * editar: se manda lo que lo compone.
+   */
   nombre: string
+  /** El de un negocio, o el de alguien cargado sin partir. */
+  nombreLibre: string | null
+  primerNombre: string | null
+  segundoNombre: string | null
+  apellidos: string | null
+  /** Como la conocen en el pueblo. No entra en `nombre`. */
+  apodo: string | null
   tipo: TipoDeCliente
   tipoDocumento: TipoDeDocumento
   /** El número base, normalizado: sin puntos, sin guion, sin DV. */

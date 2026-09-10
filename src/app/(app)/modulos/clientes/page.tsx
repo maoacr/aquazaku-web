@@ -2,7 +2,7 @@ import { AltaDeCliente } from '@/components/clientes/alta-cliente'
 import { TarjetasDeClientes } from '@/components/clientes/tarjetas-de-clientes'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch } from '@/lib/api-server'
-import type { Cliente } from '@/lib/api-types'
+import type { Cliente, Departamento, Municipio } from '@/lib/api-types'
 
 /**
  * Clientes — M5.
@@ -26,9 +26,16 @@ export default async function ClientesPage({
   const { q, estado } = await searchParams
   const verTodos = estado === 'todos'
 
-  const clientes = await apiServerFetch<Cliente[]>(
-    verTodos ? '/clientes?estado=todos' : '/clientes',
-  )
+  const [clientes, departamentos, municipios] = await Promise.all([
+    apiServerFetch<Cliente[]>(verTodos ? '/clientes?estado=todos' : '/clientes'),
+    /*
+     * El catálogo de geografía viaja como props porque el alta ahora ofrece
+     * cargar la dirección apenas se crea el cliente. Va desde el servidor y no
+     * con un `fetch` del navegador: ADR-0002 — el browser nunca toca `api/`.
+     */
+    apiServerFetch<Departamento[]>('/geografia/departamentos'),
+    apiServerFetch<Municipio[]>('/geografia/municipios'),
+  ])
   const leidoEn = new Date()
 
   const busqueda = (q ?? '').trim().toLowerCase()
@@ -36,6 +43,9 @@ export default async function ClientesPage({
     ? clientes.filter(
         (c) =>
           c.nombre.toLowerCase().includes(busqueda) ||
+          // El apodo es como se la conoce en el pueblo, y muchas veces es lo
+          // único que quien busca tiene a mano — RN-CLI-17.
+          (c.apodo?.toLowerCase().includes(busqueda) ?? false) ||
           // Se busca contra el número BASE, no contra el documento armado: quien
           // teclea `79123456` tiene que encontrarlo aunque en pantalla diga
           // `79123456-0`.
@@ -58,7 +68,7 @@ export default async function ClientesPage({
           <input
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Nombre o número de documento"
+            placeholder="Nombre, apodo o número de documento"
             className="aq-campo"
           />
         </label>
@@ -84,7 +94,7 @@ export default async function ClientesPage({
         <SelloDeHora leidoEn={leidoEn} />
       </section>
 
-      <AltaDeCliente />
+      <AltaDeCliente departamentos={departamentos} municipios={municipios} />
     </div>
   )
 }

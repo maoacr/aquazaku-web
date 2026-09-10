@@ -277,7 +277,17 @@ export function BuscadorDeCliente({
                 >
                   {/* Sin clase de color: el color lo pone la fila, para que el
                       resaltado pueda cambiarlo. Ver `.aq-panel-flotante`. */}
-                  <span className="min-w-0 truncate text-[15px]">{cliente.nombre}</span>
+                  <span className="min-w-0 truncate text-[15px]">
+                    {cliente.nombre}
+                    {/* Espacio literal: sin él se lee de corrido en voz alta. */}
+                    {cliente.apodo ? ' ' : null}
+                    {/* Quien atiende el mostrador reconoce el apodo antes que el nombre. */}
+                    {cliente.apodo ? (
+                      <span className="aq-panel-flotante-secundario ml-1.5 text-[13px]">
+                        «{cliente.apodo}»
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="aq-cifra aq-panel-flotante-secundario shrink-0 text-[13px]">
                     {cliente.documento}
                   </span>

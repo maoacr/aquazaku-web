@@ -3,6 +3,13 @@
 import { useId, useState, useTransition } from 'react'
 import { crearClienteRapidoAction } from '@/app/(app)/modulos/clientes/actions'
 import { FormError } from '@/components/auth/form-error'
+import {
+  CamposDeNombre,
+  faltaElNombre,
+  NOMBRE_VACIO,
+  type Nombre,
+  soloLoEscrito,
+} from '@/components/clientes/campos-de-nombre'
 import { Modal } from '@/components/ui/modal'
 import type { Cliente } from '@/lib/api-types'
 
@@ -52,7 +59,7 @@ export function AltaRapidaDeCliente({
   documentoInicial?: string
   alRegistrar: (cliente: Cliente) => void
 }) {
-  const [nombre, setNombre] = useState('')
+  const [nombre, setNombre] = useState<Nombre>(NOMBRE_VACIO)
   const [tipoDocumento, setTipoDocumento] = useState<'CC' | 'NIT'>('CC')
   const [numeroDocumento, setNumeroDocumento] = useState(documentoInicial)
   const [tipo, setTipo] = useState<'residencial' | 'comercial'>('residencial')
@@ -62,7 +69,7 @@ export function AltaRapidaDeCliente({
   const [error, setError] = useState<string | undefined>(undefined)
   const [guardando, empezarGuardado] = useTransition()
 
-  const faltaNombre = nombre.trim().length === 0
+  const faltaNombre = faltaElNombre(tipo, nombre)
   const faltaDocumento = numeroDocumento.trim().length === 0
   // El mismo mínimo que el esquema de `api/`. Acá solo adelanta el rechazo.
   const telefonoCorto = telefono.trim().length > 0 && telefono.trim().length < 7
@@ -73,7 +80,7 @@ export function AltaRapidaDeCliente({
     setError(undefined)
     empezarGuardado(async () => {
       const resultado = await crearClienteRapidoAction({
-        nombre: nombre.trim(),
+        ...soloLoEscrito(nombre),
         tipo,
         tipoDocumento,
         numeroDocumento: numeroDocumento.trim(),
@@ -119,17 +126,40 @@ export function AltaRapidaDeCliente({
           después desde su ficha.
         </p>
 
+        {/* Va primero porque decide qué campos de nombre se muestran. */}
+        <div className="flex flex-wrap gap-2">
+          {(['residencial', 'comercial'] as const).map((opcion) => (
+            <label key={opcion} className="aq-ficha">
+              <input
+                type="radio"
+                /*
+                 * Sin `name` dos radios no son un grupo, y un lector de
+                 * pantalla no dice «1 de 2». El prefijo `_` es la convención
+                 * de la casa para un campo que el servidor no lee — y acá
+                 * importa más que nunca, porque el formulario que lo recibiría
+                 * es el de la venta.
+                 */
+                name="_tipoDeCliente"
+                checked={tipo === opcion}
+                onChange={() => setTipo(opcion)}
+                className="sr-only"
+              />
+              <span className="aq-ficha-caja" aria-hidden />
+              {opcion === 'residencial' ? 'Una persona' : 'Un negocio'}
+            </label>
+          ))}
+        </div>
+
         <FormError id={idError}>{error}</FormError>
 
-        <label className="aq-etiqueta-campo">
-          <span>Nombre</span>
-          <input
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            placeholder="Rosa Elena Padilla"
-            className="aq-campo"
-          />
-        </label>
+        {/*
+          Los MISMOS campos que el alta completa, y por la misma razón que ella
+          los tiene: un negocio no lleva apellidos. Dos copias de estas
+          etiquetas se separarían solas.
+        */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <CamposDeNombre tipo={tipo} valor={nombre} onCambio={setNombre} />
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-[auto_1fr]">
           <label className="aq-etiqueta-campo">
@@ -174,29 +204,6 @@ export function AltaRapidaDeCliente({
             </span>
           ) : null}
         </label>
-
-        <div className="flex flex-wrap gap-2">
-          {(['residencial', 'comercial'] as const).map((opcion) => (
-            <label key={opcion} className="aq-ficha">
-              <input
-                type="radio"
-                /*
-                 * Sin `name` dos radios no son un grupo, y un lector de
-                 * pantalla no dice «1 de 2». El prefijo `_` es la convención
-                 * de la casa para un campo que el servidor no lee — y acá
-                 * importa más que nunca, porque el formulario que lo recibiría
-                 * es el de la venta.
-                 */
-                name="_tipoDeCliente"
-                checked={tipo === opcion}
-                onChange={() => setTipo(opcion)}
-                className="sr-only"
-              />
-              <span className="aq-ficha-caja" aria-hidden />
-              {opcion === 'residencial' ? 'Residencial' : 'Comercial'}
-            </label>
-          ))}
-        </div>
 
         <div className="flex flex-wrap gap-2">
           {/*

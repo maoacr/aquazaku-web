@@ -55,7 +55,7 @@ export function TarjetasDeClientes({
         titulo="Ningún cliente coincide"
         hrefSinFiltros="/modulos/clientes"
       >
-        Puede buscar por nombre o por número de documento.
+        Puede buscar por nombre, por apodo o por número de documento.
       </Vacio>
     ) : (
       <Vacio variante="primera-vez" icono={Contact} titulo="Todavía no hay clientes">
@@ -83,7 +83,23 @@ function TarjetaDeCliente({ cliente }: { cliente: Cliente }) {
     <Link href={`/modulos/clientes/${cliente.id}`} className="aq-tarjeta block h-full p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="aq-titulo-tarjeta truncate text-principal">{cliente.nombre}</p>
+          <p className="aq-titulo-tarjeta truncate text-principal">
+            {cliente.nombre}
+            {/* El espacio es literal: `ml-1.5` separa a la vista, pero un lector de
+                pantalla leería «Gómez«Doña Rosa»» de corrido. */}
+            {cliente.apodo ? ' ' : null}
+            {/*
+              El apodo va PEGADO al nombre y en tono menor, no en una línea
+              propia. Es el mismo dato visto de otra forma —«Rosa Elena Padilla
+              Gómez» y «Doña Rosa» son la misma señora— y separarlos en dos
+              renglones los presenta como dos personas.
+            */}
+            {cliente.apodo ? (
+              <span className="ml-1.5 font-normal text-[14px] text-tenue">
+                «{cliente.apodo}»
+              </span>
+            ) : null}
+          </p>
           {/*
             El documento va en mono con `tabular-nums`: es un código que alguien
             va a comparar dígito por dígito contra una cédula en la mano.

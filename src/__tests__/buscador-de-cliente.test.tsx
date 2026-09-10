@@ -121,7 +121,8 @@ describe('registrar desde la búsqueda', () => {
     await usuario.type(screen.getByRole('combobox'), '5551234')
     await usuario.click(await screen.findByRole('button', { name: /Registrar a esta persona/ }))
 
-    await usuario.type(screen.getByRole('textbox', { name: /Nombre/ }), 'Rosa Elena Padilla')
+    await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
+    await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
     await usuario.click(screen.getByRole('button', { name: /Registrar y continuar/ }))
 
     expect(await screen.findByText('Rosa Elena Padilla')).toBeInTheDocument()

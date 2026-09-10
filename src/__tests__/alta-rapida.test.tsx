@@ -52,7 +52,8 @@ function Anfitrion({ alTeclearEnter = vi.fn() }: { alTeclearEnter?: (frenado: bo
 }
 
 const llenar = async (usuario: ReturnType<typeof userEvent.setup>) => {
-  await usuario.type(screen.getByRole('textbox', { name: /Nombre/ }), 'Rosa Elena Padilla')
+  await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
+  await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
   await usuario.type(screen.getByRole('textbox', { name: /Teléfono/ }), '3001234567')
 }
 
@@ -84,7 +85,7 @@ describe('nada de acá adentro puede cobrar la venta', () => {
     const enter = vi.fn()
 
     render(<Anfitrion alTeclearEnter={enter} />)
-    await usuario.type(screen.getByRole('textbox', { name: /Nombre/ }), 'Rosa{Enter}')
+    await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa{Enter}')
 
     expect(enter).toHaveBeenCalledWith(true)
   })
@@ -124,7 +125,8 @@ describe('lo que manda', () => {
 
     expect(crearClienteRapidoAction).toHaveBeenCalledWith(
       expect.objectContaining({
-        nombre: 'Rosa Elena Padilla',
+        primerNombre: 'Rosa',
+        apellidos: 'Padilla',
         numeroDocumento: '1042857391',
         telefono: { numero: '3001234567' },
       }),
@@ -135,7 +137,8 @@ describe('lo que manda', () => {
     const usuario = userEvent.setup()
     render(<Anfitrion />)
 
-    await usuario.type(screen.getByRole('textbox', { name: /Nombre/ }), 'Rosa')
+    await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
+    await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
     await usuario.click(screen.getByRole('button', { name: /Registrar y continuar/ }))
 
     expect(crearClienteRapidoAction.mock.calls[0]?.[0]).not.toHaveProperty('telefono')
@@ -167,7 +170,8 @@ describe('lo que no deja mandar', () => {
     const usuario = userEvent.setup()
     render(<Anfitrion />)
 
-    await usuario.type(screen.getByRole('textbox', { name: /Nombre/ }), 'Rosa')
+    await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
+    await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
     await usuario.type(screen.getByRole('textbox', { name: /Teléfono/ }), '30012')
 
     expect(screen.getByText(/al menos 7/)).toBeInTheDocument()
@@ -186,7 +190,8 @@ describe('lo que no deja mandar', () => {
     const usuario = userEvent.setup()
     render(<Anfitrion />)
 
-    await usuario.type(screen.getByRole('textbox', { name: /Nombre/ }), 'Rosa')
+    await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
+    await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
     await usuario.type(screen.getByRole('textbox', { name: /Teléfono/ }), '30012{Enter}')
 
     expect(crearClienteRapidoAction).not.toHaveBeenCalled()

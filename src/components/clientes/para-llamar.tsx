@@ -82,22 +82,38 @@ function Fila({ cliente }: { cliente: ClienteALlamar }) {
      */
     <li
       aria-label={cliente.nombre}
-      className={`flex items-stretch gap-4 rounded-lg border p-3 ${
+      className={`relative flex items-stretch gap-4 rounded-lg border p-3 transition-colors ${
         urgente
-          ? 'border-error-borde bg-error-fondo text-error-texto'
-          : 'border-alerta-borde bg-alerta-fondo text-alerta-texto'
+          ? 'border-error-borde bg-error-fondo text-error-texto hover:border-error'
+          : 'border-alerta-borde bg-alerta-fondo text-alerta-texto hover:border-alerta'
       }`}
     >
       <Contador dias={cliente.diasSinComprar} urgente={urgente} />
 
       <div className="grid min-w-0 flex-1 content-start gap-2">
         {/*
-          El nombre ENVUELVE, no se corta. En una lista de llamadas el nombre es
-          el dato: «Mario Alejandro Crespo Reyes» truncado a «Mario Alejandro
-          Cre…» obliga a abrir la ficha para saber a quién se llama. Una línea
-          de más es más barata que eso.
+          ── El nombre es el enlace, y su sombra cubre la tarjeta ──────────────
+
+          La lista dice a quién llamar; la ficha dice qué decirle. Sin ese salto,
+          quien atiende tiene que ir a Clientes y buscar el nombre a mano, con el
+          teléfono ya sonando.
+
+          No se envuelve la tarjeta entera en un `Link` porque **un `<a>` no
+          puede contener otro `<a>`**, y acá adentro viven los de WhatsApp. El
+          `after:absolute after:inset-0` estira el área clicable sin anidar nada:
+          un solo enlace real por destino, y el lector de pantalla anuncia el
+          nombre, no «tarjeta, clicable».
+
+          El nombre ENVUELVE, no se corta: «Mario Alejandro Cre…» obliga a abrir
+          la ficha para saber a quién se llama, que es justo lo que este enlace
+          viene a evitar.
         */}
-        <p className="font-semibold leading-tight break-words">{cliente.nombre}</p>
+        <Link
+          href={`/modulos/clientes/${cliente.clienteId}`}
+          className="font-semibold leading-tight break-words underline-offset-4 after:absolute after:inset-0 after:rounded-lg hover:underline"
+        >
+          {cliente.nombre}
+        </Link>
 
         {cliente.telefonos.length === 0 ? (
           /*
@@ -160,7 +176,14 @@ function Telefono({ telefono, nombre }: { telefono: TelefonoParaLlamar; nombre: 
      * envuelve DENTRO de su bloque. La pertenencia deja de depender de que haya
      * espacio.
      */
-    <li className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-current/5 px-2 py-1.5">
+    /*
+     * `relative z-10` lo pone POR ENCIMA de la sombra del enlace a la ficha.
+     * Sin eso pasan dos cosas malas y ninguna falla ruidosamente: el botón de
+     * WhatsApp navega a la ficha —y quien atiende cree que WhatsApp se rompió—
+     * y el número deja de poder seleccionarse para copiarlo a un teléfono de
+     * escritorio, que es exactamente lo que alguien hace con esta lista.
+     */
+    <li className="relative z-10 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-current/5 px-2 py-1.5">
       <span className="aq-cifra text-[13px]">{telefono.numero}</span>
 
       {telefono.etiqueta ? (

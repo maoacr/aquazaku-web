@@ -27,6 +27,74 @@ const cliente = (parcial: Partial<ClienteALlamar> = {}): ClienteALlamar => ({
   ...parcial,
 })
 
+/**
+ * ── Llegar a la ficha ───────────────────────────────────────────────────────
+ *
+ * La lista dice a quién llamar; la ficha dice qué decirle. Sin ese salto, quien
+ * atiende tiene que ir a Clientes y buscar el nombre a mano — con el teléfono
+ * ya sonando.
+ *
+ * El enlace es el NOMBRE, no la tarjeta entera: un `<a>` no puede contener otro
+ * `<a>`, y la tarjeta ya tiene los de WhatsApp. Que el clic funcione en toda la
+ * tarjeta lo resuelve el pseudo-elemento, no un anidamiento inválido.
+ */
+describe('el salto a la ficha', () => {
+  it('el nombre lleva a la ficha del cliente', () => {
+    render(<ClientesParaLlamar clientes={[cliente({ clienteId: 'abc-123' })]} />)
+
+    expect(screen.getByRole('link', { name: /Yeimy Padilla/ })).toHaveAttribute(
+      'href',
+      '/modulos/clientes/abc-123',
+    )
+  })
+
+  it('cada tarjeta lleva a SU cliente', () => {
+    render(
+      <ClientesParaLlamar
+        clientes={[
+          cliente({ clienteId: 'c1', nombre: 'Rosa Padilla' }),
+          cliente({ clienteId: 'c2', nombre: 'Ana Beltrán', diasSinComprar: 6, urgencia: 'aviso' }),
+        ]}
+      />,
+    )
+
+    expect(screen.getByRole('link', { name: /Rosa Padilla/ })).toHaveAttribute(
+      'href',
+      '/modulos/clientes/c1',
+    )
+    expect(screen.getByRole('link', { name: /Ana Beltrán/ })).toHaveAttribute(
+      'href',
+      '/modulos/clientes/c2',
+    )
+  })
+
+  /*
+   * El de WhatsApp tiene que seguir yendo a WhatsApp. Si el enlace de la ficha
+   * lo tapara, el botón dejaría de funcionar sin que nada falle: el clic
+   * navegaría a la ficha y quien atiende pensaría que WhatsApp está roto.
+   */
+  it('el botón de WhatsApp no queda tapado por el enlace de la ficha', () => {
+    render(
+      <ClientesParaLlamar
+        clientes={[
+          cliente({
+            clienteId: 'abc-123',
+            telefonos: [{ numero: '300 123 4567', etiqueta: null, whatsapp: '573001234567' }],
+          }),
+        ]}
+      />,
+    )
+
+    const fila = screen.getByRole('listitem', { name: /Yeimy Padilla/ })
+    const enlaces = within(fila).getAllByRole('link')
+
+    expect(enlaces.map((a) => a.getAttribute('href'))).toEqual([
+      '/modulos/clientes/abc-123',
+      'https://wa.me/573001234567',
+    ])
+  })
+})
+
 describe('sin nadie a quien llamar', () => {
   /*
    * La lista vacía es una buena noticia, y hay que decirla. Una sección que

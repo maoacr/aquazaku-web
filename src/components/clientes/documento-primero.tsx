@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Check, Search, UserCheck } from 'lucide-react'
+import { AlertTriangle, Check, UserCheck } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useId, useRef, useState, useTransition } from 'react'
 import { buscarClientesAction } from '@/app/(app)/modulos/clientes/actions'
@@ -150,25 +150,31 @@ export function DocumentoPrimero({
           </select>
         </label>
 
+        {/*
+          Sin icono de lupa, y por dos razones.
+
+          La de forma: el `<div className="relative">` que hacía falta para
+          posicionarlo rompía la alineación con el select de al lado — medido,
+          14 px de desfase vertical en una fila de dos campos.
+
+          La de fondo: una lupa dice «esto es un buscador». Esto no lo es. Es el
+          documento del cliente que se está registrando, y que además se
+          comprueba. Prometer búsqueda invita a usarlo para buscar, que es lo que
+          hace el campo de arriba.
+        */}
         <label htmlFor={idNumero} className="aq-etiqueta-campo">
           <span>Número</span>
-          <div className="relative">
-            <Search
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-tenue"
-            />
-            <input
-              id={idNumero}
-              name="numeroDocumento"
-              value={numero}
-              onChange={(e) => setNumero(e.target.value)}
-              required
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="79123456"
-              className="aq-campo aq-campo-con-icono aq-cifra"
-            />
-          </div>
+          <input
+            id={idNumero}
+            name="numeroDocumento"
+            value={numero}
+            onChange={(e) => setNumero(e.target.value)}
+            required
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="79123456"
+            className="aq-campo aq-cifra"
+          />
           <span className="mt-1 font-normal normal-case text-[13px] text-tenue">
             Sin el dígito de verificación: lo calcula el sistema.
           </span>

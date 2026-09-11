@@ -346,6 +346,32 @@ export async function buscarClientesAction(documento: string): Promise<Cliente[]
   }
 }
 
+/**
+ * La búsqueda ANCHA de la pantalla de clientes — M16.
+ *
+ * ── Por qué no alcanza con `buscarClientesAction` ───────────────────────────
+ *
+ * Esa busca por documento y con empieza-con, porque en el mostrador se dicta una
+ * cédula de izquierda a derecha. Acá quien busca recuerda un apellido suelto —«el
+ * Gómez ese»— o el apodo con el que lo conocen en el pueblo.
+ *
+ * ── Y por qué no se filtra en el navegador ──────────────────────────────────
+ *
+ * Antes sí, y tenía dos defectos medidos. Las tildes: «gomez» no encontraba a
+ * «Gómez», que en Colombia es la mitad de los apellidos. Y la escala: obligaba a
+ * traer TODOS los clientes en cada carga de la pantalla.
+ *
+ * Se traga el error igual que su hermana: quien busca ve que no aparece nadie y
+ * sigue. El error queda en el log con su `x-request-id`.
+ */
+export async function buscarClientesAnchoAction(termino: string): Promise<Cliente[]> {
+  try {
+    return await apiServerFetch<Cliente[]>(`/clientes?buscar=${encodeURIComponent(termino)}`)
+  } catch {
+    return []
+  }
+}
+
 /** Lo que devuelve el alta rápida: o el cliente, o por qué no se pudo. */
 export interface ResultadoDeAltaRapida {
   cliente?: Cliente

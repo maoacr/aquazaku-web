@@ -177,9 +177,27 @@ describe('las dos franjas se distinguen', () => {
     expect(within(aviso).queryByText(/urgente/i)).toBeNull()
   })
 
-  it('dice cuántos días lleva sin comprar', () => {
-    render(<ClientesParaLlamar clientes={[cliente({ diasSinComprar: 12 })]} />)
+  /*
+   * La cifra y la unidad viven en elementos separados a propósito: el número va
+   * grande y tabular para que la columna se pueda recorrer con el ojo, y
+   * «días» queda chico debajo. Por eso se buscan por separado dentro de la
+   * fila, y no como un solo texto «12 días».
+   */
+  it('el número de días se muestra como cifra, con su unidad', () => {
+    render(<ClientesParaLlamar clientes={[cliente({ nombre: 'Rosa Padilla', diasSinComprar: 12 })]} />)
 
-    expect(screen.getByText(/12 días/)).toBeInTheDocument()
+    const fila = screen.getByRole('listitem', { name: /Rosa Padilla/ })
+
+    expect(within(fila).getByText('12')).toBeInTheDocument()
+    expect(within(fila).getByText('días')).toBeInTheDocument()
+  })
+
+  /** Un día es «día», no «días». El «(s)» no lo dice nadie hablando. */
+  it('concuerda en singular', () => {
+    render(<ClientesParaLlamar clientes={[cliente({ nombre: 'Rosa Padilla', diasSinComprar: 1 })]} />)
+
+    const fila = screen.getByRole('listitem', { name: /Rosa Padilla/ })
+
+    expect(within(fila).getByText('día')).toBeInTheDocument()
   })
 })

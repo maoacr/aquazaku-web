@@ -3,10 +3,12 @@ import Link from 'next/link'
 import { BarrasConUmbral } from '@/components/graficos/barras-con-umbral'
 import { BarrasDiarias, DIAS_VISIBLES, cuantosCierres } from '@/components/graficos/barras-diarias'
 import { Tanque } from '@/components/graficos/tanque'
+import { ClientesParaLlamar } from '@/components/clientes/para-llamar'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch, getServerUser } from '@/lib/api-server'
 import type {
   CierreDeProduccion,
+  ClienteALlamar,
   InsumoListado,
   Producto,
   Reconciliacion,
@@ -40,13 +42,14 @@ import { siPuedeVerlo } from '@/lib/permiso-opcional'
  * servidor y llegan como HTML. No hay `'use client'` en esta pantalla.
  */
 export default async function TableroPage() {
-  const [usuario, stock, productos, cierres, saldos, insumos] = await Promise.all([
+  const [usuario, stock, productos, cierres, saldos, insumos, aLlamar] = await Promise.all([
     getServerUser(),
     apiServerFetch<ResumenDeStock[]>('/stock'),
     apiServerFetch<Producto[]>('/productos?estado=todos'),
     siPuedeVerlo(apiServerFetch<CierreDeProduccion[]>('/produccion')),
     siPuedeVerlo(apiServerFetch<SaldoDeAgua[]>('/tanques')),
     siPuedeVerlo(apiServerFetch<InsumoListado[]>('/insumos')),
+    siPuedeVerlo(apiServerFetch<ClienteALlamar[]>('/clientes/a-llamar')),
   ])
   const leidoEn = new Date()
 
@@ -170,6 +173,17 @@ export default async function TableroPage() {
           ))}
         </ul>
       ) : null}
+
+      {/*
+        Va acá arriba, con lo que espera una decisión, y no abajo con los
+        gráficos. Es la misma regla que gobierna esta pantalla: primero qué
+        hacer, después cómo venimos. Una lista de llamadas debajo de tres
+        gráficos es una lista que nadie ve.
+
+        `aLlamar` puede ser `null` si el rol no puede verla — el 403 decide, no
+        una copia de la matriz de permisos.
+      */}
+      {aLlamar ? <ClientesParaLlamar clientes={aLlamar} /> : null}
 
       {saldos ? (
         <section className="aq-tarjeta grid gap-4 p-5">

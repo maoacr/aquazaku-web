@@ -5,6 +5,7 @@ import type {
   CierreDeProduccion,
   InsumoListado,
   Producto,
+  ClienteALlamar,
   Reconciliacion,
   ResumenDeStock,
   SaldoDeAgua,
@@ -83,6 +84,11 @@ function responde(respuestas: {
   produccion?: CierreDeProduccion[] | null
   insumos?: InsumoListado[] | null
   reconciliacion?: Reconciliacion | null
+  /*
+   * Por defecto `[]` y no `negar()`: los cuatro roles tienen `clientes:ver`,
+   * así que el caso normal de esta ruta es responder, no dar 403.
+   */
+  aLlamar?: ClienteALlamar[] | null
 }) {
   vi.mocked(apiServerFetch).mockImplementation((async (ruta: string) => {
     const negar = () => {
@@ -99,6 +105,7 @@ function responde(respuestas: {
     if (ruta.startsWith('/tanques')) return respuestas.tanques ?? negar()
     if (ruta.startsWith('/produccion')) return respuestas.produccion ?? negar()
     if (ruta.startsWith('/insumos')) return respuestas.insumos ?? negar()
+    if (ruta.startsWith('/clientes/a-llamar')) return respuestas.aLlamar ?? []
 
     throw new Error(`ruta sin mockear: ${ruta}`)
   }) as never)

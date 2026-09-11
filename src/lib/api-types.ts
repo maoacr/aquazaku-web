@@ -676,3 +676,33 @@ export interface Municipio {
   lat: number
   lng: number
 }
+
+/**
+ * Un teléfono del cliente, listo para llamar o escribir — M15.
+ *
+ * `whatsapp` viene ARMADO desde `api`, y en `null` cuando ese número no lo
+ * tiene. Es el mismo criterio que `legible` en las direcciones: la regla que
+ * decide qué es un celular vive de un solo lado, porque si cada pantalla la
+ * escribiera, en tres meses habría tres y dos estarían mal.
+ */
+export interface TelefonoParaLlamar {
+  numero: string
+  etiqueta: string | null
+  /** Los dígitos para `wa.me`, o `null` si es un fijo. */
+  whatsapp: string | null
+}
+
+/**
+ * Un cliente que hace días que no compra — M15.
+ *
+ * `urgencia` la decide `api` comparando contra los parámetros, no la pantalla.
+ * Si el umbral viviera acá, cambiarlo desde administración no movería nada.
+ */
+export interface ClienteALlamar {
+  clienteId: string
+  nombre: string
+  documento: string
+  diasSinComprar: number
+  urgencia: 'aviso' | 'urgente'
+  telefonos: TelefonoParaLlamar[]
+}

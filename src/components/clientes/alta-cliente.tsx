@@ -6,6 +6,7 @@ import { useActionState, useId, useState } from 'react'
 import { crearClienteAction, type EstadoDeAlta } from '@/app/(app)/modulos/clientes/actions'
 import { FormError } from '@/components/auth/form-error'
 import { AgregarDireccion } from '@/components/clientes/acciones-de-cliente'
+import { DocumentoPrimero, type EstadoDelDocumento } from '@/components/clientes/documento-primero'
 import { CamposDeNombre } from '@/components/clientes/campos-de-nombre'
 import type { Departamento, Municipio } from '@/lib/api-types'
 import { useAvisoDeExito } from '@/lib/formulario-cliente'
@@ -66,6 +67,14 @@ export function AltaDeCliente({
    * cambiarse, porque hay negocios pequeños que operan con la cédula del dueño.
    */
   const [tipoDocumento, setTipoDocumento] = useState<'CC' | 'NIT'>('CC')
+
+  /*
+   * Si ese documento ya está tomado no hay nada que registrar, y el botón lo
+   * dice en vez de dejar intentar. La barrera real sigue siendo el índice único
+   * de la base: esto solo evita el viaje y el mensaje de error al final.
+   */
+  const [estadoDelDocumento, setEstadoDelDocumento] = useState<EstadoDelDocumento>('vacio')
+  const documentoTomado = estadoDelDocumento === 'tomado'
 
   function elegirTipo(nuevo: 'residencial' | 'comercial') {
     setTipo(nuevo)
@@ -162,8 +171,24 @@ export function AltaDeCliente({
       {estado.aviso ? <AvisoDeCruce aviso={estado.aviso} /> : null}
 
       {/*
-        La primera pregunta, y la que manda: de acá sale si se piden nombre y
-        apellidos o la razón social del negocio.
+        ── El documento va primero ────────────────────────────────────────────
+
+        Es el único dato que puede decir «este cliente ya existe». Pedirlo
+        quinto —después de cuatro campos de nombre— hacía que el rechazo por
+        duplicado llegara recién al enviar, con todo el trabajo ya hecho.
+
+        El índice único de la base sigue siendo la garantía; esto solo mueve el
+        aviso al principio.
+      */}
+      <DocumentoPrimero
+        tipoDocumento={tipoDocumento}
+        onTipoDocumento={setTipoDocumento}
+        onEstado={setEstadoDelDocumento}
+      />
+
+      {/*
+        La segunda pregunta, y la que manda sobre el resto: de acá sale si se
+        piden nombre y apellidos o la razón social del negocio.
       */}
       <fieldset className="grid gap-2">
         <legend className="aq-micro text-tenue">Quién es</legend>
@@ -191,34 +216,6 @@ export function AltaDeCliente({
       <div className="grid gap-4 sm:grid-cols-2">
         <CamposDeNombre tipo={tipo} />
 
-        <label className="aq-etiqueta-campo">
-          <span>Tipo de documento</span>
-          <select
-            name="tipoDocumento"
-            value={tipoDocumento}
-            onChange={(e) => setTipoDocumento(e.target.value as 'CC' | 'NIT')}
-            className="aq-campo"
-          >
-            <option value="CC">Cédula de ciudadanía</option>
-            <option value="NIT">NIT</option>
-          </select>
-        </label>
-
-        <label className="aq-etiqueta-campo">
-          <span>Número</span>
-          <input
-            name="numeroDocumento"
-            required
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="79123456"
-            className="aq-campo aq-cifra"
-          />
-          <span className="mt-1 font-normal normal-case text-[13px] text-tenue">
-            Sin el dígito de verificación: lo calcula el sistema.
-          </span>
-        </label>
-
         {/*
           El teléfono va acá y no en un paso aparte porque es lo que convierte
           un registro en algo útil: la cartera por edad dice a quién llamar
@@ -242,12 +239,21 @@ export function AltaDeCliente({
         </label>
       </div>
 
+      {/*
+        El botón dice POR QUÉ no se puede, no solo que no se puede. Un botón
+        apagado sin explicación manda a quien registra a buscar el error en los
+        campos, que es el único lugar donde no está.
+      */}
       <button
         type="submit"
-        disabled={enviando}
+        disabled={enviando || documentoTomado}
         className="aq-boton aq-boton-primario justify-self-start"
       >
-        {enviando ? 'Registrando…' : 'Registrar cliente'}
+        {enviando
+          ? 'Registrando…'
+          : documentoTomado
+            ? 'Ese cliente ya existe'
+            : 'Registrar cliente'}
       </button>
     </form>
   )

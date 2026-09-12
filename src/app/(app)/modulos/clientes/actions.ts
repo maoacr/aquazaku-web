@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { apiServerFetch, apiServerFetchRaw } from '@/lib/api-server'
-import type { AvisoDeCruce, Cliente, Direccion } from '@/lib/api-types'
+import type { AvisoDeCruce, Cliente, Departamento, Direccion, Municipio } from '@/lib/api-types'
 import { cuerpoDeError } from '@/lib/form-errors'
 import { type EstadoDeFormulario, exito } from '@/lib/formulario'
 
@@ -346,6 +346,32 @@ export async function buscarClientesAction(documento: string): Promise<Cliente[]
   }
 }
 
+/**
+ * La búsqueda ANCHA de la pantalla de clientes — M16.
+ *
+ * ── Por qué no alcanza con `buscarClientesAction` ───────────────────────────
+ *
+ * Esa busca por documento y con empieza-con, porque en el mostrador se dicta una
+ * cédula de izquierda a derecha. Acá quien busca recuerda un apellido suelto —«el
+ * Gómez ese»— o el apodo con el que lo conocen en el pueblo.
+ *
+ * ── Y por qué no se filtra en el navegador ──────────────────────────────────
+ *
+ * Antes sí, y tenía dos defectos medidos. Las tildes: «gomez» no encontraba a
+ * «Gómez», que en Colombia es la mitad de los apellidos. Y la escala: obligaba a
+ * traer TODOS los clientes en cada carga de la pantalla.
+ *
+ * Se traga el error igual que su hermana: quien busca ve que no aparece nadie y
+ * sigue. El error queda en el log con su `x-request-id`.
+ */
+export async function buscarClientesAnchoAction(termino: string): Promise<Cliente[]> {
+  try {
+    return await apiServerFetch<Cliente[]>(`/clientes?buscar=${encodeURIComponent(termino)}`)
+  } catch {
+    return []
+  }
+}
+
 /** Lo que devuelve el alta rápida: o el cliente, o por qué no se pudo. */
 export interface ResultadoDeAltaRapida {
   cliente?: Cliente
@@ -391,6 +417,30 @@ export async function crearClienteRapidoAction(datos: {
   tipoDocumento: 'CC' | 'NIT'
   numeroDocumento: string
   telefono?: { numero: string; etiqueta?: string }
+  /**
+   * Varios teléfonos, en el mismo viaje — M16.
+   *
+   * Un comercial tiene el celular del dueño y el fijo del local, y el sistema
+   * ya distingue uno de otro: el botón de WhatsApp no se dibuja sobre un fijo.
+   * Capturar uno solo tira información que después hace falta.
+   *
+   * Agregarle el segundo más tarde exige `clientes:editar`, que el `pos` no
+   * tiene. `api/` lo junta con el singular, que sigue existiendo para el alta
+   * del mostrador.
+   */
+  telefonos?: { numero: string; etiqueta?: string }[]
+  /**
+   * La dirección, en el mismo viaje — M16.
+   *
+   * `POST /clientes` la mete en la misma transacción que el cliente y el
+   * teléfono. Mandarla aparte dejaría un cliente a medio cargar si la segunda
+   * escritura falla, y quien atiende no sabría qué quedó guardado.
+   *
+   * Además es lo único que le permite al `pos` cargarla: el endpoint suelto
+   * pide `clientes:editar`, que no tiene, y RN-BAS-03 dice que una base se
+   * presta a una DIRECCIÓN.
+   */
+  direccion?: Record<string, unknown>
 }): Promise<ResultadoDeAltaRapida> {
   const res = await apiServerFetchRaw('/clientes', {
     method: 'POST',
@@ -438,4 +488,30 @@ export async function direccionesDeClienteAction(clienteId: string): Promise<Dir
   } catch {
     return []
   }
+}
+
+/**
+ * El catálogo del DANE, pedido cuando hace falta — M16.
+ *
+ * ── Por qué una acción y no props ───────────────────────────────────────────
+ *
+ * El alta en pasos vive en cuatro pantallas: Clientes, el mostrador, y las dos
+ * de Retornables. Pasarle el catálogo desde cada una significaría que las cuatro
+ * carguen **1122 municipios en cada visita**, por si alguien registra un
+ * cliente — y en el mostrador eso es en cada venta.
+ *
+ * Se pide al llegar al paso de la dirección, que es el único que lo usa, y
+ * muchas veces no se llega. Sigue siendo server-to-server: ADR-0002, el browser
+ * nunca toca `api/`.
+ */
+export async function geografiaAction(): Promise<{
+  departamentos: Departamento[]
+  municipios: Municipio[]
+}> {
+  const [departamentos, municipios] = await Promise.all([
+    apiServerFetch<Departamento[]>('/geografia/departamentos'),
+    apiServerFetch<Municipio[]>('/geografia/municipios'),
+  ])
+
+  return { departamentos, municipios }
 }

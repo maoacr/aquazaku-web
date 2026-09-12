@@ -19,13 +19,6 @@ vi.mock('@/app/(app)/modulos/clientes/actions', () => ({
  */
 
 beforeAll(() => {
-  // jsdom no implementa el <dialog> nativo: se emulan las dos que usa el modal.
-  HTMLDialogElement.prototype.showModal = function () {
-    this.open = true
-  }
-  HTMLDialogElement.prototype.close = function () {
-    this.open = false
-  }
 })
 
 const DEPARTAMENTOS: Departamento[] = [{ codigo: '08', nombre: 'Atlántico' }]

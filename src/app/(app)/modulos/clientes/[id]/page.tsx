@@ -1,8 +1,8 @@
 import { ArrowLeft, MapPin } from 'lucide-react'
 import { EditarDireccion } from '@/components/clientes/editar-direccion'
 import Link from 'next/link'
+import { BotonDeDireccion } from '@/components/clientes/boton-de-direccion'
 import {
-  AgregarDireccion,
   TelefonosDelCliente,
   CambiarEstado,
   ConfigurarCredito,
@@ -254,7 +254,15 @@ export default async function FichaDeClientePage({
           <p className="text-[14px] text-tenue">Todavía no tiene direcciones cargadas.</p>
         )}
 
-        <AgregarDireccion
+        {/*
+          El formulario va detrás del botón y no desplegado bajo la lista.
+
+          Son doce campos, y esta ficha se abre para MIRAR: cuánto debe, a qué
+          número llamarlo, a cuál de sus locales ir a buscar la 0913. Un
+          formulario largo entre esos datos empuja el resto fuera de la
+          pantalla — y esto se usa desde un celular al lado de una llenadora.
+        */}
+        <BotonDeDireccion
           clienteId={cliente.id}
           departamentos={departamentos}
           municipios={municipios}

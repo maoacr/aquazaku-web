@@ -1671,6 +1671,33 @@ textarea.aq-campo {
   padding: 0.5rem 0.75rem;
 }
 
+/**
+ * ─── Un `select` mide lo mismo que un `input` ───────────────────────────────
+ *
+ * Con `min-height: 44px` y padding cero, un `<input>` mide 44 px y un `<select>`
+ * **58**. Medido en la pantalla de clientes: catorce píxeles de diferencia en
+ * alto, y catorce de desfase vertical entre dos campos que están uno al lado del
+ * otro en la misma fila.
+ *
+ * Los 14 px salen del renderizado nativo del control, no del CSS: los dos tienen
+ * `padding: 0`, y el select trae `line-height: normal`. Se probaron cuatro
+ * arreglos en el navegador y solo uno lo movió:
+ *
+ *   line-height: 1.25rem        → 58   (no lo controla)
+ *   appearance: none            → 58   (tampoco)
+ *   appearance: base-select     → 58
+ *   height: 44px                → 44   ✓
+ *
+ * Por eso va `height` y no `min-height`: es la única que la altura intrínseca
+ * del control no puede ignorar.
+ *
+ * Se excluyen los que son listas —`size` o `multiple`— que sí necesitan crecer.
+ * Hoy no hay ninguno, pero el día que aparezca no tiene que pelear con esto.
+ */
+select.aq-campo:not([size]):not([multiple]) {
+  height: 44px;
+}
+
 .aq-campo::placeholder {
   color: var(--aq-texto-tenue);
 }
@@ -1835,6 +1862,23 @@ textarea.aq-campo {
   gap: 0.375rem;
   font: var(--aq-etiqueta);
   color: var(--aq-texto-tenue);
+
+  /**
+   * ── Los campos de una fila arrancan a la misma altura ────────────────────
+   *
+   * Sin esto, dos etiquetas vecinas en un `grid-cols-2` se estiran a la misma
+   * altura —la del más alto— y cada una reparte el sobrante entre SUS filas.
+   * La que tiene menos hijos reparte más en la primera, y su campo baja.
+   *
+   * Medido en el alta de clientes: «Tipo de documento» tiene 2 hijos y
+   * «Número» tiene 3 —porque lleva una nota abajo—, y el select quedaba **14
+   * px más abajo** que el input de al lado. Los dos controles medían lo mismo
+   * y aun así no estaban alineados.
+   *
+   * `start` hace que las filas midan lo suyo y el sobrante quede al final,
+   * donde no empuja nada.
+   */
+  align-content: start;
 }
 
 /**

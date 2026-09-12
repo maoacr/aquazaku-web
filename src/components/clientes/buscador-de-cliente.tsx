@@ -3,7 +3,7 @@
 import { Search, UserPlus, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, useTransition } from 'react'
 import { buscarClientesAction } from '@/app/(app)/modulos/clientes/actions'
-import { AltaRapidaDeCliente } from '@/components/clientes/alta-rapida'
+import { AltaEnPasos } from '@/components/clientes/alta-en-pasos'
 import type { Cliente } from '@/lib/api-types'
 
 /**
@@ -349,12 +349,24 @@ export function BuscadorDeCliente({
         Es además lo que `Modal` dice de sí mismo: montar de nuevo sale más
         barato que acordarse de limpiar.
       */}
+      {/*
+        El MISMO alta que en la pantalla de Clientes — M16.
+
+        Antes eran dos: esta pedía nombre, documento y teléfono, y no ofrecía
+        dirección nunca. Quien registraba desde el mostrador —que es donde pasa
+        en la vida real, con el cliente enfrente— quedaba con alguien sin
+        domicilio, y una base se presta a una DIRECCIÓN (RN-BAS-03).
+
+        El catálogo de municipios NO viaja como prop: lo pide el paso 3 cuando
+        se llega. Cargar 1122 filas en cada venta por si alguien registra un
+        cliente sería pagarlo siempre para usarlo casi nunca.
+      */}
       {registrando ? (
-        <AltaRapidaDeCliente
+        <AltaEnPasos
           abierto
           cerrar={() => setRegistrando(false)}
           documentoInicial={consulta}
-          alRegistrar={(cliente) => {
+          alCrear={(cliente) => {
             setTexto('')
             setResultados([])
             onElegir(cliente)

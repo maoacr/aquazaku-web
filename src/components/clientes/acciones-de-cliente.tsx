@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useId, useState } from 'react'
+import { useActionState, useEffect, useId, useRef, useState } from 'react'
 import { Phone } from 'lucide-react'
 import {
   agregarDireccionAction,
@@ -154,15 +154,36 @@ export function AgregarDireccion({
   clienteId,
   departamentos,
   municipios,
+  alAgregar,
 }: {
   clienteId: string
   departamentos: Departamento[]
   municipios: Municipio[]
+  /** Para que quien lo abrió en un modal pueda cerrarlo al terminar. */
+  alAgregar?: () => void
 }) {
   const [estado, accion, enviando] = useActionState(agregarDireccionAction, INICIAL)
   const idError = useId()
 
   useAvisoDeExito(estado)
+
+  /*
+   * El aviso de «listo» se dispara UNA vez por token y no en cada render.
+   *
+   * `alAgregar` suele llegar como una arrow inline, así que su identidad cambia
+   * siempre: con ella en las dependencias, el efecto correría en cada render y
+   * el modal se cerraría solo antes de que nadie escriba nada. El token del
+   * estado es lo que de verdad marca «esta vez sí se guardó».
+   */
+  const ultimoAvisado = useRef<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (!estado.token || estado.error) return
+    if (ultimoAvisado.current === estado.token) return
+
+    ultimoAvisado.current = estado.token
+    alAgregar?.()
+  })
 
   return (
     <form action={accion} key={estado.token ?? 'inicial'} className="grid gap-5">

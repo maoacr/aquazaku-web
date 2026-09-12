@@ -11,6 +11,16 @@ const crearClienteRapidoAction = vi.fn()
 vi.mock('@/app/(app)/modulos/clientes/actions', () => ({
   buscarClientesAction: (documento: string) => buscarClientesAction(documento),
   crearClienteRapidoAction: (datos: unknown) => crearClienteRapidoAction(datos),
+  /*
+   * El paso 3 del alta pide el catálogo del DANE cuando no se lo pasan como
+   * prop, que es justo el caso del mostrador: cargar 1122 municipios en cada
+   * venta por si alguien registra un cliente sería pagarlo siempre para usarlo
+   * casi nunca.
+   *
+   * Sin este mock, llegar al paso 3 llama a `undefined` y el test falla con un
+   * error que no menciona la geografía por ningún lado.
+   */
+  geografiaAction: async () => ({ departamentos: [], municipios: [] }),
 }))
 
 /**
@@ -68,12 +78,6 @@ beforeEach(() => {
   buscarClientesAction.mockReset()
   buscarClientesAction.mockResolvedValue([])
   crearClienteRapidoAction.mockReset()
-  HTMLDialogElement.prototype.showModal ??= function () {
-    this.setAttribute('open', '')
-  }
-  HTMLDialogElement.prototype.close ??= function () {
-    this.removeAttribute('open')
-  }
 })
 
 /**
@@ -101,6 +105,17 @@ describe('registrar desde la búsqueda', () => {
     expect(screen.queryByRole('button', { name: /Registrar a esta persona/ })).toBeNull()
   })
 
+  /*
+   * ── El alta del mostrador es AHORA la misma que la de Clientes ────────────
+   *
+   * Antes era `AltaRapidaDeCliente`: nombre, documento y teléfono, sin
+   * dirección nunca. Quien registraba acá —con el cliente enfrente— quedaba con
+   * alguien sin domicilio, y una base se presta a una DIRECCIÓN (RN-BAS-03).
+   *
+   * Estos dos tests siguen vigilando lo mismo que antes: que el documento ya
+   * tecleado no se dicte de nuevo, y que el recién creado quede elegido sin
+   * tocar el carrito. Lo que cambió es el camino — ahora son tres pasos.
+   */
   it('el documento que se acaba de escribir llega al alta', async () => {
     const usuario = userEvent.setup()
 
@@ -108,7 +123,7 @@ describe('registrar desde la búsqueda', () => {
     await usuario.type(screen.getByRole('combobox'), '5551234')
     await usuario.click(await screen.findByRole('button', { name: /Registrar a esta persona/ }))
 
-    expect(screen.getByRole('textbox', { name: /Número de documento/ })).toHaveValue('5551234')
+    expect(screen.getByRole('textbox', { name: /Número/ })).toHaveValue('5551234')
   })
 
   it('el cliente registrado queda elegido, con el carrito intacto', async () => {
@@ -123,7 +138,21 @@ describe('registrar desde la búsqueda', () => {
 
     await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
     await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
-    await usuario.click(screen.getByRole('button', { name: /Registrar y continuar/ }))
+
+    /*
+     * Paso 1 → 2 → 3, saltando teléfono y dirección: los dos son opcionales.
+     *
+     * Se usa `findBy` y no `getBy` en cada salto. El paso 1 espera un debounce
+     * de 250 ms y una respuesta del servidor antes de habilitar «Siguiente», y
+     * el paso 3 pide el catálogo de municipios al entrar. Con la suite completa
+     * corriendo en paralelo esos tiempos se estiran, y un `getBy` mira el DOM
+     * una sola vez — pasaba aislado y fallaba en la suite, que es la peor forma
+     * de fallar.
+     */
+    await waitFor(() => expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled())
+    await usuario.click(await screen.findByRole('button', { name: /Siguiente/ }))
+    await usuario.click(await screen.findByRole('button', { name: /Siguiente|sin teléfono/i }))
+    await usuario.click(await screen.findByRole('button', { name: /Registrar cliente/ }))
 
     expect(await screen.findByText('Rosa Elena Padilla')).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).toBeNull()

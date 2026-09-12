@@ -1,5 +1,5 @@
-import { AltaDeCliente } from '@/components/clientes/alta-cliente'
-import { TarjetasDeClientes } from '@/components/clientes/tarjetas-de-clientes'
+import { BotonDeAlta } from '@/components/clientes/boton-de-alta'
+import { ListaDeClientes } from '@/components/clientes/lista-de-clientes'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch } from '@/lib/api-server'
 import type { Cliente, Departamento, Municipio } from '@/lib/api-types'
@@ -18,16 +18,14 @@ import type { Cliente, Departamento, Municipio } from '@/lib/api-types'
  * cada tecla. Cuando la lista crezca, el filtro se muda a `api/` y esta página
  * casi no cambia.
  */
-export default async function ClientesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; estado?: string }>
-}) {
-  const { q, estado } = await searchParams
-  const verTodos = estado === 'todos'
-
-  const [clientes, departamentos, municipios] = await Promise.all([
-    apiServerFetch<Cliente[]>(verTodos ? '/clientes?estado=todos' : '/clientes'),
+export default async function ClientesPage() {
+  const [recientes, departamentos, municipios] = await Promise.all([
+    /*
+     * Solo los últimos diez, no el padrón entero. Traerlos todos para filtrar
+     * en el navegador era lo que había, y con cinco mil clientes son cinco mil
+     * filas viajando para mostrar veinte. La búsqueda ahora la hace `api`.
+     */
+    apiServerFetch<Cliente[]>('/clientes?recientes=10'),
     /*
      * El catálogo de geografía viaja como props porque el alta ahora ofrece
      * cargar la dirección apenas se crea el cliente. Va desde el servidor y no
@@ -38,21 +36,6 @@ export default async function ClientesPage({
   ])
   const leidoEn = new Date()
 
-  const busqueda = (q ?? '').trim().toLowerCase()
-  const visibles = busqueda
-    ? clientes.filter(
-        (c) =>
-          c.nombre.toLowerCase().includes(busqueda) ||
-          // El apodo es como se la conoce en el pueblo, y muchas veces es lo
-          // único que quien busca tiene a mano — RN-CLI-17.
-          (c.apodo?.toLowerCase().includes(busqueda) ?? false) ||
-          // Se busca contra el número BASE, no contra el documento armado: quien
-          // teclea `79123456` tiene que encontrarlo aunque en pantalla diga
-          // `79123456-0`.
-          c.numeroDocumento.includes(busqueda.replace(/\D/g, '')),
-      )
-    : clientes
-
   return (
     <div className="grid gap-6">
       <header>
@@ -62,39 +45,17 @@ export default async function ClientesPage({
         </p>
       </header>
 
-      <form className="aq-tarjeta flex flex-wrap items-end gap-4 p-5">
-        <label className="aq-etiqueta-campo min-w-[16rem] flex-1">
-          <span>Buscar</span>
-          <input
-            name="q"
-            defaultValue={q ?? ''}
-            placeholder="Nombre, apodo o número de documento"
-            className="aq-campo"
-          />
-        </label>
+      {/*
+        El botón va ARRIBA, con el encabezado, y no al fondo.
 
-        <label className="aq-etiqueta-campo">
-          <span>Estado</span>
-          <select name="estado" defaultValue={estado ?? 'activos'} className="aq-campo">
-            <option value="activos">Solo activos</option>
-            <option value="todos">Todos</option>
-          </select>
-        </label>
+        Registrar un cliente es la acción primaria de esta pantalla: si queda
+        debajo de la lista, hay que recorrer veinte tarjetas para encontrarla, y
+        con quinientas no se encuentra nunca.
+      */}
+      <BotonDeAlta departamentos={departamentos} municipios={municipios} />
 
-        <button type="submit" className="aq-boton aq-boton-secundario">
-          Filtrar
-        </button>
-      </form>
-
-      <section className="grid gap-3">
-        <h2 className="aq-micro text-tenue">
-          {visibles.length === 1 ? '1 cliente' : `${visibles.length} clientes`}
-        </h2>
-        <TarjetasDeClientes clientes={visibles} hayFiltro={busqueda.length > 0} />
-        <SelloDeHora leidoEn={leidoEn} />
-      </section>
-
-      <AltaDeCliente departamentos={departamentos} municipios={municipios} />
+      <ListaDeClientes recientes={recientes} />
+      <SelloDeHora leidoEn={leidoEn} />
     </div>
   )
 }

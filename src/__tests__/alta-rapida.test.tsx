@@ -60,12 +60,6 @@ const llenar = async (usuario: ReturnType<typeof userEvent.setup>) => {
 beforeEach(() => {
   crearClienteRapidoAction.mockReset()
   crearClienteRapidoAction.mockResolvedValue({ cliente })
-  HTMLDialogElement.prototype.showModal ??= function () {
-    this.setAttribute('open', '')
-  }
-  HTMLDialogElement.prototype.close ??= function () {
-    this.removeAttribute('open')
-  }
 })
 
 describe('nada de acá adentro puede cobrar la venta', () => {

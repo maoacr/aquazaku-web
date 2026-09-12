@@ -30,6 +30,11 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
  *
  * Se encontró abriendo la pantalla, no leyendo el código: en el JSX la línea se
  * leía perfecta.
+ *
+ * El control pasó de `<select>` a dos fichas de radio —son dos opciones fijas,
+ * y un desplegable cobraba dos clics y el ancho de un campo entero para mostrar
+ * una sola—. Lo que estos casos vigilan no cambió: que la propuesta SIGA al
+ * tipo de cliente, y que se pueda contradecir a mano.
  */
 
 beforeEach(() => {
@@ -43,7 +48,7 @@ describe('el formulario sigue al tipo de cliente', () => {
     alta()
 
     expect(screen.getByRole('textbox', { name: /Primer nombre/ })).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: /Tipo de documento/ })).toHaveValue('CC')
+    expect(screen.getByRole('radio', { name: /Cédula de ciudadanía/ })).toBeChecked()
   })
 
   it('elegir «Un negocio» cambia los campos Y el documento', async () => {
@@ -54,7 +59,7 @@ describe('el formulario sigue al tipo de cliente', () => {
 
     expect(screen.getByRole('textbox', { name: /Nombre del negocio/ })).toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: /Apellidos/ })).toBeNull()
-    expect(screen.getByRole('combobox', { name: /Tipo de documento/ })).toHaveValue('NIT')
+    expect(screen.getByRole('radio', { name: 'NIT' })).toBeChecked()
   })
 
   it('volver a «Una persona» propone la cédula de nuevo', async () => {
@@ -64,7 +69,7 @@ describe('el formulario sigue al tipo de cliente', () => {
     await usuario.click(screen.getByRole('radio', { name: /Un negocio/ }))
     await usuario.click(screen.getByRole('radio', { name: /Una persona/ }))
 
-    expect(screen.getByRole('combobox', { name: /Tipo de documento/ })).toHaveValue('CC')
+    expect(screen.getByRole('radio', { name: /Cédula de ciudadanía/ })).toBeChecked()
   })
 
   /**
@@ -76,9 +81,9 @@ describe('el formulario sigue al tipo de cliente', () => {
     alta()
 
     await usuario.click(screen.getByRole('radio', { name: /Un negocio/ }))
-    await usuario.selectOptions(screen.getByRole('combobox', { name: /Tipo de documento/ }), 'CC')
+    await usuario.click(screen.getByRole('radio', { name: /Cédula de ciudadanía/ }))
 
-    expect(screen.getByRole('combobox', { name: /Tipo de documento/ })).toHaveValue('CC')
+    expect(screen.getByRole('radio', { name: /Cédula de ciudadanía/ })).toBeChecked()
   })
 })
 

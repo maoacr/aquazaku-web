@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { apiServerFetch, apiServerFetchRaw } from '@/lib/api-server'
-import type { AvisoDeCruce, Cliente, Direccion } from '@/lib/api-types'
+import type { AvisoDeCruce, Cliente, Departamento, Direccion, Municipio } from '@/lib/api-types'
 import { cuerpoDeError } from '@/lib/form-errors'
 import { type EstadoDeFormulario, exito } from '@/lib/formulario'
 
@@ -417,6 +417,18 @@ export async function crearClienteRapidoAction(datos: {
   tipoDocumento: 'CC' | 'NIT'
   numeroDocumento: string
   telefono?: { numero: string; etiqueta?: string }
+  /**
+   * La dirección, en el mismo viaje — M16.
+   *
+   * `POST /clientes` la mete en la misma transacción que el cliente y el
+   * teléfono. Mandarla aparte dejaría un cliente a medio cargar si la segunda
+   * escritura falla, y quien atiende no sabría qué quedó guardado.
+   *
+   * Además es lo único que le permite al `pos` cargarla: el endpoint suelto
+   * pide `clientes:editar`, que no tiene, y RN-BAS-03 dice que una base se
+   * presta a una DIRECCIÓN.
+   */
+  direccion?: Record<string, unknown>
 }): Promise<ResultadoDeAltaRapida> {
   const res = await apiServerFetchRaw('/clientes', {
     method: 'POST',
@@ -464,4 +476,30 @@ export async function direccionesDeClienteAction(clienteId: string): Promise<Dir
   } catch {
     return []
   }
+}
+
+/**
+ * El catálogo del DANE, pedido cuando hace falta — M16.
+ *
+ * ── Por qué una acción y no props ───────────────────────────────────────────
+ *
+ * El alta en pasos vive en cuatro pantallas: Clientes, el mostrador, y las dos
+ * de Retornables. Pasarle el catálogo desde cada una significaría que las cuatro
+ * carguen **1122 municipios en cada visita**, por si alguien registra un
+ * cliente — y en el mostrador eso es en cada venta.
+ *
+ * Se pide al llegar al paso de la dirección, que es el único que lo usa, y
+ * muchas veces no se llega. Sigue siendo server-to-server: ADR-0002, el browser
+ * nunca toca `api/`.
+ */
+export async function geografiaAction(): Promise<{
+  departamentos: Departamento[]
+  municipios: Municipio[]
+}> {
+  const [departamentos, municipios] = await Promise.all([
+    apiServerFetch<Departamento[]>('/geografia/departamentos'),
+    apiServerFetch<Municipio[]>('/geografia/municipios'),
+  ])
+
+  return { departamentos, municipios }
 }

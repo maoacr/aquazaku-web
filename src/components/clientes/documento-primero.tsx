@@ -53,14 +53,31 @@ export type EstadoDelDocumento = 'vacio' | 'libre' | 'tomado' | 'cruce'
 export function DocumentoPrimero({
   tipoDocumento = 'CC',
   onTipoDocumento,
+  numero: numeroControlado,
+  onNumero,
   onEstado,
 }: {
   tipoDocumento?: 'CC' | 'NIT'
   onTipoDocumento?: (tipo: 'CC' | 'NIT') => void
+  /**
+   * El número también se puede controlar desde afuera.
+   *
+   * El alta en pasos lo necesita: arranca con lo que ya se tecleó en el buscador
+   * de la venta, y lo manda al final junto con el resto. Sin esto habría que
+   * espejarlo con un efecto, que es la clase de sincronización que se desfasa.
+   *
+   * Sin `numero`, el componente lo maneja solo — que es como lo usa el
+   * formulario completo de Clientes.
+   */
+  numero?: string
+  onNumero?: (numero: string) => void
   onEstado?: (estado: EstadoDelDocumento) => void
 }) {
   const idNumero = useId()
-  const [numero, setNumero] = useState('')
+  const [numeroPropio, setNumeroPropio] = useState('')
+
+  const numero = numeroControlado ?? numeroPropio
+  const setNumero = onNumero ?? setNumeroPropio
 
   /*
    * La respuesta se guarda CON lo que se preguntó, no sola. Dos consultas en

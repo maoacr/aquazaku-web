@@ -1,4 +1,4 @@
-import { AltaDeCliente } from '@/components/clientes/alta-cliente'
+import { BotonDeAlta } from '@/components/clientes/boton-de-alta'
 import { ListaDeClientes } from '@/components/clientes/lista-de-clientes'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch } from '@/lib/api-server'
@@ -45,10 +45,17 @@ export default async function ClientesPage() {
         </p>
       </header>
 
+      {/*
+        El botón va ARRIBA, con el encabezado, y no al fondo.
+
+        Registrar un cliente es la acción primaria de esta pantalla: si queda
+        debajo de la lista, hay que recorrer veinte tarjetas para encontrarla, y
+        con quinientas no se encuentra nunca.
+      */}
+      <BotonDeAlta departamentos={departamentos} municipios={municipios} />
+
       <ListaDeClientes recientes={recientes} />
       <SelloDeHora leidoEn={leidoEn} />
-
-      <AltaDeCliente departamentos={departamentos} municipios={municipios} />
     </div>
   )
 }

@@ -39,10 +39,19 @@ export function CamposDeDireccion({
   inicial,
   departamentos,
   municipios,
+  opcional = false,
 }: {
   inicial?: Direccion
   departamentos: Departamento[]
   municipios: Municipio[]
+  /**
+   * La dirección entera se puede dejar en blanco.
+   *
+   * Lo usa el alta en pasos, donde el paso 3 se puede saltar. Sin esto, el
+   * `required` de la etiqueta bloquea el envío del formulario completo aunque
+   * nadie haya querido cargar una dirección.
+   */
+  opcional?: boolean
 }) {
   const v = (campo: keyof Direccion) => (inicial?.[campo] as string | null) ?? undefined
 
@@ -56,10 +65,24 @@ export function CamposDeDireccion({
   return (
     <>
       <label className="aq-etiqueta-campo">
-        <span>Cómo la llaman</span>
+        <span>
+          Cómo la llaman
+          {opcional ? <span className="font-normal normal-case"> (opcional)</span> : null}
+        </span>
+        {/*
+          `required` solo cuando cargar la dirección ES el acto.
+
+          En el alta en pasos la dirección se puede saltar —«si todavía no la
+          sabe, puede registrarlo igual»— y ahí un `required` bloquea el envío
+          del formulario entero **en silencio**: el botón se aprieta y no pasa
+          nada. Costó dos tests rojos encontrarlo.
+
+          Cuando alguien entra a «agregar una dirección», en cambio, una sin
+          etiqueta no sirve: es lo que se busca en una lista.
+        */}
         <input
           name="etiqueta"
-          required
+          required={!opcional}
           defaultValue={v('etiqueta')}
           placeholder="La casa, el negocio, la sucursal norte"
           className="aq-campo"

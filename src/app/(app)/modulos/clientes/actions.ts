@@ -418,6 +418,18 @@ export async function crearClienteRapidoAction(datos: {
   numeroDocumento: string
   telefono?: { numero: string; etiqueta?: string }
   /**
+   * Varios teléfonos, en el mismo viaje — M16.
+   *
+   * Un comercial tiene el celular del dueño y el fijo del local, y el sistema
+   * ya distingue uno de otro: el botón de WhatsApp no se dibuja sobre un fijo.
+   * Capturar uno solo tira información que después hace falta.
+   *
+   * Agregarle el segundo más tarde exige `clientes:editar`, que el `pos` no
+   * tiene. `api/` lo junta con el singular, que sigue existiendo para el alta
+   * del mostrador.
+   */
+  telefonos?: { numero: string; etiqueta?: string }[]
+  /**
    * La dirección, en el mismo viaje — M16.
    *
    * `POST /clientes` la mete en la misma transacción que el cliente y el

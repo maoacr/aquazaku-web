@@ -39,6 +39,11 @@ const ESPERA_MS = 250
 
 export type EstadoDelDocumento = 'vacio' | 'libre' | 'tomado' | 'cruce'
 
+const TIPOS = [
+  { valor: 'CC', largo: 'Cédula de ciudadanía' },
+  { valor: 'NIT', largo: 'NIT' },
+] as const
+
 /**
  * El tipo de documento se CONTROLA desde afuera, y es a propósito.
  *
@@ -153,19 +158,47 @@ export function DocumentoPrimero({
         nuevo.
       </p>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="aq-etiqueta-campo">
-          <span>Tipo de documento</span>
-          <select
-            name="tipoDocumento"
-            value={tipoDocumento}
-            onChange={(e) => onTipoDocumento?.(e.target.value as 'CC' | 'NIT')}
-            className="aq-campo"
-          >
-            <option value="CC">Cédula de ciudadanía</option>
-            <option value="NIT">NIT</option>
-          </select>
-        </label>
+      <div className="flex flex-wrap items-start gap-4">
+        {/*
+          Dos fichas y no un desplegable.
+
+          Son DOS opciones fijas: un `<select>` cobra un clic para abrirlo y
+          otro para elegir, y ocupa el ancho de un campo entero para mostrar una
+          sola de las dos. Acá se ven las dos y se cambia con un toque.
+
+          Es además el mismo control con el que dos preguntas más abajo se
+          elige «Una persona» o «Un negocio». Con un desplegable acá y fichas
+          allá, dos preguntas del mismo tipo se veían distintas sin motivo.
+
+          Siguen siendo `<input type="radio">` con `name="tipoDocumento"`: el
+          formulario completo de Clientes lee este campo por `FormData`, y
+          cambiar el control no puede cambiarle el contrato.
+        */}
+        <fieldset className="grid gap-1.5">
+          <legend className="aq-micro text-tenue">Tipo</legend>
+          <div className="flex gap-2">
+            {TIPOS.map(({ valor, largo }) => (
+              <label key={valor} className="aq-ficha">
+                <input
+                  type="radio"
+                  name="tipoDocumento"
+                  value={valor}
+                  checked={tipoDocumento === valor}
+                  onChange={() => onTipoDocumento?.(valor)}
+                  /*
+                   * El texto visible dice «CC» para ahorrar espacio; quien
+                   * navega con lector de pantalla escucha el nombre completo.
+                   * Una sigla leída en voz alta no identifica nada.
+                   */
+                  aria-label={largo}
+                  className="sr-only"
+                />
+                <span className="aq-ficha-caja" aria-hidden />
+                {valor}
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         {/*
           Sin icono de lupa, y por dos razones.
@@ -179,7 +212,7 @@ export function DocumentoPrimero({
           comprueba. Prometer búsqueda invita a usarlo para buscar, que es lo que
           hace el campo de arriba.
         */}
-        <label htmlFor={idNumero} className="aq-etiqueta-campo">
+        <label htmlFor={idNumero} className="aq-etiqueta-campo min-w-[11rem] flex-1">
           <span>Número</span>
           <input
             id={idNumero}

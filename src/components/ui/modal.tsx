@@ -1,6 +1,6 @@
 'use client'
 
-import { X } from 'lucide-react'
+import { ArrowLeft, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
 /**
@@ -26,11 +26,21 @@ export function Modal({
   abierto,
   cerrar,
   titulo,
+  atras,
   children,
 }: {
   abierto: boolean
   cerrar: () => void
   titulo: string
+  /**
+   * Volver atrás, cuando el contenido tiene pasos — opcional.
+   *
+   * Va acá y no adentro del contenido porque «atrás» es NAVEGACIÓN, y la
+   * navegación se busca arriba a la izquierda, no abajo entre los botones que
+   * confirman. Mezclado con «Siguiente» y «Cancelar», retroceder pesaba lo
+   * mismo que avanzar y había que leer los tres para elegir.
+   */
+  atras?: () => void
   children: React.ReactNode
 }) {
   const ref = useRef<HTMLDialogElement>(null)
@@ -58,13 +68,25 @@ export function Modal({
     >
       {abierto ? (
         <div className="grid gap-4 p-5">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {atras ? (
+              <button
+                type="button"
+                onClick={atras}
+                aria-label="Volver al paso anterior"
+                className="aq-boton aq-boton-compacto aq-boton-secundario"
+              >
+                <ArrowLeft aria-hidden className="size-4" />
+              </button>
+            ) : null}
+
             <h2 className="aq-titulo-tarjeta text-principal">{titulo}</h2>
+
             <button
               type="button"
               onClick={cerrar}
               aria-label="Cerrar"
-              className="aq-boton aq-boton-compacto aq-boton-secundario"
+              className="aq-boton aq-boton-compacto aq-boton-secundario ml-auto"
             >
               <X aria-hidden className="size-4" />
             </button>

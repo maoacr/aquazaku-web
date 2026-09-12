@@ -1,10 +1,16 @@
 'use client'
 
+import { Plus, Trash2 } from 'lucide-react'
 import { useId, useRef, useState, useTransition } from 'react'
 import { crearClienteRapidoAction, geografiaAction } from '@/app/(app)/modulos/clientes/actions'
 import { FormError } from '@/components/auth/form-error'
 import { CamposDeDireccion } from '@/components/clientes/campos-de-direccion'
-import { CamposDeNombre, NOMBRE_VACIO, type Nombre } from '@/components/clientes/campos-de-nombre'
+import {
+  CamposDeNombre,
+  NOMBRE_VACIO,
+  type Nombre,
+  soloLoEscrito,
+} from '@/components/clientes/campos-de-nombre'
 import { DocumentoPrimero, type EstadoDelDocumento } from '@/components/clientes/documento-primero'
 import { Modal } from '@/components/ui/modal'
 import type { Cliente, Departamento, Municipio } from '@/lib/api-types'
@@ -43,6 +49,14 @@ const PASOS = [
   { n: 2, titulo: 'A qué número llamarlo' },
   { n: 3, titulo: 'Dónde queda' },
 ] as const
+
+/** Lo mismo que acepta `api`: más de cinco números es otra cosa, no un cliente. */
+const MAXIMO_DE_TELEFONOS = 5
+
+type Telefono = { id: number; numero: string; etiqueta: string }
+
+let ultimoId = 0
+const nuevoTelefono = (): Telefono => ({ id: ++ultimoId, numero: '', etiqueta: '' })
 
 export function AltaEnPasos({
   abierto,
@@ -83,8 +97,29 @@ export function AltaEnPasos({
   const [numeroDocumento, setNumeroDocumento] = useState(documentoInicial)
   const [estadoDelDocumento, setEstadoDelDocumento] = useState<EstadoDelDocumento>('vacio')
   const [nombre, setNombre] = useState<Nombre>(NOMBRE_VACIO)
-  const [telefono, setTelefono] = useState('')
-  const [etiquetaDelTelefono, setEtiquetaDelTelefono] = useState('')
+
+  /*
+   * Los teléfonos son una LISTA, con una fila vacía de arranque.
+   *
+   * Un comercial tiene el celular del dueño y el fijo del local, y son dos
+   * cosas distintas: al primero se le escribe por WhatsApp, al segundo solo se
+   * le llama. Con un solo campo, quien atiende captura uno y el otro se pierde
+   * —y agregarlo después exige `clientes:editar`, que el `pos` no tiene—.
+   *
+   * Cada fila lleva su `id` para poder EDITARLA y BORRARLA sin ambigüedad. Por
+   * posición también se podría, hasta que dos filas queden iguales —dos vacías
+   * lo están— y borrar una borre las dos.
+   *
+   * (Como clave de React el índice alcanzaría: los campos son controlados y el
+   * valor sale del estado. Se probó sacándolo, y los tests siguieron en verde.)
+   */
+  const [telefonos, setTelefonos] = useState<Telefono[]>(() => [nuevoTelefono()])
+
+  function cambiarTelefono(id: number, campo: 'numero' | 'etiqueta', valor: string) {
+    setTelefonos((previos) =>
+      previos.map((t) => (t.id === id ? { ...t, [campo]: valor } : t)),
+    )
+  }
 
   /*
    * La dirección se lee del DOM al enviar, no se refleja en estado.
@@ -94,10 +129,11 @@ export function AltaEnPasos({
    * a estado sería mantener trece `useState` sincronizados con el único fin de
    * volver a armarlos al final.
    *
-   * El `ref` apunta al formulario que los contiene, y sigue montado mientras el
-   * paso 3 está a la vista — que es cuando se envía.
+   * El `ref` apunta a la ZONA del paso 3 y no al formulario entero: los campos
+   * del paso 1 también tienen `name`, y levantarlos a todos metería el
+   * documento del cliente adentro de la dirección.
    */
-  const formulario = useRef<HTMLFormElement>(null)
+  const zonaDireccion = useRef<HTMLDivElement>(null)
 
   /*
    * El catálogo, pedido al llegar al paso 3 y no antes.
@@ -134,44 +170,81 @@ export function AltaEnPasos({
    */
   const puedeAvanzar = paso === 1 ? documentoServible && documentoLibre && hayNombre : true
 
-  const telefonoCorto = telefono.trim().length > 0 && telefono.trim().length < 7
+  const escritos = telefonos.filter((t) => t.numero.trim().length > 0)
+  const hayTelefonoCorto = escritos.some((t) => t.numero.trim().length < 7)
 
   function registrar() {
-    if (telefonoCorto) {
+    if (hayTelefonoCorto) {
       setError('Un teléfono tiene al menos 7 dígitos. Bórrelo o complételo.')
+      return
+    }
+
+    /*
+     * Se leen los campos DE LA ZONA de la dirección, no los del formulario.
+     *
+     * Un `new FormData(formulario)` levanta todo lo que tenga `name` adentro —y
+     * el paso 1 tiene `tipoDocumento` y `numeroDocumento`—, así que la
+     * dirección viajaba con el documento del cliente metido dentro. Hoy no
+     * rompe porque el esquema de `api` descarta lo que no conoce; el día que
+     * alguien lo ponga en `strict` rebota el alta entera al final de los tres
+     * pasos, que es el peor momento para enterarse.
+     */
+    const escrito = Object.fromEntries(
+      [...(zonaDireccion.current?.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+        '[name]',
+      ) ?? [])]
+        .map((campo) => [campo.name, campo.value.trim()] as const)
+        .filter(([, valor]) => valor !== ''),
+    )
+
+    const { etiqueta, ...resto } = escrito
+
+    /*
+     * ── Una dirección a medias AVISA, no se descarta ──────────────────────────
+     *
+     * `api` exige la etiqueta —«la casa», «el local»—: es lo que distingue una
+     * dirección de otra cuando el cliente tiene tres.
+     *
+     * Acá la dirección se armaba SOLO si venía la etiqueta, y si no, se tiraba.
+     * Quien llenaba vía, placa, municipio y departamento y no le ponía nombre
+     * daba «Registrar cliente», veía el alta salir bien, y abría la ficha sin
+     * dirección: ocho campos perdidos sin una palabra. Pasó con un cliente real.
+     *
+     * Frenar es lo único honesto. Poner una etiqueta por defecto sería
+     * inventarle un nombre a la casa de otra persona, y seguir de largo es
+     * justamente el bug.
+     */
+    if (!etiqueta && Object.keys(resto).length > 0) {
+      setError('Escriba cómo la llaman —«la casa», «el local»— para poder guardar la dirección.')
       return
     }
 
     setError(undefined)
 
-    /*
-     * La dirección va solo si tiene ETIQUETA. Es el único campo que `api` exige
-     * —«la casa», «el local»— y es lo que distingue «no cargó dirección» de
-     * «cargó una a medias»: sin él, un municipio suelto viajaría como dirección
-     * y `api` la rechazaría con un 422 al final de los tres pasos.
-     */
-    const campos = formulario.current ? new FormData(formulario.current) : null
-    const etiqueta = String(campos?.get('etiqueta') ?? '').trim()
-
-    const direccion = etiqueta
-      ? Object.fromEntries(
-          [...(campos?.entries() ?? [])]
-            .filter(([, v]) => typeof v === 'string' && v.trim() !== '')
-            .map(([k, v]) => [k, String(v).trim()]),
-        )
-      : undefined
+    const direccion = etiqueta ? { etiqueta, ...resto } : undefined
 
     empezarEnvio(async () => {
       const resultado = await crearClienteRapidoAction({
-        ...nombre,
+        /*
+         * `soloLoEscrito` y no `...nombre` a secas.
+         *
+         * `Nombre` trae las CINCO claves siempre, en cadena vacía las que nadie
+         * llenó. Mandarlas así devuelve un 400 de validación —`api` distingue
+         * «no lo cargaron» de «lo cargaron vacío»— y el mensaje que llega es el
+         * genérico «No pudimos registrar al cliente», que no dice qué campo.
+         *
+         * El helper ya existía para esto. Lo escribí sin usarlo y costó cinco
+         * intentos fallidos en el navegador.
+         */
+        ...soloLoEscrito(nombre),
         tipo,
         tipoDocumento,
         numeroDocumento: numeroDocumento.replace(/\D/g, ''),
-        ...(telefono.trim() && {
-          telefono: {
-            numero: telefono.trim(),
-            ...(etiquetaDelTelefono.trim() && { etiqueta: etiquetaDelTelefono.trim() }),
-          },
+        ...(escritos.length > 0 && {
+          telefonos: escritos.map((t) => ({
+            numero: t.numero.trim(),
+            ...(t.etiqueta.trim() && { etiqueta: t.etiqueta.trim() }),
+          })),
         }),
         ...(direccion && { direccion }),
       })
@@ -189,7 +262,12 @@ export function AltaEnPasos({
   }
 
   return (
-    <Modal abierto={abierto} cerrar={cerrar} titulo="Registrar cliente">
+    <Modal
+      abierto={abierto}
+      cerrar={cerrar}
+      titulo="Registrar cliente"
+      atras={paso > 1 ? () => irAlPaso(paso === 3 ? 2 : 1) : undefined}
+    >
       <div className="grid gap-5">
         <Progreso paso={paso} />
 
@@ -204,7 +282,6 @@ export function AltaEnPasos({
           enviar: sus campos se leen del DOM con un `FormData`.
         */}
         <form
-          ref={formulario}
           onSubmit={(e) => {
             e.preventDefault()
             if (paso === 3) registrar()
@@ -220,7 +297,19 @@ export function AltaEnPasos({
               onEstado={setEstadoDelDocumento}
             />
 
-            <fieldset className="grid gap-2">
+            {/*
+              `self-start` y no es cosmética: sin él las pastillas medían 186 px.
+
+              El paso 1 es un grid de dos columnas, y en la MISMA fila viven el
+              fieldset del documento —que sí necesita esa altura, tiene el aviso
+              de duplicado debajo— y este. Un ítem de grid se estira a la altura
+              de su fila por defecto, ese estirón baja al `flex` de adentro, y
+              las pastillas de 44 px terminaron midiendo cuatro veces eso.
+
+              Es la misma trampa que el `align-content: start` de
+              `.aq-etiqueta-campo`, que por eso no sufre lo mismo.
+            */}
+            <fieldset className="grid gap-2 self-start">
               <legend className="aq-micro text-tenue">Quién es</legend>
               <div className="flex flex-wrap gap-2">
                 {(['residencial', 'comercial'] as const).map((opcion) => (
@@ -246,41 +335,80 @@ export function AltaEnPasos({
             <CamposDeNombre tipo={tipo} valor={nombre} onCambio={setNombre} />
           </div>
 
-          <div hidden={paso !== 2} className="grid gap-4 sm:grid-cols-2">
-            <label className="aq-etiqueta-campo">
-              <span>
-                Teléfono <span className="font-normal normal-case">(opcional)</span>
-              </span>
-              <input
-                value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
-                type="tel"
-                inputMode="tel"
-                autoComplete="off"
-                placeholder="300 123 4567"
-                className="aq-campo aq-cifra"
-              />
-              <span className="mt-1 font-normal normal-case text-[13px] text-tenue">
-                Sin número no hay a quién reclamarle un envase.
-              </span>
-            </label>
+          <div hidden={paso !== 2} className="grid gap-4">
+            <p className="text-[13px] text-tenue">
+              Sin número no hay a quién reclamarle un envase. Puede cargar más de uno: el
+              celular del dueño y el fijo del local no sirven para lo mismo.
+            </p>
 
-            <label className="aq-etiqueta-campo">
-              <span>
-                Cómo se llama ese número{' '}
-                <span className="font-normal normal-case">(opcional)</span>
-              </span>
-              <input
-                value={etiquetaDelTelefono}
-                onChange={(e) => setEtiquetaDelTelefono(e.target.value)}
-                autoComplete="off"
-                placeholder="el celular del dueño"
-                className="aq-campo"
-              />
-            </label>
+            {telefonos.map((t, i) => (
+              <div key={t.id} className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-start">
+                <label className="aq-etiqueta-campo">
+                  <span>
+                    Teléfono {i + 1}{' '}
+                    <span className="font-normal normal-case">(opcional)</span>
+                  </span>
+                  <input
+                    value={t.numero}
+                    onChange={(e) => cambiarTelefono(t.id, 'numero', e.target.value)}
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="off"
+                    placeholder="300 123 4567"
+                    className="aq-campo aq-cifra"
+                  />
+                  {t.numero.trim().length > 0 && t.numero.trim().length < 7 ? (
+                    <span className="mt-1 font-normal normal-case text-[13px] text-error-texto">
+                      Un teléfono tiene al menos 7 dígitos.
+                    </span>
+                  ) : null}
+                </label>
+
+                <label className="aq-etiqueta-campo">
+                  <span>
+                    Cómo se llama ese número{' '}
+                    <span className="font-normal normal-case">(opcional)</span>
+                  </span>
+                  <input
+                    value={t.etiqueta}
+                    onChange={(e) => cambiarTelefono(t.id, 'etiqueta', e.target.value)}
+                    autoComplete="off"
+                    placeholder={i === 0 ? 'el celular del dueño' : 'el fijo del local'}
+                    className="aq-campo"
+                  />
+                </label>
+
+                {/*
+                  Quitar aparece recién desde la segunda fila. En la primera
+                  sería un botón que no hace nada: la lista nunca queda vacía,
+                  y para no cargar teléfono alcanza con dejarla en blanco.
+                */}
+                {telefonos.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setTelefonos((previos) => previos.filter((p) => p.id !== t.id))}
+                    aria-label={`Quitar el teléfono ${i + 1}`}
+                    className="aq-boton aq-boton-secundario aq-boton-compacto sm:mt-[26px]"
+                  >
+                    <Trash2 aria-hidden className="size-4" />
+                  </button>
+                ) : null}
+              </div>
+            ))}
+
+            {telefonos.length < MAXIMO_DE_TELEFONOS ? (
+              <button
+                type="button"
+                onClick={() => setTelefonos((previos) => [...previos, nuevoTelefono()])}
+                className="aq-boton aq-boton-secundario aq-boton-compacto justify-self-start"
+              >
+                <Plus aria-hidden className="size-4" />
+                Agregar otro número
+              </button>
+            ) : null}
           </div>
 
-          <div hidden={paso !== 3} className="grid gap-4">
+          <div ref={zonaDireccion} hidden={paso !== 3} className="grid gap-4">
             <p className="text-[13px] text-tenue">
               Una base se presta a una dirección, que es a donde hay que ir a buscarla. Si
               todavía no la sabe, puede registrarlo igual.
@@ -300,9 +428,9 @@ export function AltaEnPasos({
             paso={paso}
             puedeAvanzar={puedeAvanzar}
             enviando={enviando}
-            hayTelefono={telefono.trim().length > 0}
-            atras={() => irAlPaso(paso === 3 ? 2 : 1)}
+            hayTelefono={escritos.length > 0}
             siguiente={() => irAlPaso(paso === 1 ? 2 : 3)}
+            registrar={registrar}
             cerrar={cerrar}
           />
         </form>
@@ -335,27 +463,56 @@ function Progreso({ paso }: { paso: 1 | 2 | 3 }) {
   )
 }
 
+/**
+ * Los botones que HACEN algo. Volver atrás no está acá: es navegación, y vive
+ * arriba a la izquierda, en la cabecera del modal.
+ */
 function Botones({
   paso,
   puedeAvanzar,
   enviando,
   hayTelefono,
-  atras,
   siguiente,
+  registrar,
   cerrar,
 }: {
   paso: 1 | 2 | 3
   puedeAvanzar: boolean
   enviando: boolean
   hayTelefono: boolean
-  atras: () => void
   siguiente: () => void
+  registrar: () => void
   cerrar: () => void
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-sutil pt-4">
+      {/*
+        ── `type="button"` SIEMPRE, incluso para registrar ────────────────────
+
+        Acá vivía un bug que se saltaba el paso 3 entero: en el paso 2, un clic
+        en «Seguir sin teléfono» registraba al cliente sin dirección.
+
+        Es un solo `<button>` que React REUSA al cambiar de paso. El clic
+        actualiza el estado a paso 3, React vuelve a pintar —de forma síncrona,
+        porque un clic es un evento discreto— y le cambia el atributo a
+        `type="submit"`. El navegador recién DESPUÉS evalúa la acción por
+        defecto del clic, y la mira sobre el botón como quedó: envía el
+        formulario, `onSubmit` ve `paso === 3` y llama a `registrar()`. Un solo
+        clic, dos efectos.
+
+        Sin acción por defecto no hay nada que evaluar después. El `Enter` sigue
+        registrando: lo maneja el `onSubmit` del formulario.
+
+        Es la misma trampa que vigila el alta del mostrador, donde un botón sin
+        `type` cobraba la venta.
+      */}
       {paso === 3 ? (
-        <button type="submit" disabled={enviando} className="aq-boton aq-boton-primario">
+        <button
+          type="button"
+          onClick={registrar}
+          disabled={enviando}
+          className="aq-boton aq-boton-primario"
+        >
           {enviando ? 'Registrando…' : 'Registrar cliente'}
         </button>
       ) : (
@@ -373,12 +530,6 @@ function Botones({
           {paso === 2 && !hayTelefono ? 'Seguir sin teléfono' : 'Siguiente'}
         </button>
       )}
-
-      {paso > 1 ? (
-        <button type="button" onClick={atras} className="aq-boton aq-boton-secundario">
-          Atrás
-        </button>
-      ) : null}
 
       <button type="button" onClick={cerrar} className="aq-boton aq-boton-secundario ml-auto">
         Cancelar

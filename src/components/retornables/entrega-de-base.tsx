@@ -1,8 +1,12 @@
 'use client'
 
 import { PackagePlus } from 'lucide-react'
-import { useEffect, useId, useState, useTransition } from 'react'
+import { useEffect, useId, useRef, useState, useTransition } from 'react'
 import { direccionesDeClienteAction } from '@/app/(app)/modulos/clientes/actions'
+import {
+  type BaseParaPrestar,
+  buscarBaseParaPrestarAction,
+} from '@/app/(app)/modulos/retornables/actions'
 import type { Cliente, Direccion } from '@/lib/api-types'
 
 /**
@@ -132,10 +136,124 @@ export function SelectorDeDireccion({
   )
 }
 
+/**
+ * Lo que se sabe del sticker tecleado, consultado al salir del campo.
+ *
+ * ── Por qué al salir y no al teclear ────────────────────────────────────────
+ *
+ * Un código de cuatro dígitos pasa por tres estados inválidos antes de estar
+ * completo. Consultar en cada tecla pintaría «no figura» tres veces mientras
+ * alguien escribe bien — y un aviso que aparece cuando no hay problema es un
+ * aviso que se aprende a ignorar.
+ *
+ * ── La guarda de carrera ────────────────────────────────────────────────────
+ *
+ * Misma forma que `useDireccionesDe`: la respuesta se guarda CON el código que
+ * se consultó, y el aviso se deriva comparándolo con lo que hay escrito ahora.
+ * Eso resuelve dos cosas con un solo mecanismo: la respuesta que llega tarde no
+ * coincide y no se pinta, y el aviso se borra solo al corregir el número, sin
+ * que nadie tenga que limpiarlo.
+ */
+function useBaseParaPrestar() {
+  const [codigo, setCodigo] = useState('')
+  const [respuesta, setRespuesta] = useState<{ sticker: string; resultado: BaseParaPrestar } | null>(
+    null,
+  )
+
+  /*
+   * Sin `useTransition`, a diferencia de `useDireccionesDe`.
+   *
+   * Allá marca un desplegable como cargando; acá no se dibuja ningún estado
+   * pendiente, así que lo único que aportaba era el defecto: React encola las
+   * transiciones, y una consulta lenta dejaba esperando al veredicto del código
+   * siguiente. Con dos stickers en vuelo el aviso del segundo no aparecía hasta
+   * que contestara el primero.
+   */
+  /*
+   * Qué código está esperando respuesta AHORA. No es estado: nadie lo dibuja, y
+   * si lo fuera cada consulta provocaría un render de más.
+   */
+  const pedidoVigente = useRef('')
+
+  const verificar = async () => {
+    const sticker = codigo.trim()
+
+    // Sin código no hay nada que preguntar, y preguntarlo igual gasta un viaje
+    // por cada vez que alguien pasa de largo por el campo.
+    if (!sticker) return
+    if (respuesta?.sticker === sticker) return
+
+    pedidoVigente.current = sticker
+    const resultado = await buscarBaseParaPrestarAction(sticker)
+
+    /*
+     * La respuesta vieja se descarta AL LLEGAR, no al renderizar.
+     *
+     * Derivar el aviso comparando códigos (abajo) parece que alcanzara, y no
+     * alcanza: es el mismo defecto que ya tuvo el desplegable de direcciones.
+     * Si la consulta de un código lento contesta después de la del código
+     * bueno, pisa a la buena en el estado — y entonces el filtro del render
+     * descarta a las DOS, dejando el campo sin ningún aviso. El que cobra
+     * tecleó un código válido y no ve nada.
+     *
+     * Las dos guardas hacen trabajos distintos: esta impide que una respuesta
+     * muerta borre a la viva; la de abajo hace que el aviso pertenezca al
+     * código que está escrito ahora.
+     */
+    if (pedidoVigente.current !== sticker) return
+
+    setRespuesta({ sticker, resultado })
+  }
+
+  const aviso = respuesta?.sticker === codigo.trim() ? respuesta.resultado : null
+
+  return { codigo, setCodigo, verificar, aviso }
+}
+
+/**
+ * El aviso bajo el campo.
+ *
+ * `alert` para lo que va a frenar la venta —un lector de pantalla lo anuncia
+ * apenas aparece— y `status` para lo que no. `indeterminado` va en `status` a
+ * propósito: no es un rechazo, es que no se pudo averiguar.
+ */
+function AvisoDeBase({ aviso }: { aviso: BaseParaPrestar | null }) {
+  if (aviso === null || aviso.estado === 'vacio') return null
+
+  if (aviso.estado === 'disponible') {
+    return (
+      <p role="status" className="text-[13px] text-exito-texto">
+        Base {aviso.idSticker}: en bodega, lista para salir.
+      </p>
+    )
+  }
+
+  if (aviso.estado === 'indeterminado') {
+    return (
+      <p role="status" className="text-[13px] text-tenue">
+        No pudimos verificar el código ahora. Puede cobrar igual: se valida al registrar la
+        venta.
+      </p>
+    )
+  }
+
+  return (
+    <p role="alert" className="text-[13px] text-error-texto">
+      {aviso.estado === 'prestada' &&
+        `La base ${aviso.idSticker} figura prestada a ${aviso.clienteNombre} (${aviso.etiqueta}). Registre el retorno primero: una base está en un solo lugar.`}
+      {aviso.estado === 'danada' &&
+        `La base ${aviso.idSticker} está marcada como dañada. Prestarla haría que el próximo cliente responda por un daño que ya se cobró.`}
+      {aviso.estado === 'desconocida' &&
+        `Ninguna base disponible tiene el código ${aviso.sticker}. Puede no existir, o estar dada de baja.`}
+    </p>
+  )
+}
+
 export function EntregaDeBase({ cliente }: { cliente: Cliente | null }) {
   const idSticker = useId()
   const [abierto, setAbierto] = useState(false)
   const { direcciones, cargando } = useDireccionesDe(cliente)
+  const { codigo, setCodigo, verificar, aviso } = useBaseParaPrestar()
 
   // Sin cliente no hay a quién prestarle: RN-BAS-03 no tiene dónde apuntar.
   if (!cliente) return null
@@ -200,7 +318,18 @@ export function EntregaDeBase({ cliente }: { cliente: Cliente | null }) {
             autoComplete="off"
             placeholder="0042"
             className="aq-campo aq-cifra"
+            value={codigo}
+            onChange={(e) => setCodigo(e.target.value)}
+            /*
+              Al salir del campo se consulta qué se sabe de ese sticker. Es una
+              PISTA: la validación de verdad vive en `api/`, que rechaza la base
+              inexistente, la dada de baja, la dañada y la prestada dentro de la
+              transacción de la venta. Acá solo se adelanta el veredicto para que
+              un dedazo no tumbe una venta ya cargada.
+            */
+            onBlur={verificar}
           />
+          <AvisoDeBase aviso={aviso} />
         </label>
 
         <SelectorDeDireccion cliente={cliente} name="baseDireccionId" />

@@ -1,7 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { apiServerFetchRaw } from '@/lib/api-server'
+import type { Base } from '@/lib/api-types'
+import { apiServerFetch, apiServerFetchRaw } from '@/lib/api-server'
 import { cuerpoDeError } from '@/lib/form-errors'
 import { type EstadoDeFormulario, exito } from '@/lib/formulario'
 
@@ -218,4 +219,94 @@ export async function comprarBasesAction(
       ? `Entró la base ${primera}.`
       : `Entraron ${compradas.length} bases: de la ${primera} a la ${ultima}.`,
   )
+}
+
+/**
+ * Qué se sabe de un sticker ANTES de cobrar — RN-BAS-03.
+ *
+ * `vacio` e `indeterminado` no son estados de la base: son estados de la
+ * averiguación. Se distinguen a propósito de `desconocida`, que sí es una
+ * afirmación sobre el parque.
+ */
+export type BaseParaPrestar =
+  | { estado: 'disponible'; idSticker: string }
+  | { estado: 'prestada'; idSticker: string; clienteNombre: string; etiqueta: string }
+  | { estado: 'danada'; idSticker: string }
+  | { estado: 'desconocida'; sticker: string }
+  | { estado: 'vacio' }
+  | { estado: 'indeterminado' }
+
+/**
+ * El aviso temprano del código de base — RN-BAS-03.
+ *
+ * ── Esto NO es la validación ────────────────────────────────────────────────
+ *
+ * La barrera sigue siendo `api/`: `basePorSticker` y `prestarBaseEn` rechazan
+ * la base inexistente, la descartada, la dañada y la que figura en otra
+ * dirección, y lo hacen dentro de la transacción de la venta. Acá no se decide
+ * nada — se adelanta lo que `api/` va a contestar.
+ *
+ * ── Por qué vale la pena adelantarlo ────────────────────────────────────────
+ *
+ * Sin esto, un dedazo en un campo OPCIONAL de cuatro dígitos rebota la venta
+ * entera: los productos, el medio de pago y el descuento que ya se cargaron,
+ * con el cliente parado enfrente. El costo del error no guarda ninguna relación
+ * con su tamaño.
+ *
+ * ── Por qué la lista entera y no un endpoint nuevo ──────────────────────────
+ *
+ * `GET /bases` ya devuelve el parque activo con su ubicación resuelta por el
+ * JOIN, y son decenas de filas: 0,8 ms medidos para 38. Un endpoint por sticker
+ * sería superficie nueva para preguntar lo mismo. Además el rol `seller` ya
+ * tiene `bases:ver`, así que no abre ningún permiso.
+ */
+export async function buscarBaseParaPrestarAction(sticker: string): Promise<BaseParaPrestar> {
+  const codigo = sticker.trim()
+
+  if (!codigo) return { estado: 'vacio' }
+
+  let parque: Base[]
+
+  try {
+    parque = await apiServerFetch<Base[]>('/bases')
+  } catch {
+    /*
+     * Ni `disponible` ni `desconocida`: las dos mentirían.
+     *
+     * Un verde falso manda a cobrar una venta que va a rebotar igual, y un rojo
+     * falso acusa a un código que puede estar perfecto. El error queda en el
+     * log con su `x-request-id`; acá se dice que no se pudo averiguar y quien
+     * cobra decide.
+     */
+    return { estado: 'indeterminado' }
+  }
+
+  const base = parque.find((b) => b.idSticker === codigo)
+
+  /*
+   * `GET /bases` filtra `activa = true`: una base dada de baja no está en la
+   * lista, igual que un código inventado. Desde acá son indistinguibles, y el
+   * mensaje los cubre a los dos en vez de afirmar cuál es.
+   */
+  if (!base) return { estado: 'desconocida', sticker: codigo }
+
+  /*
+   * El orden es el de `prestarBaseEn`: primero dónde está, después cómo está.
+   *
+   * Invertirlo haría que el campo diga «dañada» y que `api/` conteste «prestada
+   * en otra dirección» para la misma base — dos diagnósticos para un solo
+   * problema, y ninguna forma de saber a cuál hacerle caso.
+   */
+  if (base.ubicacion !== null) {
+    return {
+      estado: 'prestada',
+      idSticker: base.idSticker,
+      clienteNombre: base.ubicacion.clienteNombre,
+      etiqueta: base.ubicacion.etiqueta,
+    }
+  }
+
+  if (base.estado === 'danada') return { estado: 'danada', idSticker: base.idSticker }
+
+  return { estado: 'disponible', idSticker: base.idSticker }
 }

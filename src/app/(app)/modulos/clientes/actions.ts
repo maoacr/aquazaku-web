@@ -5,6 +5,7 @@ import { apiServerFetch, apiServerFetchRaw } from '@/lib/api-server'
 import type { AvisoDeCruce, Cliente, Departamento, Direccion, Municipio } from '@/lib/api-types'
 import { cuerpoDeError } from '@/lib/form-errors'
 import { type EstadoDeFormulario, exito } from '@/lib/formulario'
+import { type Nombre, faltaElNombre, soloLoEscrito } from '@/lib/nombre-de-cliente'
 
 /**
  * Mutaciones de clientes — M5.
@@ -89,6 +90,84 @@ export async function crearClienteAction(
     cliente,
     ...(cliente.aviso && { aviso: cliente.aviso }),
   }
+}
+
+/**
+ * Editar el nombre de un cliente ya registrado — RN-CLI-17.
+ *
+ * ── Por qué hacía falta ─────────────────────────────────────────────────────
+ *
+ * El alta era la única puerta al nombre: un dedazo en «Padilla» quedaba fijo
+ * para siempre, y la salida que encontraba quien atiende era registrar al
+ * cliente otra vez. Dos fichas parten su deuda y sus botellones en dos, y
+ * ninguna de las dos es real — que es el mismo daño que el aviso de cruce
+ * CC/NIT existe para evitar.
+ *
+ * ── El nombre viaja ENTERO ──────────────────────────────────────────────────
+ *
+ * `PATCH /clientes/:id` reemplaza las cinco partes de una: lo que no llega se
+ * guarda en `null`. Por eso este formulario manda todos los campos de su forma
+ * y no solo los que cambiaron — y por eso borrar un segundo nombre o un apodo
+ * se hace dejándolo vacío, sin un verbo aparte para «borrar».
+ *
+ * ── Lo que NO se manda ──────────────────────────────────────────────────────
+ *
+ * `nombre` no es un campo: en la base es una columna generada a partir de las
+ * partes, y `api/` rechaza cualquier intento de escribirla.
+ *
+ * `tipo` tampoco. Acá se corrige cómo se llama el cliente, no qué es: convertir
+ * una persona en negocio cambia además qué precio paga (RN-VEN-04), y eso es
+ * otra decisión con otras consecuencias.
+ */
+export async function editarClienteAction(
+  _previo: EstadoDeFormulario,
+  formData: FormData,
+): Promise<EstadoDeFormulario> {
+  const id = String(formData.get('clienteId') ?? '')
+  const texto = (campo: string) => String(formData.get(campo) ?? '')
+
+  /*
+   * `tipo` acá es la FORMA de nombrar —partido o libre—, no `cliente.tipo`.
+   * Casi siempre coinciden, pero no siempre: un residencial cargado sin partir
+   * tiene `nombreLibre`, y mostrarle campos de apellidos borraría el nombre que
+   * sí tiene. Quien abre el formulario lo deriva del dato guardado.
+   */
+  const tipo = texto('tipo') === 'comercial' ? 'comercial' : 'residencial'
+
+  const nombre: Nombre = {
+    nombreLibre: texto('nombreLibre'),
+    primerNombre: texto('primerNombre'),
+    segundoNombre: texto('segundoNombre'),
+    apellidos: texto('apellidos'),
+    apodo: texto('apodo'),
+  }
+
+  /*
+   * Se ataja antes del viaje. `api/` lo rechaza igual —y la base detrás—, pero
+   * un campo vacío es un error que se ve sin preguntarle a nadie.
+   */
+  if (faltaElNombre(tipo, nombre)) {
+    return {
+      error:
+        tipo === 'comercial'
+          ? 'El negocio necesita un nombre: como aparece en el letrero.'
+          : 'Un nombre de pila sin apellidos no identifica a nadie. Van los dos.',
+    }
+  }
+
+  const res = await apiServerFetchRaw(`/clientes/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(soloLoEscrito(nombre)),
+  })
+
+  if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos guardar el nombre.') }
+
+  const cliente = (await res.json()) as Cliente
+
+  revalidatePath(RUTA)
+  revalidatePath(`${RUTA}/${id}`)
+  return exito(`Ahora se llama ${cliente.nombre}.`)
 }
 
 export async function verificarDocumentoAction(

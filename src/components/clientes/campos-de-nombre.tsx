@@ -28,49 +28,48 @@
  * de la venta: ahí un campo con `name` viajaría en el `FormData` de la venta.
  *
  * Sin `onCambio` es un formulario normal y emite `name`, que es lo que el resto
- * del sistema usa.
+ * del sistema usa — y ahí `inicial` es lo que ya estaba guardado.
+ *
+ * ── Dónde vive la regla ─────────────────────────────────────────────────────
+ *
+ * `Nombre`, `soloLoEscrito` y `faltaElNombre` se mudaron a
+ * `@/lib/nombre-de-cliente`: los necesita también `editarClienteAction`, que
+ * corre en el servidor. Se reexportan para no partir en dos los imports que ya
+ * los traen de acá.
  */
 
-export interface Nombre {
-  nombreLibre: string
-  primerNombre: string
-  segundoNombre: string
-  apellidos: string
-  apodo: string
-}
+import { NOMBRE_VACIO, type Nombre } from '@/lib/nombre-de-cliente'
 
-export const NOMBRE_VACIO: Nombre = {
-  nombreLibre: '',
-  primerNombre: '',
-  segundoNombre: '',
-  apellidos: '',
-  apodo: '',
-}
+export {
+  NOMBRE_VACIO,
+  faltaElNombre,
+  soloLoEscrito,
+  type Nombre,
+} from '@/lib/nombre-de-cliente'
 
-/** Lo que viaja a `api/`: sin las cadenas vacías, que la base rechaza. */
-export function soloLoEscrito(n: Nombre): Partial<Nombre> {
-  return Object.fromEntries(
-    Object.entries(n)
-      .map(([campo, valor]) => [campo, valor.trim()])
-      .filter(([, valor]) => valor !== ''),
-  )
-}
-
-/** Si falta lo mínimo para que `api/` lo acepte. Adelanta el rechazo, no lo reemplaza. */
-export function faltaElNombre(tipo: 'residencial' | 'comercial', n: Nombre): boolean {
-  return tipo === 'comercial'
-    ? n.nombreLibre.trim() === ''
-    : n.primerNombre.trim() === '' || n.apellidos.trim() === ''
+/** Lo que ya estaba guardado. Las partes vienen de `api/` en `null` cuando faltan. */
+export type NombreGuardado = {
+  [K in keyof Nombre]?: string | null
 }
 
 export function CamposDeNombre({
   tipo,
   valor,
+  inicial,
   onCambio,
 }: {
   tipo: 'residencial' | 'comercial'
   /** El estado, en modo controlado. */
   valor?: Nombre
+  /**
+   * Lo que ya estaba, para un formulario NO controlado.
+   *
+   * Existe por la edición: la ficha abre el formulario con el nombre puesto, y
+   * quien corrige un dedazo arregla la letra en vez de reescribir los cuatro
+   * campos. Se ignora en modo controlado, donde el estado inicial lo pone quien
+   * lo posee.
+   */
+  inicial?: NombreGuardado
   /** Presente = controlado y sin `name`. Ausente = formulario normal. */
   onCambio?: (n: Nombre) => void
 }) {
@@ -80,7 +79,7 @@ export function CamposDeNombre({
   const campo = (nombre: keyof Nombre) =>
     controlado
       ? { value: v[nombre], onChange: (e: React.ChangeEvent<HTMLInputElement>) => onCambio({ ...v, [nombre]: e.target.value }) }
-      : { name: nombre }
+      : { name: nombre, defaultValue: inicial?.[nombre] ?? undefined }
 
   if (tipo === 'comercial') {
     return (

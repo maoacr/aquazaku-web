@@ -100,6 +100,21 @@ describe('R54 · los controles se pueden tocar', () => {
     )
   })
 
+  /**
+   * Un botón de solo ícono falla por el ANCHO, no por el alto.
+   *
+   * `.aq-boton` ya declara los 44 px de alto, y `.aq-boton-compacto` los
+   * conserva — pero angosta el padding a 0.75rem, que con un ícono de 16 px deja
+   * un objetivo de 40 px de ancho. El alto cumple y el control igual se falla
+   * con el pulgar.
+   *
+   * Vive en el CSS y no en cada componente por la misma razón que el resto de
+   * R54: la próxima pantalla que necesite un lápiz no se va a acordar.
+   */
+  it('un botón de solo ícono también mide 44 de ANCHO', () => {
+    expect(globales).toMatch(/\.aq-boton-icono\s*\{[\s\S]*?min-width:\s*44px/)
+  })
+
   it('cubre los inputs, salvo los que se deformarían', () => {
     const regla = /input:not\(\[type='checkbox'\], \[type='radio'\], \[type='hidden'\]\)/.exec(
       globales,

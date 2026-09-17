@@ -2,12 +2,12 @@
 
 import { Search, UserPlus, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, useTransition } from 'react'
-import { buscarClientesAction } from '@/app/(app)/modulos/clientes/actions'
+import { buscarClientesAnchoAction } from '@/app/(app)/modulos/clientes/actions'
 import { AltaEnPasos } from '@/components/clientes/alta-en-pasos'
 import type { Cliente } from '@/lib/api-types'
 
 /**
- * Ubicar a un cliente por su número de documento.
+ * Ubicar a un cliente para elegirlo.
  *
  * ── Por qué no es un `<select>` ─────────────────────────────────────────────
  *
@@ -15,9 +15,27 @@ import type { Cliente } from '@/lib/api-types'
  * elija uno. Con cuarenta funciona; con quinientos es una lista que nadie
  * recorre, y la página además carga quinientos registros que no va a usar.
  *
- * Y hay algo más de fondo: en el mostrador nadie busca «Pedro». Se pide la
- * cédula, y con ella se ubica a la persona. La pantalla ahora hace lo mismo que
- * hace la persona que atiende.
+ * ── La MISMA búsqueda que la pantalla de Clientes — M16 ─────────────────────
+ *
+ * Nació pidiendo solo el documento, y el argumento era bueno: en el mostrador
+ * el cliente dicta su cédula, no deletrea su apellido.
+ *
+ * Pero el mismo componente terminó en Retornables —«a quién le presto esta
+ * base»—, donde quien atiende no tiene la cédula a mano: tiene el apodo con el
+ * que lo conocen en el pueblo. Y aun en el mostrador, el cliente que no trae la
+ * cédula encima existe todos los días.
+ *
+ * La pantalla de Clientes ya sabía encontrarlo por nombre, apellidos, apodo y
+ * documento, sin que las tildes escondieran a nadie. Esta no, y eran dos
+ * búsquedas distintas para la misma pregunta: «quién es esta persona».
+ *
+ * Ahora las dos llaman a `buscarClientesAnchoAction`. NO son el mismo
+ * componente —esto elige UN cliente y aquello filtra una lista de tarjetas—,
+ * pero preguntan lo mismo.
+ *
+ * La búsqueda angosta por documento sigue viva en `DocumentoPrimero`, que no
+ * busca a nadie: pregunta si ESE número exacto ya está tomado. Otra pregunta,
+ * otra consulta.
  *
  * ── El panel flotante NO lleva clase del sistema ────────────────────────────
  *
@@ -50,6 +68,8 @@ const MINIMO = 3
  * Sin esto, escribir una cédula de diez dígitos son ocho consultas de las que
  * siete ya no le importan a nadie. 250 ms es más de lo que tarda en escribirse
  * el siguiente dígito y menos de lo que se percibe como demora.
+ *
+ * Es el mismo número que usa la pantalla de Clientes, y por el mismo motivo.
  */
 const ESPERA = 250
 
@@ -105,9 +125,32 @@ export function BuscadorDeCliente({
    */
   useEffect(() => () => clearTimeout(temporizador.current), [])
 
-  const soloAlfanumerico = (valor: string) => valor.replaceAll(/[^0-9A-Za-z]/g, '')
-  const consulta = soloAlfanumerico(texto)
+  /*
+   * Lo escrito viaja ENTERO, con tildes y con espacios.
+   *
+   * Acá había un `replaceAll(/[^0-9A-Za-z]/g, '')`, y tenía sentido cuando lo
+   * único que podía entrar era una cédula: sacaba los puntos del dictado. Con
+   * nombres adentro se vuelve un defecto —«Gómez» viajaría como «Gmez» y «rosa
+   * padilla» como «rosapadilla»— y no encontraría a nadie, sin un error en
+   * ningún log que lo delate.
+   *
+   * Los puntos de la cédula ya no molestan: `api/` saca los dígitos del término
+   * para cotejarlos contra el documento. Repetir esa normalización acá sería la
+   * misma regla escrita en dos repos, lista para desincronizarse.
+   */
+  const consulta = texto.trim()
   const abierto = elegido === null && consulta.length >= MINIMO
+
+  /*
+   * Solo los dígitos, y solo para el alta.
+   *
+   * Cuando no aparece nadie se ofrece registrarlo, y el alta arranca con lo que
+   * ya se tecleó para no dictarlo de nuevo. Pero su primer campo es el NÚMERO
+   * de documento: pasarle «rosa padilla» dejaría un documento inventado a un
+   * clic de guardarse, y el documento es la llave con la que después se
+   * encuentra a esa persona.
+   */
+  const digitosEscritos = texto.replaceAll(/\D/g, '')
 
   function alEscribir(valor: string) {
     setTexto(valor)
@@ -115,7 +158,7 @@ export function BuscadorDeCliente({
 
     clearTimeout(temporizador.current)
 
-    const limpio = soloAlfanumerico(valor)
+    const limpio = valor.trim()
     ultima.current = limpio
 
     if (limpio.length < MINIMO) {
@@ -125,7 +168,7 @@ export function BuscadorDeCliente({
 
     temporizador.current = setTimeout(() => {
       empezarBusqueda(async () => {
-        const encontrados = await buscarClientesAction(limpio)
+        const encontrados = await buscarClientesAnchoAction(limpio)
         if (ultima.current !== limpio) return
         setResultados(encontrados)
       })
@@ -229,12 +272,11 @@ export function BuscadorDeCliente({
             abierto && resultados[resaltado] ? `${idLista}-${resaltado}` : undefined
           }
           autoComplete="off"
-          inputMode="numeric"
-          placeholder="Número de documento"
+          placeholder="Nombre, apellido, apodo o documento"
           value={texto}
           onChange={(e) => alEscribir(e.target.value)}
           onKeyDown={alTeclear}
-          className="aq-campo aq-campo-con-icono aq-cifra"
+          className="aq-campo aq-campo-con-icono"
         />
 
         {abierto ? (
@@ -296,7 +338,7 @@ export function BuscadorDeCliente({
 
               {resultados.length === 0 ? (
                 <li className="aq-panel-flotante-secundario flex min-h-11 items-center px-3 text-[13px]">
-                  {buscando ? 'Buscando…' : 'Nadie con ese documento.'}
+                  {buscando ? 'Buscando…' : 'No encontramos a nadie así.'}
                 </li>
               ) : null}
             </ul>
@@ -365,7 +407,7 @@ export function BuscadorDeCliente({
         <AltaEnPasos
           abierto
           cerrar={() => setRegistrando(false)}
-          documentoInicial={consulta}
+          documentoInicial={digitosEscritos}
           alCrear={(cliente) => {
             setTexto('')
             setResultados([])
@@ -376,8 +418,8 @@ export function BuscadorDeCliente({
 
       <p id={idAyuda} className="font-normal normal-case text-[13px] text-tenue">
         {consulta.length > 0 && consulta.length < MINIMO
-          ? `Escriba al menos ${MINIMO} números.`
-          : (sinCliente ?? 'Ubique a la persona por su documento.')}
+          ? `Escriba al menos ${MINIMO} letras.`
+          : (sinCliente ?? 'Búsquela por su nombre, su apodo o su documento.')}
       </p>
     </div>
   )

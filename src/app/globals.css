@@ -1971,6 +1971,26 @@ select.aq-campo:not([size]):not([multiple]) {
   font-weight: 500;
 }
 
+/*
+ * La acción que es SOLO un ícono — el lápiz que corrige el nombre del cliente.
+ *
+ * ── Por qué no alcanza con `.aq-boton-compacto` ────────────────────────────
+ *
+ * Esa conserva los 44 px de alto pero angosta el padding a 0.75rem. Con un
+ * ícono de 16 px eso da un objetivo de 40 px de ANCHO: el alto cumple R54 y el
+ * control igual se falla con el pulgar, que es lo único que la regla vino a
+ * evitar. El cuadrado se declara acá, una vez, y no en cada componente que
+ * necesite un ícono suelto.
+ *
+ * El padding se anula porque `min-width` sin eso solo corre el piso: el ícono
+ * quedaría centrado en una caja más ancha de lo necesario en cuanto alguien le
+ * ponga texto al lado.
+ */
+.aq-boton-icono {
+  min-width: 44px;
+  padding: 0;
+}
+
 /**
  * El texto de apoyo que acompaña a un título de pantalla.
  *

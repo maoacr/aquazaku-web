@@ -1,5 +1,6 @@
 import { ArrowLeft, MapPin } from 'lucide-react'
 import { EditarDireccion } from '@/components/clientes/editar-direccion'
+import { EditarNombre } from '@/components/clientes/editar-nombre'
 import Link from 'next/link'
 import { BotonDeDireccion } from '@/components/clientes/boton-de-direccion'
 import {
@@ -102,22 +103,49 @@ export default async function FichaDeClientePage({
       </div>
 
       <header className="grid gap-3">
-        <div className="flex flex-wrap items-center gap-3">
+        {/*
+          El título es el NOMBRE y su acción, y nada más.
+
+          El estado de verificación estaba acá y se mudó abajo, junto al
+          documento: lo que se verifica es el DOCUMENTO (RN-CLI-14), no el
+          nombre. Al lado del nombre se leía como si dijera algo sobre la
+          persona —«esta señora no está verificada»— cuando lo que dice es que
+          nadie tuvo esa cédula a la vista. Puesto al lado del número, la
+          etiqueta califica lo que de verdad califica.
+        */}
+        <div className="flex flex-wrap items-center gap-2">
           <h1 className="aq-titulo-pantalla text-principal">{cliente.nombre}</h1>
+
+          {/*
+            Corregir el nombre va ACÁ y no entre las secciones de abajo: se
+            corrige lo que se está mirando, y lo que se está mirando es el
+            título. Puesto al final de la ficha, entre crédito y dar de baja,
+            habría que salir a buscarlo — y el dedazo se descubre justo al leer
+            el nombre.
+
+            No se esconde por permiso: ocultar un botón es cosmética, no control
+            de acceso (RN-ACC-02). `PATCH /clientes/:id` pide `clientes:editar`
+            y contesta 403, que es la barrera real; la acción traduce ese 403 a
+            un mensaje.
+          */}
+          <EditarNombre cliente={cliente} />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="aq-bajada text-secundario">
+            {cliente.tipoDocumento === 'CC' ? 'Cédula' : 'NIT'}{' '}
+            <Cifra>{cliente.documento}</Cifra>
+            {cliente.tipoDocumento === 'NIT' ? (
+              <span className="ml-2 text-[13px] text-tenue">
+                — el dígito después del guion lo calcula el sistema, no se guarda
+              </span>
+            ) : null}
+          </p>
+
           <Estado tono={nivel}>
             {cliente.verificacionEstado === 'verificado' ? 'Verificado' : 'Sin verificar'}
           </Estado>
         </div>
-
-        <p className="aq-bajada text-secundario">
-          {cliente.tipoDocumento === 'CC' ? 'Cédula' : 'NIT'}{' '}
-          <Cifra>{cliente.documento}</Cifra>
-          {cliente.tipoDocumento === 'NIT' ? (
-            <span className="ml-2 text-[13px] text-tenue">
-              — el dígito después del guion lo calcula el sistema, no se guarda
-            </span>
-          ) : null}
-        </p>
 
         {cliente.verificacionEstado === 'verificado' && cliente.verificacionMetodo ? (
           <p className="text-[13px] text-tenue">

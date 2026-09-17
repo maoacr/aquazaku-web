@@ -5,11 +5,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
 import type { Cliente } from '@/lib/api-types'
 
-const buscarClientesAction = vi.fn()
+const buscarClientesAnchoAction = vi.fn()
 const crearClienteRapidoAction = vi.fn()
 
 vi.mock('@/app/(app)/modulos/clientes/actions', () => ({
-  buscarClientesAction: (documento: string) => buscarClientesAction(documento),
+  buscarClientesAnchoAction: (termino: string) => buscarClientesAnchoAction(termino),
+  /*
+   * La búsqueda ANGOSTA sigue existiendo, y este mock la necesita aunque el
+   * buscador ya no la llame: el alta que se abre desde acá empieza por
+   * `DocumentoPrimero`, que pregunta si ESE número exacto ya está tomado. Es
+   * otra pregunta y por eso es otra consulta.
+   *
+   * Devuelve vacío: acá el documento siempre está libre. Que el aviso de
+   * duplicado aparezca cuando no lo está se prueba en `documento-primero`.
+   */
+  buscarClientesAction: async () => [],
   crearClienteRapidoAction: (datos: unknown) => crearClienteRapidoAction(datos),
   /*
    * El paso 3 del alta pide el catálogo del DANE cuando no se lo pasan como
@@ -75,8 +85,8 @@ function Anfitrion({ alTeclearEnter = vi.fn() }: { alTeclearEnter?: (frenado: bo
 const pasaElDebounce = () => new Promise((r) => setTimeout(r, 400))
 
 beforeEach(() => {
-  buscarClientesAction.mockReset()
-  buscarClientesAction.mockResolvedValue([])
+  buscarClientesAnchoAction.mockReset()
+  buscarClientesAnchoAction.mockResolvedValue([])
   crearClienteRapidoAction.mockReset()
 })
 
@@ -96,7 +106,7 @@ beforeEach(() => {
 describe('registrar desde la búsqueda', () => {
   it('la opción aparece solo cuando ya se buscó y no vino nadie', async () => {
     const usuario = userEvent.setup()
-    buscarClientesAction.mockResolvedValue([cliente()])
+    buscarClientesAnchoAction.mockResolvedValue([cliente()])
 
     render(<Anfitrion />)
     await usuario.type(screen.getByRole('combobox'), '1043')
@@ -124,6 +134,24 @@ describe('registrar desde la búsqueda', () => {
     await usuario.click(await screen.findByRole('button', { name: /Registrar a esta persona/ }))
 
     expect(screen.getByRole('textbox', { name: /Número/ })).toHaveValue('5551234')
+  })
+
+  /**
+   * Buscar por nombre NO llena el campo de documento.
+   *
+   * El alta arranca con lo que se tecleó en el buscador, y eso servía cuando lo
+   * único que se podía teclear era una cédula. Ahora se teclea «rosa padilla»:
+   * meter eso en «Número» deja un documento inventado a un clic de guardarse, y
+   * el documento es la llave con la que se encuentra a alguien después.
+   */
+  it('un nombre no se cuela en el campo de documento', async () => {
+    const usuario = userEvent.setup()
+
+    render(<Anfitrion />)
+    await usuario.type(screen.getByRole('combobox'), 'rosa padilla')
+    await usuario.click(await screen.findByRole('button', { name: /Registrar a esta persona/ }))
+
+    expect(screen.getByRole('textbox', { name: /Número/ })).toHaveValue('')
   })
 
   it('el cliente registrado queda elegido, con el carrito intacto', async () => {
@@ -174,7 +202,7 @@ describe('no consulta lo que no vale la pena consultar', () => {
     // comprobó sacando el mínimo, y seguía en verde.
     await pasaElDebounce()
 
-    expect(buscarClientesAction).not.toHaveBeenCalled()
+    expect(buscarClientesAnchoAction).not.toHaveBeenCalled()
     expect(screen.getByText(/al menos 3/)).toBeInTheDocument()
   })
 
@@ -184,20 +212,86 @@ describe('no consulta lo que no vale la pena consultar', () => {
 
     await usuario.type(screen.getByRole('combobox'), '104')
 
-    await waitFor(() => expect(buscarClientesAction).toHaveBeenCalledWith('104'))
+    await waitFor(() => expect(buscarClientesAnchoAction).toHaveBeenCalledWith('104'))
   })
 
   /**
-   * Una cédula se dicta y se escribe con puntos. El servidor normaliza, pero si
-   * el punto viaja, el prefijo que busca no es el que la persona quiso.
+   * Los espacios de los extremos no cuentan.
+   *
+   * Sin el `trim`, una barra espaciadora de más alcanza el mínimo de tres y
+   * dispara una consulta por un término que nadie escribió.
    */
-  it('los puntos y guiones no llegan a la consulta', async () => {
+  it('los espacios de los bordes no viajan ni cuentan para el mínimo', async () => {
+    const usuario = userEvent.setup()
+    render(<Anfitrion />)
+
+    await usuario.type(screen.getByRole('combobox'), '  go  ')
+    await pasaElDebounce()
+
+    expect(buscarClientesAnchoAction).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * ── La misma búsqueda que la pantalla de Clientes — M16 ────────────────────
+ *
+ * Este buscador nació pidiendo SOLO el documento: en el mostrador el cliente
+ * dicta su cédula, y con eso alcanzaba. Pero el mismo componente terminó en
+ * Retornables —«a quién le presto esta base»— y ahí quien atiende no tiene la
+ * cédula: tiene el apodo con el que lo conocen en el pueblo.
+ *
+ * Y aun en el mostrador: el cliente que no trae la cédula encima existe todos
+ * los días. La pantalla de Clientes ya sabía encontrarlo por apellido y por
+ * apodo, sin que las tildes lo escondieran. Esta no, y eran dos búsquedas
+ * distintas para la misma pregunta.
+ *
+ * Ahora las dos llaman a `buscarClientesAnchoAction`. La angosta NO se borró:
+ * sigue viva en `DocumentoPrimero`, que no busca a nadie —pregunta si ESE
+ * número exacto ya está tomado, que es otra pregunta—.
+ */
+describe('busca por cómo se conoce a alguien, no solo por el número', () => {
+  it('un apellido suelto encuentra al cliente', async () => {
+    const usuario = userEvent.setup()
+    buscarClientesAnchoAction.mockResolvedValue([cliente({ nombre: 'Rosa Elena Padilla Gómez' })])
+
+    render(<Anfitrion />)
+    await usuario.type(screen.getByRole('combobox'), 'padilla')
+
+    await waitFor(() => expect(buscarClientesAnchoAction).toHaveBeenCalledWith('padilla'))
+    expect(await screen.findByRole('option', { name: /Padilla/ })).toBeInTheDocument()
+  })
+
+  /**
+   * Las letras tienen que llegar ENTERAS.
+   *
+   * El filtro anterior recortaba a `[0-9A-Za-z]` porque solo esperaba una
+   * cédula. Con ese recorte «Gómez» viajaba como «Gmez» y «rosa padilla» como
+   * «rosapadilla»: dos términos que no coinciden con nadie. Quien busca ve el
+   * buscador roto, y no hay error en ningún log.
+   */
+  it('las tildes y los espacios del nombre llegan al servidor', async () => {
+    const usuario = userEvent.setup()
+    render(<Anfitrion />)
+
+    await usuario.type(screen.getByRole('combobox'), 'rosa gómez')
+
+    await waitFor(() => expect(buscarClientesAnchoAction).toHaveBeenCalledWith('rosa gómez'))
+  })
+
+  /**
+   * La cédula con puntos viaja con puntos, y está bien.
+   *
+   * `api/` saca los dígitos del término para cotejarlos contra el documento
+   * —por eso «1.043» encuentra al de la cédula 1043—. Normalizar también acá
+   * sería la misma regla escrita dos veces, en dos repos, para desincronizarse.
+   */
+  it('la cédula con puntos viaja tal como se dicta', async () => {
     const usuario = userEvent.setup()
     render(<Anfitrion />)
 
     await usuario.type(screen.getByRole('combobox'), '1.043')
 
-    await waitFor(() => expect(buscarClientesAction).toHaveBeenCalledWith('1043'))
+    await waitFor(() => expect(buscarClientesAnchoAction).toHaveBeenCalledWith('1.043'))
   })
 })
 
@@ -212,7 +306,7 @@ describe('el teclado', () => {
   it('Enter con la lista abierta elige, y llega frenado al formulario', async () => {
     const usuario = userEvent.setup()
     const enter = vi.fn()
-    buscarClientesAction.mockResolvedValue([cliente()])
+    buscarClientesAnchoAction.mockResolvedValue([cliente()])
 
     render(<Anfitrion alTeclearEnter={enter} />)
     await usuario.type(screen.getByRole('combobox'), '1043')
@@ -244,7 +338,7 @@ describe('el teclado', () => {
 
   it('las flechas mueven el resaltado', async () => {
     const usuario = userEvent.setup()
-    buscarClientesAction.mockResolvedValue([
+    buscarClientesAnchoAction.mockResolvedValue([
       cliente(),
       cliente({ id: 'c2', nombre: 'Ana Ruiz', documento: 'CC 1.043.299.999' }),
     ])
@@ -262,7 +356,7 @@ describe('el teclado', () => {
 describe('lo que viaja en el formulario', () => {
   it('sale el id, no el documento', async () => {
     const usuario = userEvent.setup()
-    buscarClientesAction.mockResolvedValue([cliente({ id: 'el-id-real' })])
+    buscarClientesAnchoAction.mockResolvedValue([cliente({ id: 'el-id-real' })])
 
     const { container } = render(<Anfitrion />)
     await usuario.type(screen.getByRole('combobox'), '1043')
@@ -285,7 +379,7 @@ describe('lo que viaja en el formulario', () => {
 
   it('«Cambiar» lo devuelve a la búsqueda', async () => {
     const usuario = userEvent.setup()
-    buscarClientesAction.mockResolvedValue([cliente()])
+    buscarClientesAnchoAction.mockResolvedValue([cliente()])
 
     render(<Anfitrion />)
     await usuario.type(screen.getByRole('combobox'), '1043')
@@ -309,7 +403,7 @@ describe('respuestas que llegan tarde', () => {
     const usuario = userEvent.setup()
 
     let resolverVieja!: (c: Cliente[]) => void
-    buscarClientesAction.mockImplementation((documento: string) =>
+    buscarClientesAnchoAction.mockImplementation((documento: string) =>
       documento === '1043'
         ? new Promise<Cliente[]>((r) => {
             resolverVieja = r
@@ -321,7 +415,7 @@ describe('respuestas que llegan tarde', () => {
     const campo = screen.getByRole('combobox')
 
     await usuario.type(campo, '1043')
-    await waitFor(() => expect(buscarClientesAction).toHaveBeenCalledWith('1043'))
+    await waitFor(() => expect(buscarClientesAnchoAction).toHaveBeenCalledWith('1043'))
 
     await usuario.type(campo, '2')
     await screen.findByRole('option', { name: /Ana/ })

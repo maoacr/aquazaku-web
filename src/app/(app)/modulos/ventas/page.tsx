@@ -6,6 +6,7 @@ import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { Vacio } from '@/components/ui/vacio'
 import { apiServerFetch } from '@/lib/api-server'
 import type { Producto, ResumenDeStock, Venta } from '@/lib/api-types'
+import { fechaYHoraEnLaPlanta } from '@/lib/hora-de-la-planta'
 
 /**
  * Ventas — M6.
@@ -80,7 +81,7 @@ function ListaDeVentas({ ventas }: { ventas: Venta[] }) {
               </p>
 
               <p className="mt-0.5 text-[13px] text-tenue">
-                {new Date(venta.createdAt).toLocaleString('es-CO')}
+                {fechaYHoraEnLaPlanta(venta.createdAt)}
                 {venta.requiereFacturaElectronica ? ' · pidió factura' : ''}
               </p>
 

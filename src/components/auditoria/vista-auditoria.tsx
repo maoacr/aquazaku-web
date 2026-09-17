@@ -2,6 +2,7 @@ import { Encabezados, Etiqueta, SinResultados, Tabla, Td, Th } from '@/component
 import { QuitarFiltros } from '@/components/ui/vacio'
 import { apiServerFetch } from '@/lib/api-server'
 import type { PaginaDeAuditoria, RegistroDeAuditoria } from '@/lib/api-types'
+import { fechaYHoraEnLaPlanta } from '@/lib/hora-de-la-planta'
 
 /**
  * Consulta de la bitácora.
@@ -121,10 +122,7 @@ function FilaDeRegistro({ fila }: { fila: RegistroDeAuditoria }) {
   return (
     <tr>
       <Td fija className="whitespace-nowrap tabular-nums text-secundario">
-        {new Date(fila.createdAt).toLocaleString('es-CO', {
-          dateStyle: 'short',
-          timeStyle: 'medium',
-        })}
+        {fechaYHoraEnLaPlanta(fila.createdAt)}
       </Td>
 
       <Td>

@@ -1,3 +1,5 @@
+import { horaEnLaPlanta } from '@/lib/hora-de-la-planta'
+
 /**
  * R51 · El dato tibio se marca, no se esconde.
  *
@@ -36,25 +38,9 @@ export function SelloDeHora({ leidoEn }: { leidoEn: Date }) {
       */}
       Datos leídos a las{' '}
       <time dateTime={leidoEn.toISOString()} className="text-secundario">
-        {formatearHora(leidoEn)}
+        {horaEnLaPlanta(leidoEn)}
       </time>
       . El inventario lo mueven varias personas: recargue para ver el último.
     </p>
   )
-}
-
-/**
- * La hora en formato de Colombia, sin la fecha.
- *
- * Sin fecha a propósito: esto se mira para saber si el número es de hace un
- * minuto o de hace una hora, y la fecha en un dato que se relee todo el tiempo
- * es ruido. Si alguien dejó la pantalla abierta desde ayer, el problema no lo
- * resuelve un sello de hora.
- */
-function formatearHora(momento: Date): string {
-  return new Intl.DateTimeFormat('es-CO', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'America/Bogota',
-  }).format(momento)
 }

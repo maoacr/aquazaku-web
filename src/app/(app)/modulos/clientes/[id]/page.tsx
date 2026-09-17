@@ -21,6 +21,7 @@ import type {
   FichaDeCliente,
   MetodoDeVerificacion,
 } from '@/lib/api-types'
+import { fechaEnLaPlanta } from '@/lib/hora-de-la-planta'
 import { siPuedeVerlo } from '@/lib/permiso-opcional'
 
 /** Qué significa cada método, en palabras — RN-CLI-14. */
@@ -151,7 +152,7 @@ export default async function FichaDeClientePage({
           <p className="text-[13px] text-tenue">
             {METODO[cliente.verificacionMetodo]}
             {cliente.verificadoEn
-              ? ` el ${new Date(cliente.verificadoEn).toLocaleDateString('es-CO')}`
+              ? ` el ${fechaEnLaPlanta(cliente.verificadoEn)}`
               : ''}
             . Alguien respondió por este dato.
           </p>

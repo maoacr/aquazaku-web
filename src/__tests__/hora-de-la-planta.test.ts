@@ -105,3 +105,26 @@ describe('las horas donde el bug se ve', () => {
     expect(fechaEnLaPlanta(iso)).toBe(diaEsperado)
   })
 })
+
+/**
+ * `hoyEnLaPlanta` sale contra el `value` de un `<input type="date">`, que es
+ * ISO. Si devolviera el formato que se lee, toda venta de hoy viajaría marcada
+ * como retroactiva.
+ */
+describe('qué día es hoy en la planta', () => {
+  it('viene en AAAA-MM-DD, como el input de fecha', async () => {
+    const { hoyEnLaPlanta } = await import('@/lib/hora-de-la-planta')
+
+    expect(hoyEnLaPlanta()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
+  /** El proceso de este test corre en UTC: si usara su reloj, a la noche erraría el día. */
+  it('usa la zona de la planta y no la del proceso', async () => {
+    const { hoyEnLaPlanta } = await import('@/lib/hora-de-la-planta')
+    const enLaPlanta = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Bogota',
+    }).format(new Date())
+
+    expect(hoyEnLaPlanta()).toBe(enLaPlanta)
+  })
+})

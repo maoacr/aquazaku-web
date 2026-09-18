@@ -92,3 +92,23 @@ export function horaEnLaPlanta(momento: Momento): string {
     timeZone: ZONA_DE_LA_PLANTA,
   }).format(instante(momento))
 }
+
+/**
+ * Qué día es HOY en la planta, en `AAAA-MM-DD`.
+ *
+ * ── Por qué en ISO y no en el formato que se lee ────────────────────────────
+ *
+ * Este no se muestra: se COMPARA. Sale contra el `value` de un
+ * `<input type="date">`, que el navegador entrega siempre en ISO por más que lo
+ * pinte DD/MM/AAAA, y viaja a `api/` como la fecha del hecho.
+ *
+ * `en-CA` es el locale que formatea así. Armarlo con `getFullYear` y amigos
+ * daría el día del PROCESO —UTC en el contenedor—, que es exactamente lo que
+ * este archivo existe para no usar.
+ *
+ * Tiene que decir lo mismo que `hoyEnLaPlanta()` de `api/src/lib/dia.ts`: si
+ * las dos discrepan, una venta de hoy viajaría marcada como retroactiva.
+ */
+export function hoyEnLaPlanta(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_DE_LA_PLANTA }).format(new Date())
+}

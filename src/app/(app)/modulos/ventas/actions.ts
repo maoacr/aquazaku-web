@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
 import { apiServerFetchRaw } from '@/lib/api-server'
 import type { ResultadoDeVenta } from '@/lib/api-types'
 import { cuerpoDeError } from '@/lib/form-errors'
@@ -43,6 +44,14 @@ export async function registrarVentaAction(
    * longitud variable, y `FormData` no la representa sin inventar una
    * convención de nombres (`items[0][productoId]`) que después hay que parsear.
    */
+  /*
+   * Vacío o igual a hoy es lo mismo que no mandarla: la comparación se hace
+   * acá y no en `api/` porque es quien sabe qué día es hoy PARA QUIEN MIRA la
+   * pantalla, que es el mismo día de la planta.
+   */
+  const fecha = String(formData.get('ocurrioEn') ?? '').trim()
+  const ocurrioEn = fecha && fecha !== hoyEnLaPlanta() ? fecha : undefined
+
   const items = JSON.parse(String(formData.get('items') ?? '[]')) as {
     productoId: string
     cantidad: number
@@ -88,6 +97,18 @@ export async function registrarVentaAction(
       ...(sinVacio > 0 && { botellonesSinVacio: sinVacio }),
       ...(baseSticker &&
         baseDireccionId && { base: { sticker: baseSticker, direccionId: baseDireccionId } }),
+      /*
+       * La fecha del hecho, solo si no es hoy — RN-VEN-13.
+       *
+       * Ausente significa «ahora», y entonces `api/` deja que la base ponga la
+       * hora real: es el caso del mostrador, donde la hora sirve. Mandarla
+       * siempre convertiría toda venta de hoy en una venta anclada al mediodía.
+       *
+       * El `<input type="date">` entrega AAAA-MM-DD sin importar cómo lo muestre
+       * —el navegador lo pinta DD/MM/AAAA con el locale es-CO—, así que no hay
+       * conversión que hacer acá.
+       */
+      ...(ocurrioEn && { ocurrioEn }),
       requiereFacturaElectronica: formData.get('requiereFactura') === 'si',
     }),
   })

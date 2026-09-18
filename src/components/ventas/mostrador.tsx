@@ -9,6 +9,15 @@ import { EntregaDeBase } from '@/components/retornables/entrega-de-base'
 import { Cifra } from '@/components/stock/cifra'
 import type { Cliente, Producto, ResumenDeStock } from '@/lib/api-types'
 import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
+import { hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
+
+/** Hoy en la planta. Se calcula una vez por carga: nadie deja el mostrador abierto de un día para otro. */
+const HOY = hoyEnLaPlanta()
+
+/** El piso de RN-VEN-13. Espeja `DIAS_MAXIMOS_HACIA_ATRAS` de `api/`, que es quien manda. */
+const HACE_90_DIAS = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(
+  new Date(Date.now() - 90 * 86_400_000),
+)
 
 const INICIAL: EstadoDeVenta = {}
 
@@ -53,6 +62,7 @@ export function Mostrador({
   const [medioDePago, setMedioDePago] = useState('efectivo')
   const [codigo, setCodigo] = useState('')
   const [requiereFactura, setRequiereFactura] = useState(false)
+  const [ocurrioEn, setOcurrioEn] = useState(HOY)
   const [sinVacio, setSinVacio] = useState(0)
 
   useAvisoDeExito(estado)
@@ -296,6 +306,42 @@ export function Mostrador({
         />
         <span className="aq-ficha-caja" aria-hidden />
         El cliente pide factura electrónica
+      </label>
+
+      {/*
+        ── Cuándo fue la venta — RN-VEN-13 ──────────────────────────────────
+
+        Arranca en HOY y casi siempre se queda ahí: el mostrador cobra en el
+        momento. Existe para las ventas que se cargan tarde, que hasta ahora
+        entraban con la fecha del día en que alguien se acordó — y ahí el reporte
+        de agosto quedaba corto y el de septiembre inflado.
+
+        Es un `<input type="date">` nativo y no un calendario propio: en un
+        celular abre el selector del sistema, que es táctil y conocido, y esto se
+        usa parado al lado de una llenadora. Además el navegador ya lo muestra
+        DD/MM/AAAA con el locale es-CO, mientras su `value` sigue siendo ISO —
+        que es lo que `api/` espera.
+
+        `max` lo cierra en hoy porque una venta futura no existe. El piso son los
+        90 días de `DIAS_MAXIMOS_HACIA_ATRAS`; quien manda es `api/`, esto solo
+        evita el viaje.
+      */}
+      <label className="aq-etiqueta-campo max-w-xs">
+        <span>Cuándo fue la venta</span>
+        <input
+          type="date"
+          name="ocurrioEn"
+          value={ocurrioEn}
+          max={HOY}
+          min={HACE_90_DIAS}
+          onChange={(e) => setOcurrioEn(e.target.value)}
+          className="aq-campo"
+        />
+        <span className="mt-1 text-[13px] font-normal normal-case text-tenue">
+          {ocurrioEn === HOY
+            ? 'Hoy. Cámbielo solo si está cargando una venta de otro día.'
+            : 'Esta venta va a contar en el día que eligió, no en el de hoy.'}
+        </span>
       </label>
 
       {/* ── Lo que va a pasar al cobrar ───────────────────────────────────── */}

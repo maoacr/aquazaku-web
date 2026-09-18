@@ -98,7 +98,7 @@ export async function registrarVentaAction(
       ...(baseSticker &&
         baseDireccionId && { base: { sticker: baseSticker, direccionId: baseDireccionId } }),
       /*
-       * La fecha del hecho, solo si no es hoy — RN-VEN-13.
+       * La fecha del hecho, solo si no es hoy — RN-VEN-14.
        *
        * Ausente significa «ahora», y entonces `api/` deja que la base ponga la
        * hora real: es el caso del mostrador, donde la hora sirve. Mandarla

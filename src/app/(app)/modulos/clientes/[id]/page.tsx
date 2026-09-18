@@ -330,14 +330,7 @@ export default async function FichaDeClientePage({
             </p>
           </div>
 
-          <UltimasVentas
-            ventas={ventas}
-            vacio={{
-              titulo: 'Este cliente todavía no compró',
-              explicacion:
-                'Puede haber comprado en el mostrador sin dar su documento: esa venta no queda a su nombre.',
-            }}
-          />
+          <UltimasVentas ventas={ventas} desde="la-ficha-del-cliente" />
         </section>
       ) : null}
 

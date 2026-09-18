@@ -11,6 +11,7 @@ import {
 } from '@/components/clientes/acciones-de-cliente'
 import { nivelDeVerificacion } from '@/components/clientes/tarjetas-de-clientes'
 import { Cifra } from '@/components/stock/cifra'
+import { UltimasVentas } from '@/components/ventas/ultimas-ventas'
 import { Estado } from '@/components/ui/estado'
 import { apiServerFetch } from '@/lib/api-server'
 import type {
@@ -20,6 +21,7 @@ import type {
   CarteraDeCliente,
   FichaDeCliente,
   MetodoDeVerificacion,
+  VentaDelListado,
 } from '@/lib/api-types'
 import { fechaEnLaPlanta } from '@/lib/hora-de-la-planta'
 import { siPuedeVerlo } from '@/lib/permiso-opcional'
@@ -61,10 +63,21 @@ export default async function FichaDeClientePage({
    * Las dos van en paralelo: son independientes y encadenarlas sumaría una
    * espera sin ganar nada.
    */
-  const [cliente, cartera, botellones, departamentos, municipios] = await Promise.all([
+  const [cliente, cartera, botellones, ventas, departamentos, municipios] = await Promise.all([
     apiServerFetch<FichaDeCliente>(`/clientes/${id}`),
     siPuedeVerlo(apiServerFetch<CarteraDeCliente>(`/clientes/${id}/deuda`)),
     siPuedeVerlo(apiServerFetch<{ enPoderDelCliente: number }>(`/clientes/${id}/botellones`)),
+    /*
+     * Las ventas las recorta `api/` con `?clienteId`, no esta página.
+     *
+     * Traer `/ventas` entero y filtrar acá dejaría la ficha mintiendo en
+     * silencio: lo que llega son las cien últimas del NEGOCIO, y un cliente que
+     * compró la semana pasada aparecería sin una sola compra.
+     *
+     * Y va bajo `siPuedeVerlo` por lo mismo que la deuda: quien ve un cliente
+     * no necesariamente ve las ventas. El 403 decide; la matriz no se copia acá.
+     */
+    siPuedeVerlo(apiServerFetch<VentaDelListado[]>(`/ventas?clienteId=${id}`)),
     /*
      * El catálogo del DANE baja por props, no se pide desde el navegador: son
      * 10 KB comprimidos y así el formulario filtra sin esperar un viaje —y sin
@@ -297,6 +310,36 @@ export default async function FichaDeClientePage({
           municipios={municipios}
         />
       </section>
+
+      {/*
+        Las ventas van DESPUÉS de teléfonos y direcciones, y antes de las
+        acciones —verificar, crédito, dar de baja—. Es el último bloque que se
+        lee y el primero que se consulta cuando la deuda de arriba no cuadra:
+        «¿de dónde salen estos $80.000?» se contesta mirando qué se llevó.
+
+        Debajo de «Dar de baja» obligaría a pasar por un botón destructivo para
+        llegar a un dato que solo se mira.
+      */}
+      {ventas !== null ? (
+        <section className="grid gap-3">
+          <div>
+            <h2 className="aq-titulo-tarjeta text-principal">Últimas ventas</h2>
+            <p className="mt-1 text-[13px] text-tenue">
+              Solo las de este cliente, de la más reciente a la más vieja. Las de mostrador —las
+              que nadie firmó— no aparecen acá: no son de nadie.
+            </p>
+          </div>
+
+          <UltimasVentas
+            ventas={ventas}
+            vacio={{
+              titulo: 'Este cliente todavía no compró',
+              explicacion:
+                'Puede haber comprado en el mostrador sin dar su documento: esa venta no queda a su nombre.',
+            }}
+          />
+        </section>
+      ) : null}
 
       {cliente.verificacionEstado !== 'verificado' ? (
         <section className="aq-tarjeta grid gap-4 p-5">

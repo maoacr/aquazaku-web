@@ -65,6 +65,15 @@ export function Mostrador({
   const [ocurrioEn, setOcurrioEn] = useState(HOY)
   const [sinVacio, setSinVacio] = useState(0)
 
+  /*
+   * ── Los precios escritos a mano — RN-VEN-15 ───────────────────────────────
+   *
+   * La CLAVE presente es el checkbox tildado; el valor son los dígitos escritos.
+   * Por eso `''` es un estado válido y distinto de ausente: es «lo voy a
+   * escribir» y no «cobrá la lista».
+   */
+  const [manuales, setManuales] = useState<Record<string, string>>({})
+
   useAvisoDeExito(estado)
   useLimpiezaAlRegistrar(estado.token, () => {
     setCarrito({})
@@ -72,6 +81,7 @@ export function Mostrador({
     setMedioDePago('efectivo')
     setCodigo('')
     setRequiereFactura(false)
+    setManuales({})
   })
 
   const vendibleDe = (id: string) => stock.find((s) => s.productoId === id)?.vendible ?? 0
@@ -89,15 +99,51 @@ export function Mostrador({
       return resto
     })
 
-  const items = Object.entries(carrito).map(([productoId, cantidad]) => ({ productoId, cantidad }))
+  const items = Object.entries(carrito).map(([productoId, cantidad]) => ({
+    productoId,
+    cantidad,
+    ...(productoId in manuales && { precioManual: manuales[productoId] }),
+  }))
+
+  /*
+   * ── Solo dígitos, y es la decisión que evita registrar $3,50 ──────────────
+   *
+   * La card pinta «$10.000» con `toLocaleString('es-CO')`, así que quien quiere
+   * poner tres mil ochocientos escribe «3.800» — es lo que tiene enfrente. Ese
+   * texto contra el `^\d+(\.\d{1,2})?$` del sistema hace dos cosas, y las dos
+   * son malas: «3.800» rebota con un mensaje sobre un regex, y «3.5» PASA como
+   * $3,50 cuando se quería $3.500.
+   *
+   * Lo segundo es lo grave, porque no falla: registra. Y RN-VEN-02 prohíbe
+   * editar una venta confirmada — la única salida sería anular y rehacer, si es
+   * que alguien nota que tres botellones sumaron $10,50.
+   *
+   * Descartando el punto en la entrada, el formato ambiguo deja de existir.
+   * Cuesta no poder cargar centavos desde el mostrador, que en pesos
+   * colombianos y con el catálogo en enteros no es un caso.
+   */
+  const escribirPrecio = (id: string, texto: string) =>
+    setManuales((previo) => ({ ...previo, [id]: texto.replace(/\D/g, '') }))
+
+  const alternarPrecioManual = (id: string) =>
+    setManuales((previo) => {
+      if (!(id in previo)) return { ...previo, [id]: '' }
+
+      const resto = { ...previo }
+      delete resto[id]
+      return resto
+    })
 
   /*
    * El precio que se muestra es el que le toca al cliente elegido — RN-VEN-12.
    * Sin cliente se cobra la lista residencial: es la de quien compra un
    * botellón y se va, que es la venta de mostrador normal.
    */
-  const precioDe = (producto: Producto) =>
+  const listaDe = (producto: Producto) =>
     cliente?.tipo === 'comercial' ? producto.precioComercial : producto.precioResidencial
+
+  /** El escrito a mano gana sobre la lista — RN-VEN-15. Vacío todavía no es un precio. */
+  const precioDe = (producto: Producto) => manuales[producto.id] || listaDe(producto)
 
   const total = items.reduce((suma, item) => {
     const producto = productos.find((p) => p.id === item.productoId)
@@ -202,6 +248,95 @@ export function Mostrador({
                   >
                     <Plus aria-hidden className="size-4" />
                   </button>
+                </div>
+
+                {/*
+                  ── Cobré otro precio — RN-VEN-15 ────────────────────────────
+
+                  Vive DENTRO de la card y no en un panel aparte porque el precio
+                  es de este producto: un campo suelto abajo obligaría a decir a
+                  cuál se refiere, y esa es exactamente la clase de dato que se
+                  pone en la fila equivocada.
+                */}
+                <div className="w-full border-t border-sutil pt-2.5">
+                  <label className="aq-ficha">
+                    <input
+                      type="checkbox"
+                      checked={producto.id in manuales}
+                      onChange={() => alternarPrecioManual(producto.id)}
+                      className="sr-only"
+                    />
+                    <span className="aq-ficha-caja" aria-hidden />
+                    Cobré otro precio
+                  </label>
+
+                  {producto.id in manuales ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                      {/*
+                        El ancho lo pone el CONTENEDOR, no el input.
+
+                        `.aq-campo` declara `width: 100%` en una regla sin capa,
+                        y las utilidades de Tailwind viven en `@layer utilities`:
+                        un `w-28` sobre el input es inerte. Es la misma trampa
+                        que `globals.css` ya documenta para `padding` y para
+                        `position` — jsdom no hace layout, así que la suite pasa
+                        en verde y el campo sale a todo lo ancho de la card.
+
+                        Envolverlo es lo que ya hace el campo de fecha de acá
+                        abajo con `max-w-xs`: el 100% del input se mide contra un
+                        padre acotado, y nadie pelea contra la cascada.
+                      */}
+                      <span className="block w-32">
+                        <input
+                          inputMode="numeric"
+                          autoComplete="off"
+                          value={
+                            manuales[producto.id]
+                              ? Number(manuales[producto.id]).toLocaleString('es-CO')
+                              : ''
+                          }
+                          onChange={(e) => escribirPrecio(producto.id, e.target.value)}
+                          placeholder={Number(listaDe(producto)).toLocaleString('es-CO')}
+                          aria-label={`Precio por unidad de ${producto.nombre}`}
+                          className="aq-campo aq-cifra"
+                        />
+                      </span>
+
+                      {/*
+                        La lista se sigue viendo al lado. Es el mismo criterio que
+                        el total antes de cobrar: quien escribe un precio tiene que
+                        poder ver contra qué lo está escribiendo, sin cambiar de
+                        pantalla ni destildar para espiar.
+                      */}
+                      <span className="text-[13px] text-tenue">
+                        por unidad · la lista dice{' '}
+                        <Cifra tono="secundario">
+                          ${Number(listaDe(producto)).toLocaleString('es-CO')}
+                        </Cifra>
+                      </span>
+
+                      {/*
+                        El subtotal de ESTA línea, ya multiplicado.
+
+                        El precio se escribe por unidad y se cobra por cantidad, y
+                        esas dos cosas se confunden con tres botellones en el
+                        mostrador. Mostrar la cuenta hecha es más barato que
+                        anular la venta después — RN-VEN-02 no deja corregirla.
+                      */}
+                      {cantidad > 0 && manuales[producto.id] ? (
+                        <span className="w-full text-[13px] text-principal">
+                          {cantidad} ×{' '}
+                          <Cifra tono="secundario">
+                            ${Number(manuales[producto.id]).toLocaleString('es-CO')}
+                          </Cifra>{' '}
+                          ={' '}
+                          <Cifra tono="principal">
+                            ${(Number(manuales[producto.id]) * cantidad).toLocaleString('es-CO')}
+                          </Cifra>
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               </li>
             )

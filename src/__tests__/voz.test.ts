@@ -62,6 +62,14 @@ const NO_SON_VOSEO = new Set([
   'dónde',
   // Primera persona. «Olvidé mi contraseña» lo dice el usuario, no la app.
   'olvidé',
+  /*
+   * «Cobré otro precio» — RN-VEN-15. Misma razón que `olvidé`, y acá pesa más:
+   * esa casilla no configura nada, AFIRMA algo. Lo que se tilda es «yo cobré
+   * este número», y esa frase viaja a la bitácora con el nombre de quien la
+   * tildó. En usted —«se cobró otro precio»— la afirmación pierde al que la
+   * hace, que es justo el dato que la fila de auditoría existe para guardar.
+   */
+  'cobré',
   // Verbos y adverbios de todos los días.
   'está',
   'acá',

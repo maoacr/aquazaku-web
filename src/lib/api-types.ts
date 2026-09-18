@@ -451,6 +451,8 @@ export interface LineaDeVenta {
   descuentoMonto: string
   precioMinimoAplicado: string
   precioFinal: string
+  /** Alguien escribió este precio a mano en vez de tomarlo del catálogo — RN-VEN-15. */
+  precioManual: boolean
 }
 
 export interface ResultadoDeVenta {

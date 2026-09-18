@@ -52,14 +52,33 @@ export async function registrarVentaAction(
   const fecha = String(formData.get('ocurrioEn') ?? '').trim()
   const ocurrioEn = fecha && fecha !== hoyEnLaPlanta() ? fecha : undefined
 
-  const items = JSON.parse(String(formData.get('items') ?? '[]')) as {
+  const crudos = JSON.parse(String(formData.get('items') ?? '[]')) as {
     productoId: string
     cantidad: number
+    /** El precio escrito a mano, en pesos enteros — RN-VEN-15. */
+    precioManual?: string
   }[]
 
-  if (items.length === 0) {
+  if (crudos.length === 0) {
     return { error: 'Agregue al menos un producto antes de cobrar.' }
   }
+
+  /*
+   * La clave se OMITE cuando nadie escribió un precio — RN-VEN-15.
+   *
+   * `api/` distingue ausente («cobrá la lista») de presente («cobrá esto»), y un
+   * `''` que llegue por un checkbox tildado sin número volvería como un 400 de
+   * Zod que habla de un regex. Acá todavía se puede decir qué falta.
+   */
+  if (crudos.some((i) => i.precioManual !== undefined && !i.precioManual.trim())) {
+    return { error: 'Escriba el precio que cobró, o destilde la casilla para usar el de la lista.' }
+  }
+
+  const items = crudos.map(({ productoId, cantidad, precioManual }) => ({
+    productoId,
+    cantidad,
+    ...(precioManual?.trim() && { precioManual: precioManual.trim() }),
+  }))
 
   const clienteId = String(formData.get('clienteId') ?? '')
   const codigo = String(formData.get('codigoDescuento') ?? '').trim()

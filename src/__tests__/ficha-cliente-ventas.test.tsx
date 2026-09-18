@@ -74,7 +74,14 @@ function venta(sobrescribe: Partial<VentaDelListado> = {}): VentaDelListado {
     anuladaPor: null,
     anuladaEn: null,
     motivoAnulacion: null,
-    lineas: [{ productoNombre: 'Recarga de botellón de 20 L', cantidad: 2 }],
+    lineas: [
+      {
+        productoNombre: 'Recarga de botellón de 20 L',
+        cantidad: 2,
+        precioFinal: '10000.00',
+        precioManual: false,
+      },
+    ],
     ...sobrescribe,
   }
 }

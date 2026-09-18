@@ -165,6 +165,30 @@ function QueSalio({ venta }: { venta: VentaDelListado }) {
           <Cifra tono="secundario">{linea.cantidad}</Cifra>
           {' × '}
           {linea.productoNombre}
+
+          {/*
+            ── El precio, SOLO cuando alguien lo escribió — RN-VEN-15 ─────────
+
+            La bitácora guarda el delta contra la lista, pero vive en Auditoría:
+            hay que acordarse de ir. Esta lista se mira todos los días, y sin
+            esto una venta a $3.800 se dibuja igual que una a $10.000.
+
+            Va en la LÍNEA y no en la venta porque una venta puede mezclar las
+            dos cosas: marcar la venta entera diría que todos sus productos se
+            cobraron distinto, y sería falso para los que no.
+
+            Y aparece solo en las manuales a propósito. Mostrarlo en todas lo
+            convertiría en una columna más —ruido en la abrumadora mayoría de
+            las filas, donde el precio es el del catálogo y no dice nada—. Su
+            ausencia significa «se cobró la lista».
+          */}
+          {linea.precioManual ? (
+            <>
+              {' · '}
+              <Cifra tono="alerta">${Number(linea.precioFinal).toLocaleString('es-CO')}</Cifra>
+              <span className="text-tenue"> a mano</span>
+            </>
+          ) : null}
         </li>
       ))}
     </ul>

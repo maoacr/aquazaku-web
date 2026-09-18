@@ -5,23 +5,32 @@ import { Vacio } from '@/components/ui/vacio'
 import type { CanalDeVenta, MedioDePago, VentaDelListado } from '@/lib/api-types'
 import { fechaYHoraEnLaPlanta } from '@/lib/hora-de-la-planta'
 
+/**
+ * Desde dónde se mira esta lista.
+ *
+ * Cambia dos cosas —qué va arriba de cada tarjeta y qué dice el vacío— y las
+ * dos son la MISMA decisión: si el cliente ya viene dado por el contexto o no.
+ * Por eso es un solo prop y no dos: con dos se podría pedir la combinación
+ * incoherente —esconder el nombre y seguir diciendo «todavía no hay ventas»,
+ * que dentro de una ficha se lee como que el negocio no vendió nunca—.
+ */
+type Desde = 'la-pantalla-de-ventas' | 'la-ficha-del-cliente'
+
 interface PropsDeUltimasVentas {
   ventas: VentaDelListado[]
-  /**
-   * Qué decir cuando no hay ninguna.
-   *
-   * La pantalla de ventas y la ficha de un cliente miran la MISMA lista y no
-   * están diciendo lo mismo con el vacío: en una significa «el negocio todavía
-   * no vendió»; en la otra, «este cliente todavía no compró» —y el negocio
-   * puede haber vendido mil veces—. Un solo texto para los dos casos haría que
-   * uno de los dos mienta.
-   */
-  vacio?: { titulo: string; explicacion: string }
+  desde?: Desde
 }
 
-const SIN_NINGUNA = {
-  titulo: 'Todavía no hay ventas',
-  explicacion: 'Cada venta descuenta el stock y —si es a crédito— suma a la deuda del cliente.',
+const VACIO: Record<Desde, { titulo: string; explicacion: string }> = {
+  'la-pantalla-de-ventas': {
+    titulo: 'Todavía no hay ventas',
+    explicacion: 'Cada venta descuenta el stock y —si es a crédito— suma a la deuda del cliente.',
+  },
+  'la-ficha-del-cliente': {
+    titulo: 'Este cliente todavía no compró',
+    explicacion:
+      'Puede haber comprado en el mostrador sin dar su documento: esa venta no queda a su nombre.',
+  },
 }
 
 /**
@@ -44,8 +53,10 @@ const SIN_NINGUNA = {
  * scrollear en horizontal para leer una venta, y esto se consulta parado en el
  * mostrador.
  */
-export function UltimasVentas({ ventas, vacio = SIN_NINGUNA }: PropsDeUltimasVentas) {
+export function UltimasVentas({ ventas, desde = 'la-pantalla-de-ventas' }: PropsDeUltimasVentas) {
   if (ventas.length === 0) {
+    const vacio = VACIO[desde]
+
     return (
       <Vacio variante="primera-vez" icono={Receipt} titulo={vacio.titulo}>
         {vacio.explicacion}
@@ -57,36 +68,56 @@ export function UltimasVentas({ ventas, vacio = SIN_NINGUNA }: PropsDeUltimasVen
     <ul className="grid gap-3">
       {ventas.map((venta) => (
         <li key={venta.id}>
-          <TarjetaDeVenta venta={venta} />
+          <TarjetaDeVenta venta={venta} desde={desde} />
         </li>
       ))}
     </ul>
   )
 }
 
-function TarjetaDeVenta({ venta }: { venta: VentaDelListado }) {
+function TarjetaDeVenta({ venta, desde }: { venta: VentaDelListado; desde: Desde }) {
   const anulada = venta.estado === 'anulada'
+  const enLaFichaDelCliente = desde === 'la-ficha-del-cliente'
 
   return (
     <article className="aq-tarjeta grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-start">
       <div className="min-w-0">
         {/*
-          El nombre en tono TENUE cuando no hay cliente. Es la diferencia entre
-          «esta venta fue de alguien» y «esta venta no tuvo cliente», y ponerlos
-          con el mismo peso haría que «Sin cliente» se leyera como un nombre más
-          en la lista.
+          Arriba va el dato que DISTINGUE una venta de la de al lado, y cuál es
+          depende de dónde se mire.
+
+          En la pantalla de ventas, veinte tarjetas son de veinte personas:
+          distingue a quién. En la ficha de un cliente, las veinte son de la
+          misma persona —el nombre ya está en el título de la pantalla— y
+          repetirlo veinte veces no distingue nada: es la misma palabra con peso
+          de título en cada tarjeta, tapando lo que sí cambia. Ahí lo que
+          distingue es CUÁNDO, así que la fecha sube del pie al encabezado.
         */}
-        <h3
-          className={`aq-titulo-tarjeta truncate ${
-            venta.clienteNombre ? 'text-principal' : 'text-tenue'
-          }`}
-        >
-          {venta.clienteNombre ?? 'Sin cliente'}
-        </h3>
+        {enLaFichaDelCliente ? (
+          <h3 className="aq-titulo-tarjeta truncate text-principal">
+            {fechaYHoraEnLaPlanta(venta.createdAt)}
+          </h3>
+        ) : (
+          /*
+            El nombre en tono TENUE cuando no hay cliente. Es la diferencia entre
+            «esta venta fue de alguien» y «esta venta no tuvo cliente», y ponerlos
+            con el mismo peso haría que «Sin cliente» se leyera como un nombre más
+            en la lista.
+          */
+          <h3
+            className={`aq-titulo-tarjeta truncate ${
+              venta.clienteNombre ? 'text-principal' : 'text-tenue'
+            }`}
+          >
+            {venta.clienteNombre ?? 'Sin cliente'}
+          </h3>
+        )}
 
         <QueSalio venta={venta} />
 
-        <p className="mt-2 text-[13px] text-tenue">{elPie(venta).join(' · ')}</p>
+        <p className="mt-2 text-[13px] text-tenue">
+          {elPie(venta, enLaFichaDelCliente).join(' · ')}
+        </p>
 
         {/*
           Una venta anulada NO desaparece: cambia de estado y muestra por qué.
@@ -150,8 +181,12 @@ function QueSalio({ venta }: { venta: VentaDelListado }) {
  * El canal aparece siempre, incluso cuando es «Mostrador». Un dato que aparece
  * y desaparece obliga a leer cada tarjeta entera para saber si está o no.
  */
-function elPie(venta: VentaDelListado): string[] {
-  const partes = [fechaYHoraEnLaPlanta(venta.createdAt), CANAL[venta.canal]]
+function elPie(venta: VentaDelListado, sinLaFecha: boolean): string[] {
+  // Cuando la fecha ya es el encabezado, acá sería el mismo dato escrito dos
+  // veces en cuatro centímetros de tarjeta.
+  const partes = sinLaFecha
+    ? [CANAL[venta.canal]]
+    : [fechaYHoraEnLaPlanta(venta.createdAt), CANAL[venta.canal]]
 
   // `null` es una cuenta borrada, no una venta sin autor. Nombrarlo como
   // «desconocido» sería inventar una explicación que nadie comprobó.

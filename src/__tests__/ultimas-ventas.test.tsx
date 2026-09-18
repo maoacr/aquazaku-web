@@ -39,7 +39,14 @@ function venta(sobrescribe: Partial<VentaDelListado> = {}): VentaDelListado {
     anuladaPor: null,
     anuladaEn: null,
     motivoAnulacion: null,
-    lineas: [{ productoNombre: 'Recarga de botellón de 20 L', cantidad: 2 }],
+    lineas: [
+      {
+        productoNombre: 'Recarga de botellón de 20 L',
+        cantidad: 2,
+        precioFinal: '10000.00',
+        precioManual: false,
+      },
+    ],
     ...sobrescribe,
   }
 }
@@ -103,5 +110,107 @@ describe('en la ficha del cliente, arriba va CUÁNDO', () => {
     enLaFicha([])
 
     expect(screen.getByText('Este cliente todavía no compró')).toBeInTheDocument()
+  })
+})
+
+/**
+ * Las ventas con precio escrito a mano se ven en la lista — RN-VEN-15.
+ *
+ * ── Por qué acá y no solo en Auditoría ──────────────────────────────────────
+ *
+ * `ventas:precio_manual` guarda el delta contra la lista, pero vive en otra
+ * pantalla: hay que acordarse de ir. Ésta se mira todos los días, y hasta acá
+ * una venta a $3.800 se dibujaba igual que una a $10.000.
+ *
+ * Un control que exige acordarse no es un control — y son ventas como cualquier
+ * otra: suman al total, al reporte y al arqueo. Esconder que se cobraron
+ * distinto es esconderlo justo donde se iba a ver.
+ */
+describe('una venta con precio escrito a mano', () => {
+  const conPrecioManual = () =>
+    venta({
+      total: '7600.00',
+      lineas: [
+        {
+          productoNombre: 'Recarga de botellón de 20 L',
+          cantidad: 2,
+          precioFinal: '3800.00',
+          precioManual: true,
+        },
+      ],
+    })
+
+  it('muestra el precio que se cobró', () => {
+    render(<UltimasVentas ventas={[conPrecioManual()]} />)
+
+    expect(screen.getByText(/3\.800/)).toBeInTheDocument()
+  })
+
+  it('dice que ese precio lo escribió alguien', () => {
+    render(<UltimasVentas ventas={[conPrecioManual()]} />)
+
+    expect(screen.getByText(/a mano/i)).toBeInTheDocument()
+  })
+
+  /**
+   * Sin esto, el precio en la línea manual se leería como una columna que la
+   * lista siempre tuvo y que en las demás filas quedó vacía por un error.
+   * El precio aparece SOLO cuando alguien lo escribió; su ausencia significa
+   * «se cobró la lista».
+   */
+  it('una venta a precio de lista no muestra ningún precio por línea', () => {
+    render(
+      <UltimasVentas
+        ventas={[
+          venta({
+            lineas: [
+              {
+                productoNombre: 'Recarga de botellón de 20 L',
+                cantidad: 2,
+                precioFinal: '10000.00',
+                precioManual: false,
+              },
+            ],
+          }),
+        ]}
+      />,
+    )
+
+    expect(screen.queryByText(/a mano/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/10\.000/)).not.toBeInTheDocument()
+  })
+
+  /**
+   * Una venta puede mezclar las dos cosas. La marca es de la LÍNEA, no de la
+   * venta: marcar la venta entera diría que los dos productos se cobraron
+   * distinto, y sería falso para uno de ellos.
+   */
+  it('en una venta mixta, marca solo la línea que lo llevó', () => {
+    render(
+      <UltimasVentas
+        ventas={[
+          venta({
+            lineas: [
+              {
+                productoNombre: 'Recarga de botellón de 20 L',
+                cantidad: 2,
+                precioFinal: '3800.00',
+                precioManual: true,
+              },
+              {
+                productoNombre: 'Paca de 20 bolsas de 600 ml',
+                cantidad: 1,
+                precioFinal: '5000.00',
+                precioManual: false,
+              },
+            ],
+          }),
+        ]}
+      />,
+    )
+
+    expect(screen.getAllByText(/a mano/i)).toHaveLength(1)
+    expect(screen.getByText(/3\.800/)).toBeInTheDocument()
+    expect(screen.queryByText(/5\.000/)).not.toBeInTheDocument()
   })
 })

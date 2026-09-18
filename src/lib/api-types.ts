@@ -438,7 +438,14 @@ export interface VentaDelListado extends Venta {
   /** `null` significa que la cuenta se borró y la venta sobrevivió. */
   registradoPorNombre: string | null
   /** Vacío en un `dano_base`: un recargo no vendió nada. */
-  lineas: { productoNombre: string; cantidad: number }[]
+  lineas: {
+    productoNombre: string
+    cantidad: number
+    /** El precio unitario congelado. Solo se muestra si lo escribió alguien. */
+    precioFinal: string
+    /** Alguien escribió este precio en vez de tomarlo del catálogo — RN-VEN-15. */
+    precioManual: boolean
+  }[]
 }
 
 export interface LineaDeVenta {

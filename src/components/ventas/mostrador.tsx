@@ -14,7 +14,7 @@ import { hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
 /** Hoy en la planta. Se calcula una vez por carga: nadie deja el mostrador abierto de un día para otro. */
 const HOY = hoyEnLaPlanta()
 
-/** El piso de RN-VEN-13. Espeja `DIAS_MAXIMOS_HACIA_ATRAS` de `api/`, que es quien manda. */
+/** El piso de RN-VEN-14. Espeja `DIAS_MAXIMOS_HACIA_ATRAS` de `api/`, que es quien manda. */
 const HACE_90_DIAS = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(
   new Date(Date.now() - 90 * 86_400_000),
 )
@@ -22,7 +22,7 @@ const HACE_90_DIAS = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogot
 const INICIAL: EstadoDeVenta = {}
 
 /**
- * El mostrador — RN-VEN-09, RN-VEN-12 y RN-VEN-13.
+ * El mostrador — RN-VEN-09, RN-VEN-12, RN-VEN-13 y RN-VEN-14.
  *
  * ── Muestra el total ANTES de cobrar ────────────────────────────────────────
  *
@@ -309,7 +309,7 @@ export function Mostrador({
       </label>
 
       {/*
-        ── Cuándo fue la venta — RN-VEN-13 ──────────────────────────────────
+        ── Cuándo fue la venta — RN-VEN-14 ──────────────────────────────────
 
         Arranca en HOY y casi siempre se queda ahí: el mostrador cobra en el
         momento. Existe para las ventas que se cargan tarde, que hasta ahora

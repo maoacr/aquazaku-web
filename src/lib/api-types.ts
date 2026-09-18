@@ -391,12 +391,20 @@ export type MedioDePago = 'efectivo' | 'transferencia' | 'credito'
 export type EstadoDeVenta = 'confirmada' | 'anulada'
 export type CanalDeVenta = 'mostrador' | 'whatsapp' | 'ruta'
 
+/**
+ * Un recargo por daño a una base (`dano_base`) es una venta sin productos: no
+ * tiene líneas —la base lo impide con un trigger— y suma a los cargos
+ * pendientes, no a la deuda (RN-BAS-08).
+ */
+export type TipoDeVenta = 'producto' | 'dano_base'
+
 export interface Venta {
   id: string
   clienteId: string | null
   tipoClienteAlMomento: TipoDeCliente | null
   medioDePago: MedioDePago
   canal: CanalDeVenta
+  tipo: TipoDeVenta
   estado: EstadoDeVenta
   /** `numeric` en la base: llega como string y se compara como string. */
   total: string
@@ -416,6 +424,23 @@ export interface Venta {
  * del cliente cambia, los códigos vencen y el piso se mueve. Sin congelarlos, un
  * comprobante de hace seis meses se reinterpretaría con los valores de hoy.
  */
+/**
+ * Una fila de «últimas ventas» — `GET /ventas`.
+ *
+ * La lista contesta tres preguntas —qué salió, a quién y cómo se pagó— y los
+ * ids no contestan ninguna. Por eso `api/` manda los nombres ya resueltos y un
+ * resumen de las líneas: sin eso, esta pantalla necesitaría una consulta por
+ * fila, o la tabla de clientes entera. Ver el comentario de `GET /ventas`.
+ */
+export interface VentaDelListado extends Venta {
+  /** `null` es la venta de mostrador: compró, pagó y se fue. No es un dato que falte. */
+  clienteNombre: string | null
+  /** `null` significa que la cuenta se borró y la venta sobrevivió. */
+  registradoPorNombre: string | null
+  /** Vacío en un `dano_base`: un recargo no vendió nada. */
+  lineas: { productoNombre: string; cantidad: number }[]
+}
+
 export interface LineaDeVenta {
   id: string
   ventaId: string

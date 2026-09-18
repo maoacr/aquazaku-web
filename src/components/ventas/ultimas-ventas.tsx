@@ -1,0 +1,174 @@
+import { Receipt } from 'lucide-react'
+import { Cifra } from '@/components/stock/cifra'
+import { Estado } from '@/components/ui/estado'
+import { Vacio } from '@/components/ui/vacio'
+import type { CanalDeVenta, MedioDePago, VentaDelListado } from '@/lib/api-types'
+import { fechaYHoraEnLaPlanta } from '@/lib/hora-de-la-planta'
+
+interface PropsDeUltimasVentas {
+  ventas: VentaDelListado[]
+  /**
+   * Qué decir cuando no hay ninguna.
+   *
+   * La pantalla de ventas y la ficha de un cliente miran la MISMA lista y no
+   * están diciendo lo mismo con el vacío: en una significa «el negocio todavía
+   * no vendió»; en la otra, «este cliente todavía no compró» —y el negocio
+   * puede haber vendido mil veces—. Un solo texto para los dos casos haría que
+   * uno de los dos mienta.
+   */
+  vacio?: { titulo: string; explicacion: string }
+}
+
+const SIN_NINGUNA = {
+  titulo: 'Todavía no hay ventas',
+  explicacion: 'Cada venta descuenta el stock y —si es a crédito— suma a la deuda del cliente.',
+}
+
+/**
+ * Las últimas ventas, en tarjetas.
+ *
+ * ── Qué salió, a quién y cómo se pagó ───────────────────────────────────────
+ *
+ * Es lo que promete la pantalla, y durante un tiempo la tarjeta contestó solo
+ * la tercera: un monto grande, el medio de pago y la hora. Dos ventas de
+ * $20.000 en la misma tarde eran dos tarjetas idénticas, y para saber cuál era
+ * la de la señora del 302 había que abrir la venta.
+ *
+ * Ahora el orden de lectura es el de la pregunta: **a quién** arriba —el dato
+ * que distingue una fila de la otra—, **qué salió** debajo, y la plata a la
+ * derecha, donde se la busca cuando se cuadra la caja.
+ *
+ * ── Tarjetas y no tabla ─────────────────────────────────────────────────────
+ *
+ * Por lo mismo que en clientes: siete columnas en un teléfono obligan a
+ * scrollear en horizontal para leer una venta, y esto se consulta parado en el
+ * mostrador.
+ */
+export function UltimasVentas({ ventas, vacio = SIN_NINGUNA }: PropsDeUltimasVentas) {
+  if (ventas.length === 0) {
+    return (
+      <Vacio variante="primera-vez" icono={Receipt} titulo={vacio.titulo}>
+        {vacio.explicacion}
+      </Vacio>
+    )
+  }
+
+  return (
+    <ul className="grid gap-3">
+      {ventas.map((venta) => (
+        <li key={venta.id}>
+          <TarjetaDeVenta venta={venta} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function TarjetaDeVenta({ venta }: { venta: VentaDelListado }) {
+  const anulada = venta.estado === 'anulada'
+
+  return (
+    <article className="aq-tarjeta grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-start">
+      <div className="min-w-0">
+        {/*
+          El nombre en tono TENUE cuando no hay cliente. Es la diferencia entre
+          «esta venta fue de alguien» y «esta venta no tuvo cliente», y ponerlos
+          con el mismo peso haría que «Sin cliente» se leyera como un nombre más
+          en la lista.
+        */}
+        <h3
+          className={`aq-titulo-tarjeta truncate ${
+            venta.clienteNombre ? 'text-principal' : 'text-tenue'
+          }`}
+        >
+          {venta.clienteNombre ?? 'Sin cliente'}
+        </h3>
+
+        <QueSalio venta={venta} />
+
+        <p className="mt-2 text-[13px] text-tenue">{elPie(venta).join(' · ')}</p>
+
+        {/*
+          Una venta anulada NO desaparece: cambia de estado y muestra por qué.
+          Esconderla sería reescribir el día.
+        */}
+        {anulada && venta.motivoAnulacion ? (
+          <p className="mt-1 text-[13px] text-alerta-texto">{venta.motivoAnulacion}</p>
+        ) : null}
+      </div>
+
+      <div className="grid gap-2 justify-items-start sm:justify-items-end">
+        <p className="flex flex-wrap items-baseline gap-2">
+          <Cifra tamano="grande" tono={anulada ? 'secundario' : 'principal'}>
+            ${Number(venta.total).toLocaleString('es-CO')}
+          </Cifra>
+          <span className="text-[13px] text-tenue">{MEDIO[venta.medioDePago]}</span>
+        </p>
+
+        <Estado tono={anulada ? 'expuesto' : 'cubierto'}>
+          {anulada ? 'Anulada' : 'Confirmada'}
+        </Estado>
+      </div>
+    </article>
+  )
+}
+
+/**
+ * Qué salió.
+ *
+ * Un recargo por daño (`dano_base`) no tiene líneas —hay un trigger en la base
+ * que lo impide— así que acá se nombra en palabras. Sin esto se dibujaría como
+ * una venta a la que se le perdieron los productos, que es justo lo contrario
+ * de lo que pasó: nunca los tuvo.
+ */
+function QueSalio({ venta }: { venta: VentaDelListado }) {
+  if (venta.tipo === 'dano_base') {
+    return <p className="mt-1.5 text-[14px] text-secundario">Recargo por daño a una base</p>
+  }
+
+  return (
+    <ul className="mt-1.5 grid gap-0.5 text-[14px] text-secundario">
+      {venta.lineas.map((linea) => (
+        <li key={linea.productoNombre} className="truncate">
+          {/* La cantidad en mono: es una cifra, y en la columna se comparan. */}
+          <Cifra tono="secundario">{linea.cantidad}</Cifra>
+          {' × '}
+          {linea.productoNombre}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/**
+ * El pie: cuándo, por dónde entró y quién la cargó.
+ *
+ * Va en un solo renglón porque son datos de CONTEXTO —se leen cuando algo no
+ * cuadra, no mientras se atiende— y cuatro renglones de contexto empujarían
+ * hacia abajo lo que sí se busca de un vistazo.
+ *
+ * El canal aparece siempre, incluso cuando es «Mostrador». Un dato que aparece
+ * y desaparece obliga a leer cada tarjeta entera para saber si está o no.
+ */
+function elPie(venta: VentaDelListado): string[] {
+  const partes = [fechaYHoraEnLaPlanta(venta.createdAt), CANAL[venta.canal]]
+
+  // `null` es una cuenta borrada, no una venta sin autor. Nombrarlo como
+  // «desconocido» sería inventar una explicación que nadie comprobó.
+  if (venta.registradoPorNombre) partes.push(venta.registradoPorNombre)
+  if (venta.requiereFacturaElectronica) partes.push('pidió factura')
+
+  return partes
+}
+
+const MEDIO: Record<MedioDePago, string> = {
+  efectivo: 'Efectivo',
+  transferencia: 'Transferencia',
+  credito: 'Crédito',
+}
+
+const CANAL: Record<CanalDeVenta, string> = {
+  mostrador: 'Mostrador',
+  whatsapp: 'WhatsApp',
+  ruta: 'Ruta',
+}

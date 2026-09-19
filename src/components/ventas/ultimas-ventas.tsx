@@ -2,8 +2,15 @@ import { Receipt } from 'lucide-react'
 import { Cifra } from '@/components/stock/cifra'
 import { Estado } from '@/components/ui/estado'
 import { Vacio } from '@/components/ui/vacio'
-import type { CanalDeVenta, MedioDePago, VentaDelListado } from '@/lib/api-types'
+import type {
+  CanalDeVenta,
+  MedioDePago,
+  Producto,
+  ResumenDeStock,
+  VentaDelListado,
+} from '@/lib/api-types'
 import { fechaYHoraEnLaPlanta } from '@/lib/hora-de-la-planta'
+import { AccionesDeVenta } from './acciones-de-venta'
 
 /**
  * Desde dónde se mira esta lista.
@@ -19,6 +26,21 @@ type Desde = 'la-pantalla-de-ventas' | 'la-ficha-del-cliente'
 interface PropsDeUltimasVentas {
   ventas: VentaDelListado[]
   desde?: Desde
+  /**
+   * El catálogo y el stock, para poder corregir o anular desde la lista.
+   *
+   * Van en las DOS pantallas donde esta lista aparece. La ficha del cliente es,
+   * de hecho, donde una venta mal cargada se descubre más seguido: es ahí donde
+   * alguien mira la cuenta y dice «esto no lo compró». Mandarlo desde ahí hasta
+   * Ventas a buscar esa misma venta entre las cien últimas del negocio es
+   * pedirle que la encuentre de nuevo — y ahí es donde se corrige la equivocada.
+   *
+   * Ausentes significa que quien mira NO puede tocar: un `contador` ve la ficha
+   * en modo lectura y `api/` le niega `/productos`, así que la lista no dibuja
+   * ninguna acción. El permiso decide, y la matriz no se copia acá.
+   */
+  productos?: Producto[]
+  stock?: ResumenDeStock[]
 }
 
 const VACIO: Record<Desde, { titulo: string; explicacion: string }> = {
@@ -53,7 +75,12 @@ const VACIO: Record<Desde, { titulo: string; explicacion: string }> = {
  * scrollear en horizontal para leer una venta, y esto se consulta parado en el
  * mostrador.
  */
-export function UltimasVentas({ ventas, desde = 'la-pantalla-de-ventas' }: PropsDeUltimasVentas) {
+export function UltimasVentas({
+  ventas,
+  desde = 'la-pantalla-de-ventas',
+  productos,
+  stock,
+}: PropsDeUltimasVentas) {
   if (ventas.length === 0) {
     const vacio = VACIO[desde]
 
@@ -68,15 +95,36 @@ export function UltimasVentas({ ventas, desde = 'la-pantalla-de-ventas' }: Props
     <ul className="grid gap-3">
       {ventas.map((venta) => (
         <li key={venta.id}>
-          <TarjetaDeVenta venta={venta} desde={desde} />
+          <TarjetaDeVenta venta={venta} desde={desde} productos={productos} stock={stock} />
         </li>
       ))}
     </ul>
   )
 }
 
-function TarjetaDeVenta({ venta, desde }: { venta: VentaDelListado; desde: Desde }) {
-  const anulada = venta.estado === 'anulada'
+function TarjetaDeVenta({
+  venta,
+  desde,
+  productos,
+  stock,
+}: {
+  venta: VentaDelListado
+  desde: Desde
+  productos?: Producto[]
+  stock?: ResumenDeStock[]
+}) {
+  /*
+   * ── Corregida y anulada se dibujan igual de apagadas, y dicen distinto ────
+   *
+   * Las dos dejaron de contar, así que las dos van en tono secundario: el monto
+   * de una venta que no cuenta no puede competir con el de una que sí.
+   *
+   * Pero lo que PASÓ es distinto, y el sello lo nombra. «Anulada» a secas sobre
+   * una venta corregida escondería que existe una venta vigente que la
+   * reemplaza, y quien cuadra la caja buscaría una plata que sí está.
+   */
+  const corregida = venta.estado === 'corregida'
+  const anulada = venta.estado !== 'confirmada'
   const enLaFichaDelCliente = desde === 'la-ficha-del-cliente'
 
   return (
@@ -126,6 +174,19 @@ function TarjetaDeVenta({ venta, desde }: { venta: VentaDelListado; desde: Desde
         {anulada && venta.motivoAnulacion ? (
           <p className="mt-1 text-[13px] text-alerta-texto">{venta.motivoAnulacion}</p>
         ) : null}
+
+        {/*
+          Y si fue CORREGIDA, se dice que hay otra venta en su lugar — RN-VEN-16.
+
+          Sin esto, la tarjeta muestra un monto apagado y un motivo, y se lee
+          como plata que se perdió. Lo que pasó es lo contrario: la venta existe,
+          con otros números, unos centímetros más arriba en la misma lista.
+        */}
+        {corregida ? (
+          <p className="mt-1 text-[13px] text-tenue">
+            La reemplazó otra venta, que es la que cuenta.
+          </p>
+        ) : null}
       </div>
 
       <div className="grid gap-2 justify-items-start sm:justify-items-end">
@@ -137,8 +198,18 @@ function TarjetaDeVenta({ venta, desde }: { venta: VentaDelListado; desde: Desde
         </p>
 
         <Estado tono={anulada ? 'expuesto' : 'cubierto'}>
-          {anulada ? 'Anulada' : 'Confirmada'}
+          {corregida ? 'Corregida' : anulada ? 'Anulada' : 'Confirmada'}
         </Estado>
+
+        {/*
+          Las acciones van abajo del sello y no arriba de la tarjeta: son lo
+          último que se busca —se llega acá a LEER una venta— y arriba
+          competirían con el nombre del cliente, que es lo que distingue una
+          fila de la otra.
+        */}
+        {productos && stock ? (
+          <AccionesDeVenta venta={venta} productos={productos} stock={stock} />
+        ) : null}
       </div>
     </article>
   )

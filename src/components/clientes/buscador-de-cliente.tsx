@@ -4,7 +4,7 @@ import { Search, UserPlus, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, useTransition } from 'react'
 import { buscarClientesAnchoAction } from '@/app/(app)/modulos/clientes/actions'
 import { AltaEnPasos } from '@/components/clientes/alta-en-pasos'
-import type { Cliente } from '@/lib/api-types'
+import type { Cliente, ClienteElegido } from '@/lib/api-types'
 
 /**
  * Ubicar a un cliente para elegirlo.
@@ -92,8 +92,8 @@ export function BuscadorDeCliente({
    * valida lo que no se ve.
    */
   sinCliente?: string
-  elegido: Cliente | null
-  onElegir: (cliente: Cliente | null) => void
+  elegido: ClienteElegido | null
+  onElegir: (cliente: ClienteElegido | null) => void
 }) {
   const [registrando, setRegistrando] = useState(false)
   const idCampo = useId()

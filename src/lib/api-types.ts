@@ -274,7 +274,27 @@ export type MetodoDeVerificacion = 'seller_manual' | 'pos_manual' | 'admin_ofici
  * definida por norma, y guardarlo abriría la puerta a que las dos copias digan
  * cosas distintas. `numeroDocumento` es lo que sí vive en la base.
  */
-export interface Cliente {
+/**
+ * Lo mínimo para trabajar con un cliente YA elegido.
+ *
+ * Es lo único que el buscador muestra y lo único que el mostrador necesita para
+ * cobrar: el nombre y el documento para que quien atiende confirme que es esa
+ * persona, y el `tipo` porque decide la lista de precios.
+ *
+ * Existe separado de `Cliente` porque la lista de ventas resuelve estos cuatro
+ * campos en el mismo `JOIN` que ya hacía, y con eso alcanza para precargar el
+ * modal de corrección (RN-VEN-16). Exigir el `Cliente` completo obligaría a una
+ * consulta más por venta para mostrar un nombre que ya viajó.
+ */
+export interface ClienteElegido {
+  id: string
+  nombre: string
+  /** Ya armado para mostrar. Calculado, no almacenado. */
+  documento: string
+  tipo: TipoDeCliente
+}
+
+export interface Cliente extends ClienteElegido {
   id: string
   /**
    * El nombre que se muestra. Lo **genera la base** a partir de las partes, o
@@ -289,12 +309,9 @@ export interface Cliente {
   apellidos: string | null
   /** Como la conocen en el pueblo. No entra en `nombre`. */
   apodo: string | null
-  tipo: TipoDeCliente
   tipoDocumento: TipoDeDocumento
   /** El número base, normalizado: sin puntos, sin guion, sin DV. */
   numeroDocumento: string
-  /** Ya armado para mostrar. Calculado, no almacenado. */
-  documento: string
   verificacionEstado: EstadoDeVerificacion
   verificadoPor: string | null
   verificadoEn: string | null
@@ -388,7 +405,14 @@ export interface FichaDeCliente extends Cliente {
 /* ── Ventas — M6 ────────────────────────────────────────────────────────── */
 
 export type MedioDePago = 'efectivo' | 'transferencia' | 'credito'
-export type EstadoDeVenta = 'confirmada' | 'anulada'
+/**
+ * Una venta confirmada no se edita — RN-VEN-02. Tiene dos salidas.
+ *
+ * `anulada` es «no debió existir»; `corregida` es «ocurrió, pero quedó mal
+ * escrita» y la reemplaza otra venta (RN-VEN-16). Las dos comparten lo que
+ * importa: ninguna está confirmada, así que ninguna cuenta.
+ */
+export type EstadoDeVenta = 'confirmada' | 'anulada' | 'corregida'
 export type CanalDeVenta = 'mostrador' | 'whatsapp' | 'ruta'
 
 /**
@@ -415,6 +439,10 @@ export interface Venta {
   anuladaPor: string | null
   anuladaEn: string | null
   motivoAnulacion: string | null
+  /** La venta que esta reemplaza porque estaba mal — RN-VEN-16. */
+  corrigeAId: string | null
+  /** La venta que reemplaza a esta. Con esto, `estado` es `corregida`. */
+  corregidaPorId: string | null
 }
 
 /**
@@ -435,10 +463,14 @@ export interface Venta {
 export interface VentaDelListado extends Venta {
   /** `null` es la venta de mostrador: compró, pagó y se fue. No es un dato que falte. */
   clienteNombre: string | null
+  /** Ya armado por `api/`, que es donde vive la regla del DV. Para el modal de corrección. */
+  clienteDocumento: string | null
   /** `null` significa que la cuenta se borró y la venta sobrevivió. */
   registradoPorNombre: string | null
   /** Vacío en un `dano_base`: un recargo no vendió nada. */
   lineas: {
+    /** Para volver a armar la venta al corregirla — RN-VEN-16. */
+    productoId: string
     productoNombre: string
     cantidad: number
     /** El precio unitario congelado. Solo se muestra si lo escribió alguien. */
@@ -460,6 +492,16 @@ export interface LineaDeVenta {
   precioFinal: string
   /** Alguien escribió este precio a mano en vez de tomarlo del catálogo — RN-VEN-15. */
   precioManual: boolean
+}
+
+/**
+ * Lo que devuelve `POST /ventas/:id/correccion` — RN-VEN-16.
+ *
+ * Trae las DOS ventas porque la corrección es un reemplazo, no una edición: sin
+ * la reemplazada, la pantalla no puede decir qué dejó de valer.
+ */
+export interface ResultadoDeCorreccion extends ResultadoDeVenta {
+  reemplazada: Venta
 }
 
 export interface ResultadoDeVenta {

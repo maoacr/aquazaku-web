@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
-import type { Cliente } from '@/lib/api-types'
+import type { Cliente, ClienteElegido } from '@/lib/api-types'
 
 const buscarClientesAnchoAction = vi.fn()
 const crearClienteRapidoAction = vi.fn()
@@ -67,7 +67,7 @@ const cliente = (extra: Partial<Cliente> = {}): Cliente =>
  * un navegador, si el Enter cobra la venta.
  */
 function Anfitrion({ alTeclearEnter = vi.fn() }: { alTeclearEnter?: (frenado: boolean) => void }) {
-  const [elegido, setElegido] = useState<Cliente | null>(null)
+  const [elegido, setElegido] = useState<ClienteElegido | null>(null)
 
   return (
     <form

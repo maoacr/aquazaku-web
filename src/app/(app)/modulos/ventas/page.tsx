@@ -41,7 +41,17 @@ export default async function VentasPage() {
 
       <section className="grid gap-3">
         <h2 className="aq-micro text-tenue">Últimas ventas</h2>
-        <UltimasVentas ventas={ventas} />
+        {/*
+          El catálogo y el stock bajan a la lista para poder CORREGIR una venta
+          desde ahí — RN-VEN-16. Son los mismos que ya consume el mostrador: no
+          hay una consulta más, se comparten los dos `fetch` que esta página ya
+          hacía.
+        */}
+        <UltimasVentas
+          ventas={ventas}
+          productos={productos.filter((p) => p.activo)}
+          stock={stock}
+        />
         <SelloDeHora leidoEn={leidoEn} />
       </section>
     </div>

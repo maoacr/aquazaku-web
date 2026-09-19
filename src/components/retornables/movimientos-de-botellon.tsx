@@ -9,7 +9,7 @@ import {
 } from '@/app/(app)/modulos/retornables/actions'
 import { FormError } from '@/components/auth/form-error'
 import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
-import type { Cliente } from '@/lib/api-types'
+import type { ClienteElegido } from '@/lib/api-types'
 import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
 
 const INICIAL: EstadoDeFormulario = {}
@@ -32,7 +32,7 @@ const INICIAL: EstadoDeFormulario = {}
 export function EntregaYRetorno() {
   const [estado, accion, enviando] = useActionState(entregarBotellonesAction, INICIAL)
   const idError = useId()
-  const [cliente, setCliente] = useState<Cliente | null>(null)
+  const [cliente, setCliente] = useState<ClienteElegido | null>(null)
   const [cantidad, setCantidad] = useState('')
   const [direccion, setDireccion] = useState<'entrega' | 'retorno'>('entrega')
 
@@ -157,7 +157,7 @@ export function ComprarBotellones() {
 export function AjustarBotellones() {
   const [estado, accion, enviando] = useActionState(ajustarBotellonesAction, INICIAL)
   const idError = useId()
-  const [dondeEsta, setDondeEsta] = useState<Cliente | null>(null)
+  const [dondeEsta, setDondeEsta] = useState<ClienteElegido | null>(null)
 
   useAvisoDeExito(estado)
   useLimpiezaAlRegistrar(estado.token, () => setDondeEsta(null))

@@ -2,12 +2,16 @@
 
 import { Minus, Plus } from 'lucide-react'
 import { useActionState, useId, useState } from 'react'
-import { type EstadoDeVenta, registrarVentaAction } from '@/app/(app)/modulos/ventas/actions'
+import {
+  type EstadoDeVenta,
+  corregirVentaAction,
+  registrarVentaAction,
+} from '@/app/(app)/modulos/ventas/actions'
 import { FormError } from '@/components/auth/form-error'
 import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
 import { EntregaDeBase } from '@/components/retornables/entrega-de-base'
 import { Cifra } from '@/components/stock/cifra'
-import type { Cliente, Producto, ResumenDeStock } from '@/lib/api-types'
+import type { ClienteElegido, Producto, ResumenDeStock, VentaDelListado } from '@/lib/api-types'
 import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
 import { hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
 
@@ -18,6 +22,14 @@ const HOY = hoyEnLaPlanta()
 const HACE_90_DIAS = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(
   new Date(Date.now() - 90 * 86_400_000),
 )
+
+/**
+ * El piso del motivo. Espeja `LARGO_MINIMO_MOTIVO` de `api/`, que es quien manda.
+ *
+ * Se declara acá por lo mismo que `HACE_90_DIAS`: para poder decir qué falta
+ * ANTES del viaje, no para decidir. Quien rechaza sigue siendo el servidor.
+ */
+const LARGO_MINIMO_MOTIVO = 10
 
 const INICIAL: EstadoDeVenta = {}
 
@@ -47,23 +59,99 @@ const INICIAL: EstadoDeVenta = {}
  * atómico del servidor, y si dos personas van por la última unidad una recibe
  * el rechazo con el número real. Ver la spec de M6.
  */
+/**
+ * La venta que se está corrigiendo, ya desarmada en lo que el formulario pide.
+ *
+ * `null` —el caso normal— es el mostrador registrando una venta nueva.
+ */
+export interface Correccion {
+  ventaId: string
+  /** El cliente que tenía la venta, para que el modal no lo pierda al abrirse. */
+  cliente: ClienteElegido | null
+  medioDePago: string
+  requiereFactura: boolean
+  carrito: Record<string, number>
+  /** Los precios que alguien había escrito a mano — RN-VEN-15. */
+  manuales: Record<string, string>
+}
+
+/**
+ * Arma la corrección a partir de una fila del listado — RN-VEN-16.
+ *
+ * Vive acá, al lado del formulario que la consume, porque es el inverso exacto
+ * de lo que el formulario envía: si mañana el carrito cambia de forma, las dos
+ * mitades están a la vista una de la otra.
+ */
+export function correccionDesde(venta: VentaDelListado): Correccion {
+  const carrito: Record<string, number> = {}
+  const manuales: Record<string, string> = {}
+
+  for (const linea of venta.lineas) {
+    carrito[linea.productoId] = (carrito[linea.productoId] ?? 0) + linea.cantidad
+
+    /*
+     * El precio manual se precarga SIN decimales, que es como se escribe: el
+     * campo solo acepta dígitos para que «3.800» no entre como $3,50. Ver
+     * `escribirPrecio`.
+     */
+    if (linea.precioManual) manuales[linea.productoId] = String(Math.round(Number(linea.precioFinal)))
+  }
+
+  return {
+    ventaId: venta.id,
+    cliente:
+      venta.clienteId && venta.clienteNombre
+        ? {
+            id: venta.clienteId,
+            nombre: venta.clienteNombre,
+            documento: venta.clienteDocumento ?? '',
+            tipo: venta.tipoClienteAlMomento ?? 'residencial',
+          }
+        : null,
+    medioDePago: venta.medioDePago,
+    requiereFactura: venta.requiereFacturaElectronica,
+    carrito,
+    manuales,
+  }
+}
+
 export function Mostrador({
   productos,
   stock,
+  correccion,
+  alCorregir,
 }: {
   productos: Producto[]
   stock: ResumenDeStock[]
+  /**
+   * Corregir una venta ya registrada — RN-VEN-16.
+   *
+   * Es el MISMO formulario y no una copia, y esa es toda la decisión. Una
+   * pantalla de corrección aparte tendría que repetir el carrito, el piso, el
+   * precio a mano y el aviso de stock — y el día que uno de los cinco cambie,
+   * cambiaría en un solo lado. Quien corrige una venta necesita exactamente las
+   * mismas decisiones que quien la cobró.
+   */
+  correccion?: Correccion
+  /** Qué hacer cuando la corrección salió bien. Cierra el modal. */
+  alCorregir?: () => void
 }) {
-  const [estado, accion, enviando] = useActionState(registrarVentaAction, INICIAL)
+  const corrigiendo = correccion !== undefined
+
+  const [estado, accion, enviando] = useActionState(
+    corrigiendo ? corregirVentaAction : registrarVentaAction,
+    INICIAL,
+  )
   const idError = useId()
 
-  const [carrito, setCarrito] = useState<Record<string, number>>({})
-  const [cliente, setCliente] = useState<Cliente | null>(null)
-  const [medioDePago, setMedioDePago] = useState('efectivo')
+  const [carrito, setCarrito] = useState<Record<string, number>>(correccion?.carrito ?? {})
+  const [cliente, setCliente] = useState<ClienteElegido | null>(correccion?.cliente ?? null)
+  const [medioDePago, setMedioDePago] = useState(correccion?.medioDePago ?? 'efectivo')
   const [codigo, setCodigo] = useState('')
-  const [requiereFactura, setRequiereFactura] = useState(false)
+  const [requiereFactura, setRequiereFactura] = useState(correccion?.requiereFactura ?? false)
   const [ocurrioEn, setOcurrioEn] = useState(HOY)
   const [sinVacio, setSinVacio] = useState(0)
+  const [motivo, setMotivo] = useState('')
 
   /*
    * ── Los precios escritos a mano — RN-VEN-15 ───────────────────────────────
@@ -72,10 +160,20 @@ export function Mostrador({
    * Por eso `''` es un estado válido y distinto de ausente: es «lo voy a
    * escribir» y no «cobrá la lista».
    */
-  const [manuales, setManuales] = useState<Record<string, string>>({})
+  const [manuales, setManuales] = useState<Record<string, string>>(correccion?.manuales ?? {})
 
   useAvisoDeExito(estado)
   useLimpiezaAlRegistrar(estado.token, () => {
+    /*
+     * Corrigiendo no hay nada que limpiar: el modal se cierra y se desmonta
+     * entero. Vaciar el carrito antes de eso dibujaría el formulario vacío
+     * durante un cuadro, que se lee como que la corrección se perdió.
+     */
+    if (corrigiendo) {
+      alCorregir?.()
+      return
+    }
+
     setCarrito({})
     setCliente(null)
     setMedioDePago('efectivo')
@@ -173,18 +271,71 @@ export function Mostrador({
   const creditoSinCliente = medioDePago === 'credito' && !cliente
 
   return (
-    <form action={accion} className="aq-tarjeta grid gap-5 p-5">
+    <form
+      action={accion}
+      className={corrigiendo ? 'grid gap-5' : 'aq-tarjeta grid gap-5 p-5'}
+    >
       <input type="hidden" name="items" value={JSON.stringify(items)} />
       <input type="hidden" name="medioDePago" value={medioDePago} />
       <input type="hidden" name="requiereFactura" value={requiereFactura ? 'si' : 'no'} />
-      <input type="hidden" name="botellonesSinVacio" value={salenSinVacio} />
+      {corrigiendo ? (
+        <input type="hidden" name="ventaId" value={correccion.ventaId} />
+      ) : (
+        <input type="hidden" name="botellonesSinVacio" value={salenSinVacio} />
+      )}
 
-      <div>
-        <h2 className="aq-titulo-tarjeta text-principal">Registrar una venta</h2>
-        <p className="mt-1 text-[13px] text-tenue">
-          Una venta confirmada no se edita. Si sale mal, se anula y se hace de nuevo.
-        </p>
-      </div>
+      {/*
+        Corrigiendo, el título lo pone el modal: repetirlo acá serían dos
+        encabezados a cuatro centímetros uno del otro diciendo lo mismo.
+      */}
+      {corrigiendo ? (
+        <>
+          <p className="text-[13px] text-tenue">
+            Esta venta no se edita: se reemplaza por una nueva y las dos quedan enlazadas. El
+            producto vuelve al stock y se descuenta de nuevo con lo que quede acá.
+          </p>
+
+          {/*
+            ── El motivo va ARRIBA, y es lo primero que se ve ─────────────────
+
+            Estuvo abajo, pegado al botón, con el argumento de que es «lo último
+            que se escribe». En una página eso es cierto. En un MODAL QUE
+            SCROLLEA es falso y caro: medido en el navegador, el campo nacía a
+            1101px con el modal cortando en 1082 — debajo del fold— y el botón
+            261px más abajo. Quien abría la corrección llegaba a un «Guardar»
+            apagado sin haber visto nunca el campo que lo apaga.
+
+            Arriba se resuelve solo: es lo primero que aparece, y además es lo
+            primero que se sabe. Nadie abre esta pantalla sin saber por qué la
+            abrió.
+          */}
+          <label className="aq-etiqueta-campo">
+            <span>
+              Por qué se corrige <span className="text-alerta">·</span>{' '}
+              <span className="font-normal normal-case text-tenue">obligatorio</span>
+            </span>
+            <textarea
+              name="motivo"
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              rows={2}
+              placeholder="Se cargaron 2 botellones y habían salido 5"
+              className="aq-campo"
+            />
+            <span className="mt-1 text-[13px] font-normal normal-case text-tenue">
+              Queda en la venta reemplazada y en la bitácora. Tiene que servir para entender el
+              cambio dentro de tres meses.
+            </span>
+          </label>
+        </>
+      ) : (
+        <div>
+          <h2 className="aq-titulo-tarjeta text-principal">Registrar una venta</h2>
+          <p className="mt-1 text-[13px] text-tenue">
+            Una venta confirmada no se edita. Si sale mal, se anula y se hace de nuevo.
+          </p>
+        </div>
+      )}
 
       <FormError id={idError}>{estado.error}</FormError>
 
@@ -360,8 +511,12 @@ export function Mostrador({
       {/*
         La base va justo debajo del cliente porque depende de él: se presta a
         una de SUS direcciones, y sin cliente no tiene dónde apuntar.
+
+        Corrigiendo no aparece: la base que salió con la venta original sigue
+        prestada y la corrección no la rehace. Ofrecerla acá prestaría una
+        SEGUNDA base por arreglar un tipeo.
       */}
-      <EntregaDeBase cliente={cliente} />
+      {corrigiendo ? null : <EntregaDeBase cliente={cliente} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="aq-etiqueta-campo">
@@ -391,7 +546,12 @@ export function Mostrador({
         </label>
       </div>
 
-      {botellonesEnCarrito > 0 ? (
+      {/*
+        Corrigiendo no se pregunta por el vacío: el envase ya salió y sigue
+        afuera, anotado en la venta original. Volver a descontarlo del parque
+        inventaría un botellón que nunca salió.
+      */}
+      {botellonesEnCarrito > 0 && !corrigiendo ? (
         <div className="rounded-lg border border-sutil p-4">
           <p className="text-[13px] text-principal">
             {botellonesEnCarrito === 1
@@ -444,40 +604,52 @@ export function Mostrador({
       </label>
 
       {/*
-        ── Cuándo fue la venta — RN-VEN-14 ──────────────────────────────────
+        ── Corrigiendo, la fecha NO se pregunta — RN-VEN-16 ─────────────────
 
-        Arranca en HOY y casi siempre se queda ahí: el mostrador cobra en el
-        momento. Existe para las ventas que se cargan tarde, que hasta ahora
-        entraban con la fecha del día en que alguien se acordó — y ahí el reporte
-        de agosto quedaba corto y el de septiembre inflado.
-
-        Es un `<input type="date">` nativo y no un calendario propio: en un
-        celular abre el selector del sistema, que es táctil y conocido, y esto se
-        usa parado al lado de una llenadora. Además el navegador ya lo muestra
-        DD/MM/AAAA con el locale es-CO, mientras su `value` sigue siendo ISO —
-        que es lo que `api/` espera.
-
-        `max` lo cierra en hoy porque una venta futura no existe. El piso son los
-        90 días de `DIAS_MAXIMOS_HACIA_ATRAS`; quien manda es `api/`, esto solo
-        evita el viaje.
+        La venta nueva hereda el instante exacto de la que reemplaza. Ofrecer el
+        campo daría a entender que se puede mover la venta de día, y eso es
+        precisamente lo que la corrección no hace: arreglar un tipeo no puede
+        reescribir el reporte de un mes que ya se emitió.
       */}
-      <label className="aq-etiqueta-campo max-w-xs">
-        <span>Cuándo fue la venta</span>
-        <input
-          type="date"
-          name="ocurrioEn"
-          value={ocurrioEn}
-          max={HOY}
-          min={HACE_90_DIAS}
-          onChange={(e) => setOcurrioEn(e.target.value)}
-          className="aq-campo"
-        />
-        <span className="mt-1 text-[13px] font-normal normal-case text-tenue">
-          {ocurrioEn === HOY
-            ? 'Hoy. Cámbielo solo si está cargando una venta de otro día.'
-            : 'Esta venta va a contar en el día que eligió, no en el de hoy.'}
-        </span>
-      </label>
+      {corrigiendo ? null : (
+        <>
+          {/*
+          ── Cuándo fue la venta — RN-VEN-14 ──────────────────────────────────
+
+          Arranca en HOY y casi siempre se queda ahí: el mostrador cobra en el
+          momento. Existe para las ventas que se cargan tarde, que hasta ahora
+          entraban con la fecha del día en que alguien se acordó — y ahí el reporte
+          de agosto quedaba corto y el de septiembre inflado.
+
+          Es un `<input type="date">` nativo y no un calendario propio: en un
+          celular abre el selector del sistema, que es táctil y conocido, y esto se
+          usa parado al lado de una llenadora. Además el navegador ya lo muestra
+          DD/MM/AAAA con el locale es-CO, mientras su `value` sigue siendo ISO —
+          que es lo que `api/` espera.
+
+          `max` lo cierra en hoy porque una venta futura no existe. El piso son los
+          90 días de `DIAS_MAXIMOS_HACIA_ATRAS`; quien manda es `api/`, esto solo
+          evita el viaje.
+        */}
+          <label className="aq-etiqueta-campo max-w-xs">
+            <span>Cuándo fue la venta</span>
+            <input
+              type="date"
+              name="ocurrioEn"
+              value={ocurrioEn}
+              max={HOY}
+              min={HACE_90_DIAS}
+              onChange={(e) => setOcurrioEn(e.target.value)}
+              className="aq-campo"
+            />
+            <span className="mt-1 text-[13px] font-normal normal-case text-tenue">
+              {ocurrioEn === HOY
+                ? 'Hoy. Cámbielo solo si está cargando una venta de otro día.'
+                : 'Esta venta va a contar en el día que eligió, no en el de hoy.'}
+            </span>
+          </label>
+        </>
+      )}
 
       {/* ── Lo que va a pasar al cobrar ───────────────────────────────────── */}
       {items.length > 0 ? (
@@ -513,15 +685,52 @@ export function Mostrador({
               dueño.
             </p>
           ) : null}
+
+          {/*
+            ── Un botón apagado tiene que decir qué lo apaga ──────────────────
+
+            Es el mismo patrón que las dos líneas de arriba, y faltaba. Sin
+            esto, «Guardar la corrección» se dibujaba gris y sin explicación: no
+            hay forma de distinguir «le falta algo» de «esto está roto», y quien
+            no encuentra qué falta concluye lo segundo.
+
+            Va acá y no en el botón porque es donde ya viven los otros dos
+            avisos —la sección tiene `aria-live`, así que un lector de pantalla
+            lo anuncia cuando aparece— y porque un botón que crece con un texto
+            adentro se mueve debajo del dedo.
+          */}
+          {corrigiendo && motivo.trim().length < LARGO_MINIMO_MOTIVO ? (
+            <p className="text-[13px] text-alerta-texto">
+              Falta decir por qué se corrige, arriba. Son al menos{' '}
+              {LARGO_MINIMO_MOTIVO} caracteres: es lo que hace que el cambio se entienda
+              dentro de tres meses.
+            </p>
+          ) : null}
         </section>
       ) : null}
 
       <button
         type="submit"
-        disabled={enviando || items.length === 0 || botellonSinCliente}
+        disabled={
+          enviando ||
+          items.length === 0 ||
+          botellonSinCliente ||
+          /*
+           * El motivo se exige acá y en `api/`. Acá para que el botón diga qué
+           * falta antes del viaje; allá porque es donde vive la regla y esta
+           * pantalla no es el único camino.
+           */
+          (corrigiendo && motivo.trim().length < LARGO_MINIMO_MOTIVO)
+        }
         className="aq-boton aq-boton-primario aq-boton-grande justify-self-start"
       >
-        {enviando ? 'Registrando…' : 'Cobrar'}
+        {corrigiendo
+          ? enviando
+            ? 'Corrigiendo…'
+            : 'Guardar la corrección'
+          : enviando
+            ? 'Registrando…'
+            : 'Cobrar'}
       </button>
     </form>
   )

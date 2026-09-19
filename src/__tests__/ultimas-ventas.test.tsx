@@ -25,6 +25,7 @@ function venta(sobrescribe: Partial<VentaDelListado> = {}): VentaDelListado {
     id: 'v1',
     clienteId: 'c1',
     clienteNombre: 'Yeimy Poveda',
+    clienteDocumento: 'CC 79.123.456',
     tipoClienteAlMomento: 'residencial',
     medioDePago: 'efectivo',
     canal: 'mostrador',
@@ -39,8 +40,11 @@ function venta(sobrescribe: Partial<VentaDelListado> = {}): VentaDelListado {
     anuladaPor: null,
     anuladaEn: null,
     motivoAnulacion: null,
+    corrigeAId: null,
+    corregidaPorId: null,
     lineas: [
       {
+        productoId: 'p1',
         productoNombre: 'Recarga de botellón de 20 L',
         cantidad: 2,
         precioFinal: '10000.00',
@@ -132,6 +136,7 @@ describe('una venta con precio escrito a mano', () => {
       total: '7600.00',
       lineas: [
         {
+          productoId: 'p1',
           productoNombre: 'Recarga de botellón de 20 L',
           cantidad: 2,
           precioFinal: '3800.00',
@@ -165,6 +170,7 @@ describe('una venta con precio escrito a mano', () => {
           venta({
             lineas: [
               {
+                productoId: 'p1',
                 productoNombre: 'Recarga de botellón de 20 L',
                 cantidad: 2,
                 precioFinal: '10000.00',
@@ -192,12 +198,14 @@ describe('una venta con precio escrito a mano', () => {
           venta({
             lineas: [
               {
+                productoId: 'p1',
                 productoNombre: 'Recarga de botellón de 20 L',
                 cantidad: 2,
                 precioFinal: '3800.00',
                 precioManual: true,
               },
               {
+                productoId: 'p1',
                 productoNombre: 'Paca de 20 bolsas de 600 ml',
                 cantidad: 1,
                 precioFinal: '5000.00',

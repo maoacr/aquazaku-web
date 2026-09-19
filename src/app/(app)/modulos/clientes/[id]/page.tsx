@@ -21,6 +21,8 @@ import type {
   CarteraDeCliente,
   FichaDeCliente,
   MetodoDeVerificacion,
+  Producto,
+  ResumenDeStock,
   VentaDelListado,
 } from '@/lib/api-types'
 import { fechaEnLaPlanta } from '@/lib/hora-de-la-planta'
@@ -63,7 +65,8 @@ export default async function FichaDeClientePage({
    * Las dos van en paralelo: son independientes y encadenarlas sumaría una
    * espera sin ganar nada.
    */
-  const [cliente, cartera, botellones, ventas, departamentos, municipios] = await Promise.all([
+  const [cliente, cartera, botellones, ventas, productos, stock, departamentos, municipios] =
+    await Promise.all([
     apiServerFetch<FichaDeCliente>(`/clientes/${id}`),
     siPuedeVerlo(apiServerFetch<CarteraDeCliente>(`/clientes/${id}/deuda`)),
     siPuedeVerlo(apiServerFetch<{ enPoderDelCliente: number }>(`/clientes/${id}/botellones`)),
@@ -83,6 +86,21 @@ export default async function FichaDeClientePage({
      * 10 KB comprimidos y así el formulario filtra sin esperar un viaje —y sin
      * un `fetch()` en el cliente, que el patrón BFF prohíbe (ADR-0002).
      */
+    /*
+     * ── El catálogo y el stock, para poder corregir desde acá — RN-VEN-16 ───
+     *
+     * Una venta mal cargada se descubre casi siempre en la ficha del cliente:
+     * es donde alguien mira la cuenta y dice «esto no lo compró». Obligar a ir
+     * hasta la pantalla de Ventas a buscar esa misma venta entre las cien
+     * últimas del negocio es pedirle a quien ya la tiene enfrente que la
+     * encuentre de nuevo — y ahí es donde se corrige la equivocada.
+     *
+     * Van bajo `siPuedeVerlo` porque un `contador` ve la ficha en modo lectura:
+     * sin productos ni stock, la lista no dibuja ninguna acción, que es
+     * exactamente lo que corresponde.
+     */
+    siPuedeVerlo(apiServerFetch<Producto[]>('/productos')),
+    siPuedeVerlo(apiServerFetch<ResumenDeStock[]>('/stock')),
     apiServerFetch<Departamento[]>('/geografia/departamentos'),
     apiServerFetch<Municipio[]>('/geografia/municipios'),
   ])
@@ -330,7 +348,11 @@ export default async function FichaDeClientePage({
             </p>
           </div>
 
-          <UltimasVentas ventas={ventas} desde="la-ficha-del-cliente" />
+          <UltimasVentas
+            ventas={ventas}
+            desde="la-ficha-del-cliente"
+            {...(productos && stock && { productos: productos.filter((p) => p.activo), stock })}
+          />
         </section>
       ) : null}
 

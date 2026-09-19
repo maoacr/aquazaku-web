@@ -16,7 +16,7 @@ import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
 import { SelectorDeDireccion } from '@/components/retornables/entrega-de-base'
 import { Estado } from '@/components/ui/estado'
 import { Vacio } from '@/components/ui/vacio'
-import type { Base, Cliente } from '@/lib/api-types'
+import type { Base, ClienteElegido } from '@/lib/api-types'
 import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
 
 const INICIAL: EstadoDeFormulario = {}
@@ -378,7 +378,7 @@ export function PrestarBase({ bases }: { bases: Base[] }) {
    * mil una peticiones en cada carga, para llenar una lista que además nadie
    * puede recorrer buscando «La casa» entre mil «La casa».
    */
-  const [cliente, setCliente] = useState<Cliente | null>(null)
+  const [cliente, setCliente] = useState<ClienteElegido | null>(null)
 
   useAvisoDeExito(estado)
   useLimpiezaAlRegistrar(estado.token, () => setCliente(null))

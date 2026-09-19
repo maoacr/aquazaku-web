@@ -7,7 +7,7 @@ import {
   type BaseParaPrestar,
   buscarBaseParaPrestarAction,
 } from '@/app/(app)/modulos/retornables/actions'
-import type { Cliente, Direccion } from '@/lib/api-types'
+import type { ClienteElegido, Direccion } from '@/lib/api-types'
 
 /**
  * Llevarse una base con la venta — RN-BAS-03.
@@ -37,7 +37,7 @@ import type { Cliente, Direccion } from '@/lib/api-types'
  * Lo usan los dos lugares donde se presta una base: el mostrador y Retornables.
  * Uno solo, porque el mecanismo es el mismo y dos copias se separan.
  */
-export function useDireccionesDe(cliente: Cliente | null) {
+export function useDireccionesDe(cliente: ClienteElegido | null) {
   /*
    * Se guarda DE QUIÉN son las direcciones, no solo las direcciones.
    *
@@ -88,7 +88,7 @@ export function SelectorDeDireccion({
   cliente,
   name,
 }: {
-  cliente: Cliente | null
+  cliente: ClienteElegido | null
   name: string
 }) {
   const { direcciones, cargando } = useDireccionesDe(cliente)
@@ -249,7 +249,7 @@ function AvisoDeBase({ aviso }: { aviso: BaseParaPrestar | null }) {
   )
 }
 
-export function EntregaDeBase({ cliente }: { cliente: Cliente | null }) {
+export function EntregaDeBase({ cliente }: { cliente: ClienteElegido | null }) {
   const idSticker = useId()
   const [abierto, setAbierto] = useState(false)
   const { direcciones, cargando } = useDireccionesDe(cliente)

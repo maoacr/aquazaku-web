@@ -60,6 +60,7 @@ function venta(sobrescribe: Partial<VentaDelListado> = {}): VentaDelListado {
     id: 'v1',
     clienteId: CLIENTE_ID,
     clienteNombre: 'Yeimy Poveda',
+    clienteDocumento: 'CC 79.123.456',
     tipoClienteAlMomento: 'residencial',
     medioDePago: 'efectivo',
     canal: 'mostrador',
@@ -74,8 +75,11 @@ function venta(sobrescribe: Partial<VentaDelListado> = {}): VentaDelListado {
     anuladaPor: null,
     anuladaEn: null,
     motivoAnulacion: null,
+    corrigeAId: null,
+    corregidaPorId: null,
     lineas: [
       {
+        productoId: 'p1',
         productoNombre: 'Recarga de botellón de 20 L',
         cantidad: 2,
         precioFinal: '10000.00',
@@ -100,6 +104,16 @@ function responde({ ventas = [] as VentaDelListado[] | null } = {}) {
       return cliente()
     }
     if (ruta.startsWith('/geografia')) return []
+
+    /*
+     * El catálogo y el stock bajan para poder corregir una venta desde la
+     * ficha — RN-VEN-16. Van con el MISMO 403 que las ventas: quien no puede
+     * ver ventas tampoco dibuja acciones sobre ellas.
+     */
+    if (ruta === '/productos' || ruta === '/stock') {
+      if (ventas === null) throw new ApiError(403, 'sin permiso')
+      return []
+    }
 
     throw new Error(`ruta sin mockear: ${ruta}`)
   }) as never)

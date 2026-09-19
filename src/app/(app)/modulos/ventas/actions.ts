@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
 import { apiServerFetchRaw } from '@/lib/api-server'
-import type { ResultadoDeVenta } from '@/lib/api-types'
+import type { ResultadoDeCorreccion, ResultadoDeVenta } from '@/lib/api-types'
 import { cuerpoDeError } from '@/lib/form-errors'
 import { type EstadoDeFormulario, exito } from '@/lib/formulario'
 
@@ -52,33 +52,9 @@ export async function registrarVentaAction(
   const fecha = String(formData.get('ocurrioEn') ?? '').trim()
   const ocurrioEn = fecha && fecha !== hoyEnLaPlanta() ? fecha : undefined
 
-  const crudos = JSON.parse(String(formData.get('items') ?? '[]')) as {
-    productoId: string
-    cantidad: number
-    /** El precio escrito a mano, en pesos enteros — RN-VEN-15. */
-    precioManual?: string
-  }[]
-
-  if (crudos.length === 0) {
-    return { error: 'Agregue al menos un producto antes de cobrar.' }
-  }
-
-  /*
-   * La clave se OMITE cuando nadie escribió un precio — RN-VEN-15.
-   *
-   * `api/` distingue ausente («cobrá la lista») de presente («cobrá esto»), y un
-   * `''` que llegue por un checkbox tildado sin número volvería como un 400 de
-   * Zod que habla de un regex. Acá todavía se puede decir qué falta.
-   */
-  if (crudos.some((i) => i.precioManual !== undefined && !i.precioManual.trim())) {
-    return { error: 'Escriba el precio que cobró, o destilde la casilla para usar el de la lista.' }
-  }
-
-  const items = crudos.map(({ productoId, cantidad, precioManual }) => ({
-    productoId,
-    cantidad,
-    ...(precioManual?.trim() && { precioManual: precioManual.trim() }),
-  }))
+  const parseados = itemsDelFormulario(formData)
+  if ('error' in parseados) return parseados
+  const { items } = parseados
 
   const clienteId = String(formData.get('clienteId') ?? '')
   const codigo = String(formData.get('codigoDescuento') ?? '').trim()
@@ -160,6 +136,117 @@ export async function registrarVentaAction(
   }
 }
 
+/**
+ * Corregir una venta registrada — RN-VEN-16.
+ *
+ * ── Manda la venta ENTERA, no lo que cambió ─────────────────────────────────
+ *
+ * El cuerpo es el mismo que el de registrar, y a propósito: `api/` la vuelve a
+ * registrar de cero, con las mismas validaciones de stock, piso, crédito y
+ * vigencia. Mandar un parche obligaría a fusionar lo nuevo con lo viejo del
+ * lado del servidor, y esa fusión es la edición que RN-VEN-02 prohíbe, escrita
+ * en otro lugar.
+ *
+ * ── Lo que NO viaja ─────────────────────────────────────────────────────────
+ *
+ * `ocurrioEn` no va: la venta nueva hereda el instante exacto de la que
+ * reemplaza, para que arreglar un tipeo no mueva plata de un día —ni de un
+ * mes— a otro. `api/` ni siquiera lo acepta.
+ *
+ * Los botellones sin vacío y la base tampoco: son movimientos FÍSICOS que ya
+ * ocurrieron y siguen colgando de la venta original. El envase salió una vez.
+ */
+export async function corregirVentaAction(
+  _previo: EstadoDeVenta,
+  formData: FormData,
+): Promise<EstadoDeVenta> {
+  const ventaId = String(formData.get('ventaId') ?? '')
+  const motivo = String(formData.get('motivo') ?? '').trim()
+
+  const items = itemsDelFormulario(formData)
+  if ('error' in items) return items
+
+  const clienteId = String(formData.get('clienteId') ?? '')
+  const codigo = String(formData.get('codigoDescuento') ?? '').trim()
+
+  const res = await apiServerFetchRaw(`/ventas/${ventaId}/correccion`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      motivo,
+      medioDePago: String(formData.get('medioDePago') ?? 'efectivo'),
+      ...(clienteId && { clienteId }),
+      items: items.items,
+      ...(codigo && { codigoDescuento: codigo }),
+      requiereFacturaElectronica: formData.get('requiereFactura') === 'si',
+    }),
+  })
+
+  if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos corregir la venta.') }
+
+  const resultado = (await res.json()) as ResultadoDeCorreccion
+
+  revalidatePath(RUTA)
+  revalidatePath('/modulos/stock')
+  revalidatePath('/modulos/clientes', 'layout')
+
+  const antes = Number(resultado.reemplazada.total)
+  const despues = Number(resultado.venta.total)
+
+  return exito(
+    antes === despues
+      ? 'Venta corregida. El total no cambió.'
+      : `Venta corregida: de $${antes.toLocaleString('es-CO')} a $${despues.toLocaleString('es-CO')}.`,
+  )
+}
+
+/**
+ * Las líneas del carrito, validadas, o el error que dice qué falta.
+ *
+ * Lo comparten registrar y corregir porque es el MISMO carrito: la corrección
+ * vuelve a registrar la venta entera, no parchea la vieja. Duplicar este
+ * parseo dejaría que el mensaje sobre el precio a mano existiera en un camino y
+ * no en el otro.
+ */
+function itemsDelFormulario(
+  formData: FormData,
+): { items: { productoId: string; cantidad: number; precioManual?: string }[] } | { error: string } {
+  /*
+   * Las líneas llegan como JSON en un campo oculto: un carrito es una lista de
+   * longitud variable, y `FormData` no la representa sin inventar una
+   * convención de nombres (`items[0][productoId]`) que después hay que parsear.
+   */
+  const crudos = JSON.parse(String(formData.get('items') ?? '[]')) as {
+    productoId: string
+    cantidad: number
+    /** El precio escrito a mano, en pesos enteros — RN-VEN-15. */
+    precioManual?: string
+  }[]
+
+  if (crudos.length === 0) {
+    return { error: 'Agregue al menos un producto antes de cobrar.' }
+  }
+
+  /*
+   * La clave se OMITE cuando nadie escribió un precio — RN-VEN-15.
+   *
+   * `api/` distingue ausente («cobrá la lista») de presente («cobrá esto»), y un
+   * `''` que llegue por un checkbox tildado sin número volvería como un 400 de
+   * Zod que habla de un regex. Acá todavía se puede decir qué falta.
+   */
+  if (crudos.some((i) => i.precioManual !== undefined && !i.precioManual.trim())) {
+    return { error: 'Escriba el precio que cobró, o destilde la casilla para usar el de la lista.' }
+  }
+
+  return {
+    items: crudos.map(({ productoId, cantidad, precioManual }) => ({
+      productoId,
+      cantidad,
+      ...(precioManual?.trim() && { precioManual: precioManual.trim() }),
+    })),
+  }
+}
+
 export async function anularVentaAction(
   _previo: EstadoDeFormulario,
   formData: FormData,
@@ -176,6 +263,13 @@ export async function anularVentaAction(
 
   revalidatePath(RUTA)
   revalidatePath('/modulos/stock')
+  /*
+   * La ficha del cliente también muestra esta venta, y desde M17 se puede
+   * anular DESDE ahí. Sin esto, la tarjeta se queda diciendo «Confirmada»
+   * encima de una deuda que ya bajó, que es la clase de pantalla que hace que
+   * alguien anule dos veces.
+   */
+  revalidatePath('/modulos/clientes', 'layout')
 
   return exito('Venta anulada. El producto volvió a su lote.')
 }

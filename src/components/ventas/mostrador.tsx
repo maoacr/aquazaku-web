@@ -13,7 +13,7 @@ import { EntregaDeBase } from '@/components/retornables/entrega-de-base'
 import { Cifra } from '@/components/stock/cifra'
 import type { ClienteElegido, Producto, ResumenDeStock, VentaDelListado } from '@/lib/api-types'
 import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
-import { hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
+import { aaaaMmDdEnLaPlanta, hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
 
 /** Hoy en la planta. Se calcula una vez por carga: nadie deja el mostrador abierto de un día para otro. */
 const HOY = hoyEnLaPlanta()
@@ -73,6 +73,16 @@ export interface Correccion {
   carrito: Record<string, number>
   /** Los precios que alguien había escrito a mano — RN-VEN-15. */
   manuales: Record<string, string>
+  /**
+   * AAAA-MM-DD de la venta original, vista desde la planta.
+   *
+   * Pre-cargada en el `<input name="ocurrioEn">` del modal de corrección para
+   * que el admin vea y confirme la fecha del hecho antes de guardar
+   * (RN-VEN-16 fecha corregible). Cuando coincide con el valor del input al
+   * confirmar, sigue viajando explícita en el body — ver `corregirVentaAction`
+   * y la nota sobre D10 en el comment del action.
+   */
+  ocurrioEnOriginal: string
 }
 
 /**
@@ -112,6 +122,13 @@ export function correccionDesde(venta: VentaDelListado): Correccion {
     requiereFactura: venta.requiereFacturaElectronica,
     carrito,
     manuales,
+    /*
+     * La fecha del hecho en la planta, ya en `AAAA-MM-DD` para que el `<input
+     * type="date">` la pueda pre-cargar — `api/` la serializa en ISO con
+     * offset, y `aaaaMmDdEnLaPlanta` la lee en la zona de la planta para no
+     * caer en el bug UTC que este archivo ya documenta.
+     */
+    ocurrioEnOriginal: aaaaMmDdEnLaPlanta(venta.createdAt),
   }
 }
 

@@ -166,7 +166,15 @@ export function Mostrador({
   const [medioDePago, setMedioDePago] = useState(correccion?.medioDePago ?? 'efectivo')
   const [codigo, setCodigo] = useState('')
   const [requiereFactura, setRequiereFactura] = useState(correccion?.requiereFactura ?? false)
-  const [ocurrioEn, setOcurrioEn] = useState(HOY)
+  /*
+   * La fecha del hecho — RN-VEN-14 + RN-VEN-16 fecha corregible.
+   *
+   * Alta: arranca en HOY, que es lo normal del mostrador. Corrección: arranca
+   * en la fecha ORIGINAL, que es lo que el admin está viendo para decidir si
+   * la cambia. La edición la maneja `api/` con el piso de 90 días y el rechazo
+   * de futuro — acá solo se muestra y se envía.
+   */
+  const [ocurrioEn, setOcurrioEn] = useState(correccion?.ocurrioEnOriginal ?? HOY)
   const [sinVacio, setSinVacio] = useState(0)
   const [motivo, setMotivo] = useState('')
 

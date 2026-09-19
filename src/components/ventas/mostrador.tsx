@@ -629,52 +629,49 @@ export function Mostrador({
       </label>
 
       {/*
-        ── Corrigiendo, la fecha NO se pregunta — RN-VEN-16 ─────────────────
+        ── Cuándo fue la venta — RN-VEN-14 + RN-VEN-16 fecha corregible ──────
 
-        La venta nueva hereda el instante exacto de la que reemplaza. Ofrecer el
-        campo daría a entender que se puede mover la venta de día, y eso es
-        precisamente lo que la corrección no hace: arreglar un tipeo no puede
-        reescribir el reporte de un mes que ya se emitió.
+        Arranca en HOY para el alta (lo normal del mostrador) y en la fecha
+        ORIGINAL para la corrección — `ocurrioEnOriginal` ya viene en
+        `AAAA-MM-DD`, así que el `<input type="date">` la muestra directo sin
+        volver a formatear.
+
+        Existe para tres casos:
+        - alta: la venta se carga tarde y se encuadra en el día real del hecho;
+        - corrección: la venta se cargó con la fecha equivocada y se corrige al
+          día que debería haber tenido — la nueva hereda por default pero el
+          admin puede ajustarla dentro del piso de 90 días de RN-VEN-14;
+        - ambos: el reporte del mes no se reescribe por un tipeo (RN-VEN-02).
+
+        Es un `<input type="date">` nativo y no un calendario propio: en un
+        celular abre el selector del sistema, que es táctil y conocido, y esto
+        se usa parado al lado de una llenadora. Además el navegador ya lo muestra
+        DD/MM/AAAA con el locale es-CO, mientras su `value` sigue siendo ISO —
+        que es lo que `api/` espera.
+
+        `max` lo cierra en hoy porque una venta futura no existe. El piso son los
+        90 días de `DIAS_MAXIMOS_HACIA_ATRAS`; quien manda es `api/`, esto solo
+        evita el viaje.
       */}
-      {corrigiendo ? null : (
-        <>
-          {/*
-          ── Cuándo fue la venta — RN-VEN-14 ──────────────────────────────────
-
-          Arranca en HOY y casi siempre se queda ahí: el mostrador cobra en el
-          momento. Existe para las ventas que se cargan tarde, que hasta ahora
-          entraban con la fecha del día en que alguien se acordó — y ahí el reporte
-          de agosto quedaba corto y el de septiembre inflado.
-
-          Es un `<input type="date">` nativo y no un calendario propio: en un
-          celular abre el selector del sistema, que es táctil y conocido, y esto se
-          usa parado al lado de una llenadora. Además el navegador ya lo muestra
-          DD/MM/AAAA con el locale es-CO, mientras su `value` sigue siendo ISO —
-          que es lo que `api/` espera.
-
-          `max` lo cierra en hoy porque una venta futura no existe. El piso son los
-          90 días de `DIAS_MAXIMOS_HACIA_ATRAS`; quien manda es `api/`, esto solo
-          evita el viaje.
-        */}
-          <label className="aq-etiqueta-campo max-w-xs">
-            <span>Cuándo fue la venta</span>
-            <input
-              type="date"
-              name="ocurrioEn"
-              value={ocurrioEn}
-              max={HOY}
-              min={HACE_90_DIAS}
-              onChange={(e) => setOcurrioEn(e.target.value)}
-              className="aq-campo"
-            />
-            <span className="mt-1 text-[13px] font-normal normal-case text-tenue">
-              {ocurrioEn === HOY
-                ? 'Hoy. Cámbielo solo si está cargando una venta de otro día.'
-                : 'Esta venta va a contar en el día que eligió, no en el de hoy.'}
-            </span>
-          </label>
-        </>
-      )}
+      <label className="aq-etiqueta-campo max-w-xs">
+        <span>Cuándo fue la venta</span>
+        <input
+          type="date"
+          name="ocurrioEn"
+          value={ocurrioEn}
+          max={HOY}
+          min={HACE_90_DIAS}
+          onChange={(e) => setOcurrioEn(e.target.value)}
+          className="aq-campo"
+        />
+        <span className="mt-1 text-[13px] font-normal normal-case text-tenue">
+          {corrigiendo
+            ? 'Esta venta corregida va a contar en el día que elija, no en el día que se cargó.'
+            : ocurrioEn === HOY
+              ? 'Hoy. Cámbielo solo si está cargando una venta de otro día.'
+              : 'Esta venta va a contar en el día que eligió, no en el de hoy.'}
+        </span>
+      </label>
 
       {/* ── Lo que va a pasar al cobrar ───────────────────────────────────── */}
       {items.length > 0 ? (

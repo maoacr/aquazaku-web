@@ -95,14 +95,36 @@ describe('corregirVentaAction() — lo que viaja', () => {
   })
 
   /*
-   * La regla que protege los cierres. Si `ocurrioEn` viajara, corregir un
-   * tipeo de una venta de ayer la movería a hoy — y un mes ya cerrado dejaría
-   * de cuadrar sin que nadie haya tocado un número de plata.
+   * La regla de la fecha en la corrección — RN-VEN-16 fecha corregible.
+   *
+   * El modal pre-carga con la fecha ORIGINAL — `ocurrioEnOriginal` —
+   * `ocurrioEn` viaja SIEMPRE que el campo trae un valor:
+   *
+   * - vacío ⇒ se omite, `api/` hereda el instante de la original;
+   * - con día distinto ⇒ `api/` valida dentro del piso de 90 días;
+   * - igual a la original ⇒ se manda igual (D10): la auditoría registra la
+   *   intención del admin, no la herencia silenciosa.
    */
-  it('NUNCA manda `ocurrioEn`: la venta nueva hereda el instante de la vieja', async () => {
+  it('manda `ocurrioEn` cuando el modal trae un día distinto al de hoy', async () => {
     respondeSiempre(201, CORRECCION)
 
-    await corregirVentaAction({}, form({ ...BASE, ocurrioEn: '2026-01-15' }))
+    await corregirVentaAction({}, form({ ...BASE, ocurrioEn: '2026-08-20' }))
+
+    expect(ultimoPedido().body.ocurrioEn).toBe('2026-08-20')
+  })
+
+  it('manda `ocurrioEn` igual al original sin filtrarlo — D10', async () => {
+    respondeSiempre(201, CORRECCION)
+
+    await corregirVentaAction({}, form({ ...BASE, ocurrioEn: '2026-09-15' }))
+
+    expect(ultimoPedido().body.ocurrioEn).toBe('2026-09-15')
+  })
+
+  it('omite `ocurrioEn` cuando el campo viene vacío', async () => {
+    respondeSiempre(201, CORRECCION)
+
+    await corregirVentaAction({}, form({ ...BASE, ocurrioEn: '   ' }))
 
     expect(ultimoPedido().body).not.toHaveProperty('ocurrioEn')
   })

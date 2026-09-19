@@ -112,3 +112,26 @@ export function horaEnLaPlanta(momento: Momento): string {
 export function hoyEnLaPlanta(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_DE_LA_PLANTA }).format(new Date())
 }
+
+/**
+ * `AAAA-MM-DD` de un instante, visto desde la planta — gemelo JS de
+ * `diaEnLaPlanta` (SQL) en `api/src/lib/dia.ts`.
+ *
+ * ── Por qué existe si ya tenemos `hoyEnLaPlanta` ────────────────────────────
+ *
+ * `hoyEnLaPlanta` lee el RELOJ. Esto lee un INSTANTE: el `createdAt` de una
+ * venta que se está mostrando, y que puede ser de cualquier día. Sin el
+ * helper, el modal de corrección pre-cargaba la fecha con `toISOString` del
+ * navegador — UTC en el contenedor, y la misma clase de bug que motivó este
+ * archivo, pero del lado de la lectura.
+ *
+ * Idéntico byte-a-byte a la pareja SQL `diaEnLaPlanta(...)::date` —
+ * `api/src/lib/dia.ts:47-49` — y a `hoyEnLaPlanta()` en el mismo archivo.
+ * Cualquier drift entre las dos se ve como un descuadre del reporte del día,
+ * no como un test que falla.
+ */
+export function aaaaMmDdEnLaPlanta(momento: Date | string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_DE_LA_PLANTA }).format(
+    momento instanceof Date ? momento : new Date(momento),
+  )
+}

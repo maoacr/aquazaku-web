@@ -147,11 +147,26 @@ export async function registrarVentaAction(
  * lado del servidor, y esa fusión es la edición que RN-VEN-02 prohíbe, escrita
  * en otro lugar.
  *
- * ── Lo que NO viaja ─────────────────────────────────────────────────────────
+ * ── `ocurrioEn` sí viaja, y siempre — RN-VEN-16 fecha corregible ────────────
  *
- * `ocurrioEn` no va: la venta nueva hereda el instante exacto de la que
- * reemplaza, para que arreglar un tipeo no mueva plata de un día —ni de un
- * mes— a otro. `api/` ni siquiera lo acepta.
+ * La corrección PUEDE llevar override de fecha dentro del piso de 90 días de
+ * RN-VEN-14. El modal pre-carga con la fecha original —queda en
+ * `ocurrioEnOriginal`— y se envía SIEMPRE, incluso si el admin no la tocó:
+ *
+ * - si viene vacío (no es el caso normal, el modal siempre pinta el input),
+ *   se omite para que `api/` herede el instante de la original;
+ * - si viene con un día distinto al de la original, `api/` lo valida y lo
+ *   persiste al mediodía de la planta;
+ * - si viene IGUAL a la original (D10), también se manda: el admin vio el
+ *   campo, confirmó la fecha, y la auditoría tiene que registrar esa
+ *   intención — no la herencia silenciosa.
+ *
+ * El filtro "igual a hoy = undefined" del alta NO se aplica acá: ese filtro
+ * existe porque el alta sin override usa `defaultNow()` y la corrección SIEMPRE
+ * escribe un `createdAt` explícito vía `Reemplazo`. Lo explica `corregirVenta`
+ * en `api/src/modules/ventas/correccion.ts`.
+ *
+ * ── Lo que NO viaja ─────────────────────────────────────────────────────────
  *
  * Los botellones sin vacío y la base tampoco: son movimientos FÍSICOS que ya
  * ocurrieron y siguen colgando de la venta original. El envase salió una vez.
@@ -162,6 +177,13 @@ export async function corregirVentaAction(
 ): Promise<EstadoDeVenta> {
   const ventaId = String(formData.get('ventaId') ?? '')
   const motivo = String(formData.get('motivo') ?? '').trim()
+
+  /*
+   * La fecha del modal — ver el comment del action arriba. Vacío ⇒ se omite
+   * para que `api/` herede; cualquier valor no-vacío viaja explícito.
+   */
+  const fecha = String(formData.get('ocurrioEn') ?? '').trim()
+  const ocurrioEn = fecha || undefined
 
   const items = itemsDelFormulario(formData)
   if ('error' in items) return items
@@ -178,6 +200,7 @@ export async function corregirVentaAction(
       ...(clienteId && { clienteId }),
       items: items.items,
       ...(codigo && { codigoDescuento: codigo }),
+      ...(ocurrioEn && { ocurrioEn }),
       requiereFacturaElectronica: formData.get('requiereFactura') === 'si',
     }),
   })

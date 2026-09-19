@@ -353,3 +353,70 @@ describe('la tarjeta de una venta corregida', () => {
     expect(screen.getByText('se cargaron 2 y habían salido 5')).toBeInTheDocument()
   })
 })
+
+/**
+ * ── Anular, que es la otra salida de una venta — RN-VEN-03 y RN-VEN-08 ──────
+ *
+ * La server action existía desde M6 y ninguna pantalla la llamaba. Estos tests
+ * son lo que faltaba para que «conectarla» signifique algo: el formulario se
+ * abre, exige motivo, y lleva la venta que se está anulando.
+ */
+describe('anular una venta', () => {
+  const abrirAnulacion = async () => {
+    const montado = montar()
+    await montado.usuario.click(screen.getByRole('button', { name: 'Anular' }))
+    return montado
+  }
+
+  it('el modal pide por qué', async () => {
+    await abrirAnulacion()
+
+    expect(screen.getByRole('textbox', { name: /Por qué se anula/ })).toBeInTheDocument()
+  })
+
+  it('lleva el id de la venta que se anula', async () => {
+    const { container } = await abrirAnulacion()
+
+    const ventaId = [...container.querySelectorAll('dialog input[name="ventaId"]')]
+      .map((i) => (i as HTMLInputElement).value)
+
+    expect(ventaId).toContain('v1')
+  })
+
+  /**
+   * Una anulación sin explicación es un agujero en la caja que dentro de tres
+   * meses nadie puede cerrar. El largo mínimo lo decide `api/`; acá se exige el
+   * mismo para poder decir qué falta antes del viaje.
+   */
+  it('sin motivo no se puede anular', async () => {
+    await abrirAnulacion()
+
+    expect(screen.getByRole('button', { name: 'Anular la venta' })).toBeDisabled()
+  })
+
+  it('con una explicación de verdad, sí', async () => {
+    const { usuario } = await abrirAnulacion()
+
+    await usuario.click(screen.getByRole('textbox', { name: /Por qué se anula/ }))
+    await usuario.paste('el cliente devolvió el botellón sin abrir')
+
+    expect(screen.getByRole('button', { name: 'Anular la venta' })).toBeEnabled()
+  })
+
+  /**
+   * Lo que va a pasar se dice ANTES, no después. Y cambia con el medio de pago:
+   * en una venta a crédito, anular además baja la deuda del cliente.
+   */
+  it('avisa que el producto vuelve al lote', async () => {
+    await abrirAnulacion()
+
+    expect(screen.getByText(/El producto vuelve a su lote/)).toBeInTheDocument()
+  })
+
+  it('y en una venta a crédito, que la deuda baja sola', async () => {
+    const montado = montar({ medioDePago: 'credito' })
+    await montado.usuario.click(screen.getByRole('button', { name: 'Anular' }))
+
+    expect(screen.getByText(/la deuda del cliente baja sola/)).toBeInTheDocument()
+  })
+})

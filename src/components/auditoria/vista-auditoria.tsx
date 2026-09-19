@@ -1,3 +1,4 @@
+import { FiltrosDeAuditoria } from '@/components/auditoria/filtros-de-auditoria'
 import { Encabezados, Etiqueta, SinResultados, Tabla, Td, Th } from '@/components/ui/tabla'
 import { QuitarFiltros } from '@/components/ui/vacio'
 import { apiServerFetch } from '@/lib/api-server'
@@ -12,8 +13,10 @@ import { fechaYHoraEnLaPlanta } from '@/lib/hora-de-la-planta'
  * que la pantalla no ramifica por rol — si algún día un rol viera menos, esta
  * vista no cambia.
  *
- * Todo server-rendered: los filtros viajan por query string y la paginación es
- * por cursor. Cero JavaScript en el browser para una pantalla de consulta.
+ * La consulta es toda del servidor: los filtros viajan por query string y la
+ * paginación es por cursor. Lo único que corre en el browser es la barra de
+ * filtros, porque encadenar el desplegable de acción al de módulo no se puede
+ * sin JavaScript. La tabla no lleva ni una línea.
  */
 
 export interface FiltrosDeAuditoria {
@@ -66,7 +69,7 @@ export async function VistaDeAuditoria({
         </p>
       </header>
 
-      <Filtros filtros={filtros} ruta={ruta} />
+      <FiltrosDeAuditoria filtros={filtros} ruta={ruta} />
 
       <Tabla>
         <Encabezados>
@@ -169,79 +172,5 @@ function FilaDeRegistro({ fila }: { fila: RegistroDeAuditoria }) {
         {fila.ip ? <p className="text-sm text-secundario">{fila.ip}</p> : null}
       </Td>
     </tr>
-  )
-}
-
-/**
- * Filtros por GET.
- *
- * Un formulario que navega en vez de un componente con estado: los filtros
- * quedan en la URL, así se pueden compartir, guardar en favoritos y volver
- * atrás con el botón del browser. Nada de esto funciona con estado en memoria.
- */
-function Filtros({ filtros, ruta }: { filtros: FiltrosDeAuditoria; ruta: string }) {
-  return (
-    /*
-      Es una tarjeta del sistema, no un recuadro con borde.
-
-      Estaba como `rounded-lg border border-sutil`: un rectángulo dibujado
-      encima del agua, sin relación con ninguna otra superficie de la app. Con
-      `aq-tarjeta` es la misma lámina que el resto y los campos se hunden en
-      ella, que es lo que hace que se lean como campos.
-    */
-    <form action={ruta} method="get" className="aq-tarjeta grid gap-4 p-5">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <label className="aq-etiqueta-campo">
-          <span>Acción</span>
-          <input
-            name="action"
-            defaultValue={filtros.action ?? ''}
-            placeholder="ventas:anular"
-            className="aq-campo"
-          />
-        </label>
-
-        <label className="aq-etiqueta-campo">
-          <span>Módulo</span>
-          <input
-            name="resource"
-            defaultValue={filtros.resource ?? ''}
-            placeholder="usuarios"
-            className="aq-campo"
-          />
-        </label>
-
-        <label className="aq-etiqueta-campo">
-          <span>Resultado</span>
-          <select name="result" defaultValue={filtros.result ?? ''} className="aq-campo">
-            <option value="">Todos</option>
-            <option value="ok">Permitidos</option>
-            {/* Ver solo los denegados es la consulta de seguridad más útil. */}
-            <option value="denied">Denegados</option>
-          </select>
-        </label>
-
-        <label className="aq-etiqueta-campo">
-          <span>Desde</span>
-          <input name="desde" type="date" defaultValue={filtros.desde ?? ''} className="aq-campo" />
-        </label>
-
-        <label className="aq-etiqueta-campo">
-          <span>Hasta</span>
-          <input name="hasta" type="date" defaultValue={filtros.hasta ?? ''} className="aq-campo" />
-        </label>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="submit" className="aq-boton aq-boton-primario">
-          Filtrar
-        </button>
-        {/* Un link y no un reset: `reset` devuelve los campos a sus valores
-            iniciales, que son justamente los filtros aplicados. */}
-        <a href={ruta} className="aq-boton aq-boton-secundario">
-          Limpiar
-        </a>
-      </div>
-    </form>
   )
 }

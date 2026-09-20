@@ -133,8 +133,8 @@ function FormularioDeAnulacion({
       <input type="hidden" name="ventaId" value={venta.id} />
 
       <p className="text-[13px] text-tenue">
-        La venta no desaparece: cambia de estado y muestra por qué. El producto vuelve a su
-        lote
+        La venta no desaparece: cambia de estado y muestra por qué. El producto vuelve a su lote.
+        Si la venta despachó botellones o prestó una base, también vuelven al stock
         {venta.medioDePago === 'credito' ? ' y la deuda del cliente baja sola' : ''}.
       </p>
 

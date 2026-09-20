@@ -75,7 +75,7 @@ const ventaOriginal: VentaDelListado = {
       productoNombre: 'Recarga',
       cantidad: 3,
       precioFinal: '10000',
-      precioManual: null,
+      precioManual: false,
     },
   ],
 } as VentaDelListado

@@ -130,19 +130,22 @@ describe('corregirVentaAction() — lo que viaja', () => {
   })
 
   /*
-   * El envase salió una vez. Volver a mandarlo lo contaría dos veces, y el
-   * cliente quedaría figurando con el doble de botellones sin vacío.
+   * La corrección puede mover `botellonesEntregados` y `botellonesRecibidos`:
+   * viajan pre-cargados con los valores originales, editables, y el server
+   * calcula el delta. La base sigue sin viajar: el préstamo es un movimiento
+   * FÍSICO que sigue colgando de la venta original y no se rehace — esa
+   * decisión quedó en la corrección de la venta (sucesora), no en el parque.
    */
-  it('NUNCA manda botellones ni base: el envase físico ya salió', async () => {
+  it('la corrección SÍ envía los dos campos de botellones (RN-VEN-17) pero NO la base', async () => {
     respondeSiempre(201, CORRECCION)
 
     await corregirVentaAction(
       {},
-      form({ ...BASE, botellonesSinVacio: '2', baseId: 'base-1', idSticker: '0042' }),
+      form({ ...BASE, botellonesEntregados: '2', botellonesRecibidos: '1', baseId: 'base-1', idSticker: '0042' }),
     )
 
     const { body } = ultimoPedido()
-    expect(body).not.toHaveProperty('botellonesSinVacio')
+    expect(body).toMatchObject({ botellonesEntregados: 2, botellonesRecibidos: 1 })
     expect(body).not.toHaveProperty('baseId')
     expect(body).not.toHaveProperty('idSticker')
   })

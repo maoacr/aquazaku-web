@@ -378,6 +378,113 @@ export function Mostrador({
         </p>
       ) : null}
 
+      {/*
+        El cliente va primero, antes de los productos, y se queda con la fila entera.
+
+        Es el campo del que dependen el precio, el crédito y el botellón sin
+        vacío, y ahora además despliega resultados: en un tercio del ancho el
+        nombre y el documento no entran en la misma línea.
+      */}
+      <BuscadorDeCliente
+        elegido={cliente}
+        onElegir={setCliente}
+        sinCliente="Sin cliente se cobra la lista residencial."
+      />
+
+      {/*
+        La base va justo debajo del cliente porque depende de él: se presta a
+        una de SUS direcciones, y sin cliente no tiene dónde apuntar.
+
+        Corrigiendo no aparece: la base que salió con la venta original sigue
+        prestada y la corrección no la rehace. Ofrecerla acá prestaría una
+        SEGUNDA base por arreglar un tipeo.
+      */}
+      {corrigiendo ? null : <EntregaDeBase cliente={cliente} />}
+
+      {/*
+        ── Cuándo fue la venta — RN-VEN-14 + RN-VEN-16 fecha corregible ──────
+
+        Arranca en HOY para el alta (lo normal del mostrador) y en la fecha
+        ORIGINAL para la corrección — `ocurrioEnOriginal` ya viene en
+        `AAAA-MM-DD`, así que el `<input type="date">` la muestra directo sin
+        volver a formatear.
+
+        Existe para tres casos:
+        - alta: la venta se carga tarde y se encuadra en el día real del hecho;
+        - corrección: la venta se cargó con la fecha equivocada y se corrige al
+          día que debería haber tenido — la nueva hereda por default pero el
+          admin puede ajustarla dentro del piso de 90 días de RN-VEN-14;
+        - ambos: el reporte del mes no se reescribe por un tipeo (RN-VEN-02).
+
+        Es un `<input type="date">` nativo y no un calendario propio: en un
+        celular abre el selector del sistema, que es táctil y conocido, y esto
+        se usa parado al lado de una llenadora. Además el navegador ya lo muestra
+        DD/MM/AAAA con el locale es-CO, mientras su `value` sigue siendo ISO —
+        que es lo que `api/` espera.
+
+        `max` lo cierra en hoy porque una venta futura no existe. El piso son los
+        90 días de `DIAS_MAXIMOS_HACIA_ATRAS`; quien manda es `api/`, esto solo
+        evita el viaje.
+      */}
+      <label className="aq-etiqueta-campo max-w-xs">
+        <span>Cuándo fue la venta</span>
+        <input
+          type="date"
+          name="ocurrioEn"
+          value={ocurrioEn}
+          max={HOY}
+          min={HACE_90_DIAS}
+          onChange={(e) => setOcurrioEn(e.target.value)}
+          className="aq-campo"
+        />
+        <span className="mt-1 text-[13px] font-normal normal-case text-tenue">
+          {corrigiendo
+            ? 'Esta venta corregida va a contar en el día que elija, no en el día que se cargó.'
+            : ocurrioEn === HOY
+              ? 'Hoy. Cámbielo solo si está cargando una venta de otro día.'
+              : 'Esta venta va a contar en el día que eligió, no en el de hoy.'}
+        </span>
+      </label>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="aq-etiqueta-campo">
+          <span>Cómo paga</span>
+          <select
+            value={medioDePago}
+            onChange={(e) => setMedioDePago(e.target.value)}
+            className="aq-campo"
+          >
+            <option value="efectivo">Efectivo</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="credito">Crédito</option>
+          </select>
+        </label>
+
+        <label className="aq-etiqueta-campo">
+          <span>
+            Código <span className="font-normal normal-case">(opcional)</span>
+          </span>
+          <input
+            name="codigoDescuento"
+            value={codigo}
+            onChange={(e) => setCodigo(e.target.value)}
+            placeholder="VERANO2026"
+            className="aq-campo uppercase"
+          />
+        </label>
+      </div>
+
+      <label className="aq-ficha">
+        <input
+          type="checkbox"
+          checked={requiereFactura}
+          onChange={(e) => setRequiereFactura(e.target.checked)}
+          className="sr-only"
+        />
+        <span className="aq-ficha-caja" aria-hidden />
+        El cliente pide factura electrónica
+      </label>
+
       <section className="grid gap-2">
         <h3 className="aq-micro text-tenue">Qué se lleva</h3>
 
@@ -521,57 +628,6 @@ export function Mostrador({
       </section>
 
       {/*
-        El cliente sale del grid y se queda con la fila entera.
-
-        Es el campo del que dependen el precio, el crédito y el botellón sin
-        vacío, y ahora además despliega resultados: en un tercio del ancho el
-        nombre y el documento no entran en la misma línea.
-      */}
-      <BuscadorDeCliente
-        elegido={cliente}
-        onElegir={setCliente}
-        sinCliente="Sin cliente se cobra la lista residencial."
-      />
-
-      {/*
-        La base va justo debajo del cliente porque depende de él: se presta a
-        una de SUS direcciones, y sin cliente no tiene dónde apuntar.
-
-        Corrigiendo no aparece: la base que salió con la venta original sigue
-        prestada y la corrección no la rehace. Ofrecerla acá prestaría una
-        SEGUNDA base por arreglar un tipeo.
-      */}
-      {corrigiendo ? null : <EntregaDeBase cliente={cliente} />}
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="aq-etiqueta-campo">
-          <span>Cómo paga</span>
-          <select
-            value={medioDePago}
-            onChange={(e) => setMedioDePago(e.target.value)}
-            className="aq-campo"
-          >
-            <option value="efectivo">Efectivo</option>
-            <option value="transferencia">Transferencia</option>
-            <option value="credito">Crédito</option>
-          </select>
-        </label>
-
-        <label className="aq-etiqueta-campo">
-          <span>
-            Código <span className="font-normal normal-case">(opcional)</span>
-          </span>
-          <input
-            name="codigoDescuento"
-            value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
-            placeholder="VERANO2026"
-            className="aq-campo uppercase"
-          />
-        </label>
-      </div>
-
-      {/*
         Corrigiendo no se pregunta por el vacío: el envase ya salió y sigue
         afuera, anotado en la venta original. Volver a descontarlo del parque
         inventaría un botellón que nunca salió.
@@ -616,62 +672,6 @@ export function Mostrador({
           ) : null}
         </div>
       ) : null}
-
-      <label className="aq-ficha">
-        <input
-          type="checkbox"
-          checked={requiereFactura}
-          onChange={(e) => setRequiereFactura(e.target.checked)}
-          className="sr-only"
-        />
-        <span className="aq-ficha-caja" aria-hidden />
-        El cliente pide factura electrónica
-      </label>
-
-      {/*
-        ── Cuándo fue la venta — RN-VEN-14 + RN-VEN-16 fecha corregible ──────
-
-        Arranca en HOY para el alta (lo normal del mostrador) y en la fecha
-        ORIGINAL para la corrección — `ocurrioEnOriginal` ya viene en
-        `AAAA-MM-DD`, así que el `<input type="date">` la muestra directo sin
-        volver a formatear.
-
-        Existe para tres casos:
-        - alta: la venta se carga tarde y se encuadra en el día real del hecho;
-        - corrección: la venta se cargó con la fecha equivocada y se corrige al
-          día que debería haber tenido — la nueva hereda por default pero el
-          admin puede ajustarla dentro del piso de 90 días de RN-VEN-14;
-        - ambos: el reporte del mes no se reescribe por un tipeo (RN-VEN-02).
-
-        Es un `<input type="date">` nativo y no un calendario propio: en un
-        celular abre el selector del sistema, que es táctil y conocido, y esto
-        se usa parado al lado de una llenadora. Además el navegador ya lo muestra
-        DD/MM/AAAA con el locale es-CO, mientras su `value` sigue siendo ISO —
-        que es lo que `api/` espera.
-
-        `max` lo cierra en hoy porque una venta futura no existe. El piso son los
-        90 días de `DIAS_MAXIMOS_HACIA_ATRAS`; quien manda es `api/`, esto solo
-        evita el viaje.
-      */}
-      <label className="aq-etiqueta-campo max-w-xs">
-        <span>Cuándo fue la venta</span>
-        <input
-          type="date"
-          name="ocurrioEn"
-          value={ocurrioEn}
-          max={HOY}
-          min={HACE_90_DIAS}
-          onChange={(e) => setOcurrioEn(e.target.value)}
-          className="aq-campo"
-        />
-        <span className="mt-1 text-[13px] font-normal normal-case text-tenue">
-          {corrigiendo
-            ? 'Esta venta corregida va a contar en el día que elija, no en el día que se cargó.'
-            : ocurrioEn === HOY
-              ? 'Hoy. Cámbielo solo si está cargando una venta de otro día.'
-              : 'Esta venta va a contar en el día que eligió, no en el de hoy.'}
-        </span>
-      </label>
 
       {/* ── Lo que va a pasar al cobrar ───────────────────────────────────── */}
       {items.length > 0 ? (

@@ -400,14 +400,12 @@ function Cuenta({
   valor,
   desde,
   alerta = false,
-  tamano = 'grande',
 }: {
   termino: string
   /** Ya formateado cuando es plata. `null` es «todavía no hay de dónde». */
   valor: number | string | null
   desde: string
   alerta?: boolean
-  tamano?: 'cuerpo' | 'grande'
 }) {
   return (
     <div>
@@ -416,7 +414,7 @@ function Cuenta({
         {valor === null ? (
           <p className="text-[14px] text-tenue">Sin registrar todavía</p>
         ) : (
-          <Cifra tamano={tamano} tono={alerta ? 'alerta' : 'principal'}>
+          <Cifra tamano="grande" tono={alerta ? 'alerta' : 'principal'}>
             {typeof valor === 'number' ? valor.toLocaleString('es-CO') : valor}
           </Cifra>
         )}

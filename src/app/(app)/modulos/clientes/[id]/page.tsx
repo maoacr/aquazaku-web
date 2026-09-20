@@ -240,7 +240,6 @@ export default async function FichaDeClientePage({
                   : stickersDeBases.join(', ')
             }
             desde="préstamos por dirección"
-            tamano="cuerpo"
           />
           <Cuenta
             termino="Cargos pendientes"

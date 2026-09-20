@@ -69,6 +69,13 @@ const ventaOriginal: VentaDelListado = {
   motivoAnulacion: null,
   corrigeAId: null,
   corregidaPorId: null,
+  /*
+   * Botellones despachados y recibidos en la venta original (RN-VEN-17).
+   * El caso «cliente trae 2 vacíos y se lleva 3 llenos»: intercambia 2 + neto
+   * +1. El modal debe pre-cargar estos números y permitir editarlos.
+   */
+  botellonesEntregados: 3,
+  botellonesRecibidos: 2,
   lineas: [
     {
       productoId: 'p-1',
@@ -142,5 +149,49 @@ describe('cambiar la fecha en el modal propaga el nuevo valor', () => {
      * tests de `corregirVentaAction` en el otro archivo.
      */
     expect(input.value).toBe('2026-09-10')
+  })
+})
+
+/*
+ * ── Botellones en el modal de corrección — RN-VEN-17 ───────────────────────
+ *
+ * El modal pre-carga los dos campos con los valores de la venta original
+ * (no de los defaults del alta), los deja editables, y el Server Action lee
+ * los nuevos valores para calcular el delta contra la original.
+ */
+describe('el modal de corrección pre-carga los dos campos de botellones', () => {
+  it('muestra los inputs con los valores de la venta original', () => {
+    const correccion = correccionDesde(ventaOriginal)
+
+    render(<Mostrador productos={[botellon]} stock={stock} correccion={correccion} />)
+
+    const entregados = screen.getByLabelText(/Entregados/i) as HTMLInputElement
+    const recibidos = screen.getByLabelText(/Recibidos/i) as HTMLInputElement
+
+    expect(entregados.value).toBe('3')
+    expect(recibidos.value).toBe('2')
+  })
+
+  it('los inputs son editables: el operador puede ajustar ambos valores', async () => {
+    const correccion = correccionDesde(ventaOriginal)
+
+    render(<Mostrador productos={[botellon]} stock={stock} correccion={correccion} />)
+
+    const entregados = screen.getByLabelText(/Entregados/i) as HTMLInputElement
+    const recibidos = screen.getByLabelText(/Recibidos/i) as HTMLInputElement
+    const usuario = userEvent.setup()
+
+    await usuario.clear(entregados)
+    await usuario.type(entregados, '2')
+    await usuario.clear(recibidos)
+    await usuario.type(recibidos, '3')
+
+    /*
+     * El value del input es lo que el Server Action va a leer del formData
+     * (`formData.get('botellonesEntregados')` / `formData.get('botellonesRecibidos')`).
+     * Sin cap visual en corrección — el operador puede moverlos libremente.
+     */
+    expect(entregados.value).toBe('2')
+    expect(recibidos.value).toBe('3')
   })
 })

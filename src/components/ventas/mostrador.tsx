@@ -1,7 +1,7 @@
 'use client'
 
 import { Minus, Plus } from 'lucide-react'
-import { useActionState, useId, useState } from 'react'
+import { useActionState, useEffect, useId, useState } from 'react'
 import {
   type EstadoDeVenta,
   corregirVentaAction,
@@ -185,14 +185,19 @@ export function Mostrador({
    * Botellones despachados / recibidos en esta transacción — RN-VEN-17.
    *
    * Alta: defaults 1-a-1 sobre la cantidad de botellones en el carrito. El
-   * operador ajusta si el cliente compra sin traer vacíos o devuelve extras.
+   * operador ajusta si el cliente compra sin devolver o devuelve extras. El
+   * `useEffect` que sigue mantiene los defaults sincronizados con el carrito
+   * mientras el operador no haya tocado los campos — agregar o sacar
+   * botellones del carrito arrastra los dos números hasta la nueva cantidad.
    *
    * Corrección: pre-cargados con los valores de la venta original — la
    * corrección puede moverlos, y si los deja como están el server los toma
-   * como delta=0 y no inserta compensatorios.
+   * como delta=0 y no inserta compensatorios. El flag `botellonesDirty` no
+   * se usa en corrección.
    */
   const [entregados, setEntregados] = useState(correccion?.botellonesEntregados ?? 0)
   const [recibidos, setRecibidos] = useState(correccion?.botellonesRecibidos ?? 0)
+  const [botellonesDirty, setBotellonesDirty] = useState(false)
   const [motivo, setMotivo] = useState('')
 
   /*
@@ -222,6 +227,9 @@ export function Mostrador({
     setCodigo('')
     setRequiereFactura(false)
     setManuales({})
+    setBotellonesDirty(false)
+    setEntregados(0)
+    setRecibidos(0)
   })
 
   const vendibleDe = (id: string) => stock.find((s) => s.productoId === id)?.vendible ?? 0
@@ -300,6 +308,26 @@ export function Mostrador({
     const producto = productos.find((p) => p.id === item.productoId)
     return suma + (producto?.presentacion === 'botellon' ? item.cantidad : 0)
   }, 0)
+
+  /*
+   * Mantener los defaults sincronizados con el carrito en alta — RN-VEN-17.
+   *
+   * Mientras el operador no haya tocado los campos (flag `botellonesDirty`),
+   * cada cambio en `botellonesEnCarrito` arrastra `entregados` y `recibidos`
+   * al nuevo valor: agregar una recarga de botellón pinta 1 y 1; subir a
+   * cinco pinta 5 y 5. En el momento que el operador edita uno de los dos,
+   * el flag se prende y dejamos de sobrescribir — lo que tipeó gana hasta
+   * que se registre la venta o se limpie el formulario.
+   *
+   * En corrección el flag y el effect son no-ops: los valores ya vienen de
+   * la venta original y el operador decide si los mueve.
+   */
+  useEffect(() => {
+    if (corrigiendo) return
+    if (botellonesDirty) return
+    setEntregados(botellonesEnCarrito)
+    setRecibidos(botellonesEnCarrito)
+  }, [botellonesEnCarrito, botellonesDirty, corrigiendo])
 
   /*
    * Cap visual sobre `entregados` solo en alta: dejar un valor mayor que los
@@ -671,7 +699,10 @@ export function Mostrador({
                 min={0}
                 {...(corrigiendo ? {} : { max: botellonesEnCarrito })}
                 value={entregadosCap}
-                onChange={(e) => setEntregados(Number(e.target.value))}
+                onChange={(e) => {
+                  setEntregados(Number(e.target.value))
+                  setBotellonesDirty(true)
+                }}
                 className="aq-campo aq-cifra w-full"
               />
             </label>
@@ -681,7 +712,10 @@ export function Mostrador({
                 type="number"
                 min={0}
                 value={recibidos}
-                onChange={(e) => setRecibidos(Number(e.target.value))}
+                onChange={(e) => {
+                  setRecibidos(Number(e.target.value))
+                  setBotellonesDirty(true)
+                }}
                 className="aq-campo aq-cifra w-full"
               />
             </label>

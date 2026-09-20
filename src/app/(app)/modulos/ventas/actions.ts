@@ -60,13 +60,15 @@ export async function registrarVentaAction(
   const codigo = String(formData.get('codigoDescuento') ?? '').trim()
 
   /*
-   * Cuántos botellones salen SIN vacío de contrapartida — RN-ENV-03.
+   * Botellones despachados y recibidos — RN-VEN-17.
    *
-   * Solo viaja cuando es mayor que cero: el caso común es el intercambio, que
-   * no mueve el parque, y mandar un `0` en cada venta ensuciaría la bitácora
-   * con un campo que casi nunca dice nada.
+   * Viajan siempre (defaults del form son 1-a-1, ambos > 0 en una venta con
+   * recargas). El servidor usa `>= 0` y rechaza negativos; el cap sobre
+   * `entregados` (no exceder `botellonesEnCarrito`) lo aplica `api/` con
+   * `BOTELLONES_SIN_RESPALDO`.
    */
-  const sinVacio = Number(formData.get('botellonesSinVacio') ?? 0)
+  const entregados = Number(formData.get('botellonesEntregados') ?? 0)
+  const recibidos = Number(formData.get('botellonesRecibidos') ?? 0)
 
   /*
    * La base viaja DENTRO de la venta — RN-BAS-03.
@@ -89,7 +91,8 @@ export async function registrarVentaAction(
       ...(clienteId && { clienteId }),
       items,
       ...(codigo && { codigoDescuento: codigo }),
-      ...(sinVacio > 0 && { botellonesSinVacio: sinVacio }),
+      ...(entregados > 0 && { botellonesEntregados: entregados }),
+      ...(recibidos > 0 && { botellonesRecibidos: recibidos }),
       ...(baseSticker &&
         baseDireccionId && { base: { sticker: baseSticker, direccionId: baseDireccionId } }),
       /*
@@ -166,10 +169,12 @@ export async function registrarVentaAction(
  * escribe un `createdAt` explícito vía `Reemplazo`. Lo explica `corregirVenta`
  * en `api/src/modules/ventas/correccion.ts`.
  *
- * ── Lo que NO viaja ─────────────────────────────────────────────────────────
+ * ── Lo que sí viaja ahora: los dos campos de botellones — RN-VEN-17 ──────
  *
- * Los botellones sin vacío y la base tampoco: son movimientos FÍSICOS que ya
- * ocurrieron y siguen colgando de la venta original. El envase salió una vez.
+ * La corrección puede mover `botellonesEntregados` y `botellonesRecibidos`.
+ * Viajan siempre (pre-cargados con los valores originales, editables). Si el
+ * operador no los toca, el server los toma como delta=0 y no inserta
+ * compensatorios. Si los mueve, el server inserta `tipo='ajuste'` con el delta.
  */
 export async function corregirVentaAction(
   _previo: EstadoDeVenta,
@@ -191,6 +196,9 @@ export async function corregirVentaAction(
   const clienteId = String(formData.get('clienteId') ?? '')
   const codigo = String(formData.get('codigoDescuento') ?? '').trim()
 
+  const entregados = Number(formData.get('botellonesEntregados') ?? 0)
+  const recibidos = Number(formData.get('botellonesRecibidos') ?? 0)
+
   const res = await apiServerFetchRaw(`/ventas/${ventaId}/correccion`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -201,6 +209,8 @@ export async function corregirVentaAction(
       items: items.items,
       ...(codigo && { codigoDescuento: codigo }),
       ...(ocurrioEn && { ocurrioEn }),
+      ...(entregados > 0 && { botellonesEntregados: entregados }),
+      ...(recibidos > 0 && { botellonesRecibidos: recibidos }),
       requiereFacturaElectronica: formData.get('requiereFactura') === 'si',
     }),
   })

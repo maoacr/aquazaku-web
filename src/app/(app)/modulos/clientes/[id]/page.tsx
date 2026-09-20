@@ -120,7 +120,12 @@ export default async function FichaDeClientePage({
       bases: (await siPuedeVerlo(apiServerFetch<Base[]>(`/direcciones/${direccion.id}/bases`))) ?? [],
     })),
   )
-  const totalDeBases = basesPorDireccion.reduce((suma, d) => suma + d.bases.length, 0)
+  /*
+   * Los stickers van chatos en la cuenta de «Bases prestadas», no la cantidad:
+   * es lo que el operario mira para ir a buscar una base concreta. La lista
+   * completa con su dirección y estado sigue abajo, en su sección — RN-BAS-03.
+   */
+  const stickersDeBases = basesPorDireccion.flatMap((d) => d.bases.map((b) => b.idSticker))
 
   return (
     <div className="grid gap-6">
@@ -227,8 +232,15 @@ export default async function FichaDeClientePage({
           />
           <Cuenta
             termino="Bases prestadas"
-            valor={cliente.direcciones.length > 0 ? totalDeBases : null}
+            valor={
+              cliente.direcciones.length === 0
+                ? null
+                : stickersDeBases.length === 0
+                  ? '—'
+                  : stickersDeBases.join(', ')
+            }
             desde="préstamos por dirección"
+            tamano="cuerpo"
           />
           <Cuenta
             termino="Cargos pendientes"
@@ -389,12 +401,14 @@ function Cuenta({
   valor,
   desde,
   alerta = false,
+  tamano = 'grande',
 }: {
   termino: string
   /** Ya formateado cuando es plata. `null` es «todavía no hay de dónde». */
   valor: number | string | null
   desde: string
   alerta?: boolean
+  tamano?: 'cuerpo' | 'grande'
 }) {
   return (
     <div>
@@ -403,7 +417,7 @@ function Cuenta({
         {valor === null ? (
           <p className="text-[14px] text-tenue">Sin registrar todavía</p>
         ) : (
-          <Cifra tamano="grande" tono={alerta ? 'alerta' : 'principal'}>
+          <Cifra tamano={tamano} tono={alerta ? 'alerta' : 'principal'}>
             {typeof valor === 'number' ? valor.toLocaleString('es-CO') : valor}
           </Cifra>
         )}

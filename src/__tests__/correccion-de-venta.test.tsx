@@ -1,14 +1,26 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { UltimasVentas } from '@/components/ventas/ultimas-ventas'
 import type { Producto, ResumenDeStock, VentaDelListado } from '@/lib/api-types'
 
 vi.mock('@/app/(app)/modulos/ventas/actions', () => ({
-  registrarVentaAction: vi.fn(),
-  corregirVentaAction: vi.fn(),
-  anularVentaAction: vi.fn(),
+  /*
+   * El reducer que el componente cuelga de `useActionState` espera un
+   * `EstadoDeVenta` (no-undefined). Sin un return, el state queda undefined y
+   * el siguiente render rompe con `Cannot read properties of undefined`. Los
+   * tests previos no llegaban al submit, por eso no se veía — ahora sí.
+   */
+  registrarVentaAction: vi.fn(async () => ({})),
+  corregirVentaAction: vi.fn(async () => ({})),
+  anularVentaAction: vi.fn(async () => ({})),
 }))
+
+const { corregirVentaAction } = await import('@/app/(app)/modulos/ventas/actions')
+
+afterEach(() => {
+  vi.mocked(corregirVentaAction).mockClear()
+})
 
 /**
  * Corregir una venta desde la lista — RN-VEN-16.
@@ -250,6 +262,48 @@ describe('el modal abre con la venta adentro', () => {
      * Bogotá, así que la pre-carga cae en `2026-09-15`.
      */
     expect(input?.value).toBe('2026-09-15')
+  })
+
+  /**
+   * ── Editar la fecha propaga el día nuevo al server action ─────────────────
+   *
+   * El test de arriba prueba que la pre-carga es la original. Este prueba el
+   * otro extremo: que la edición llega al server action con el día nuevo, no
+   * con la pre-carga. Sin este, alguien podría deshabilitar el `onChange` del
+   * input y el modal seguiría pasando el test anterior — el override sería
+   * visual pero el viaje seguiría con la fecha original.
+   *
+   * El motivo se llena: si no, el botón está disabled y el form no se submitea.
+   */
+  it('cambiar la fecha propaga el día nuevo al server action', async () => {
+    const { usuario, container } = montar()
+
+    await usuario.click(screen.getByRole('button', { name: 'Corregir' }))
+
+    /*
+     * `fireEvent.change` y no `userEvent.type`: jsdom trata `<input
+     * type="date">` como texto plano y `userEvent.type` con un valor
+     * preexistente primero borra, segundo escribe — un cleanup de lo que
+     * justamente queremos afirmar (que el value pre-cargado se reemplazó).
+     * `fireEvent.change` setea el value y dispara el `onChange` una vez, que
+     * es lo que la pieza controlada necesita.
+     */
+    const input = container.querySelector('input[name="ocurrioEn"]') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '2026-08-20' } })
+
+    await usuario.click(screen.getByRole('textbox', { name: /Por qué se corrige/ }))
+    await usuario.paste('se cargó con la fecha del lunes y fue el viernes')
+
+    await usuario.click(screen.getByRole('button', { name: 'Guardar la corrección' }))
+
+    expect(corregirVentaAction).toHaveBeenCalled()
+    /*
+     * `useActionState` invoca el reducer con `(previo, formData)`; acá
+     * capturamos el segundo argumento, que es el `FormData` que el form
+     * construyó a partir del DOM.
+     */
+    const formData = vi.mocked(corregirVentaAction).mock.calls.at(-1)![1] as FormData
+    expect(formData.get('ocurrioEn')).toBe('2026-08-20')
   })
 })
 

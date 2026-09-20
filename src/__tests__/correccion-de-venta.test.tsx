@@ -230,18 +230,26 @@ describe('el modal abre con la venta adentro', () => {
   })
 
   /**
-   * ── La fecha NO se ofrece — RN-VEN-16 ────────────────────────────────────
+   * ── La fecha SÍ se ofrece — RN-VEN-16 fecha corregible ───────────────────
    *
-   * La venta nueva hereda el instante exacto de la que reemplaza. Un campo de
-   * fecha acá diría que se puede mover la venta de día, y arreglar un tipeo
-   * pasaría a poder reescribir el reporte de un mes ya emitido.
+   * La corrección PUEDE llevar un `ocurrioEn` que pasa el piso de 90 días de
+   * RN-VEN-14. El campo se renderiza pre-cargado con la fecha original en
+   * `AAAA-MM-DD`, y el admin lo modifica solo si quiere mover la plata a otro
+   * día. Sin tocarlo, sigue viajando explícito — D10: la auditoría registra la
+   * intención del admin.
    */
-  it('no ofrece cambiar la fecha', async () => {
+  it('ofrece la fecha pre-cargada con la original', async () => {
     const { usuario, container } = montar()
 
     await usuario.click(screen.getByRole('button', { name: 'Corregir' }))
 
-    expect(container.querySelector('input[name="ocurrioEn"]')).toBeNull()
+    const input = container.querySelector('input[name="ocurrioEn"]') as HTMLInputElement | null
+    expect(input).not.toBeNull()
+    /*
+     * La venta de fixture tiene `createdAt` fijo al 2026-09-15 al mediodía de
+     * Bogotá, así que la pre-carga cae en `2026-09-15`.
+     */
+    expect(input?.value).toBe('2026-09-15')
   })
 })
 

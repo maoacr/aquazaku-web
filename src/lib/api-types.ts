@@ -443,6 +443,10 @@ export interface Venta {
   corrigeAId: string | null
   /** La venta que reemplaza a esta. Con esto, `estado` es `corregida`. */
   corregidaPorId: string | null
+  /** Cuántos botellones se llevaron de la planta. RN-VEN-17. */
+  botellonesEntregados: number
+  /** Cuántos botellones trajo el cliente en esta transacción. RN-VEN-17. */
+  botellonesRecibidos: number
 }
 
 /**

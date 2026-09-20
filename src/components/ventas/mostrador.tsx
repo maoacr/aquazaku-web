@@ -83,6 +83,10 @@ export interface Correccion {
    * y la nota sobre D10 en el comment del action.
    */
   ocurrioEnOriginal: string
+  /** Botellones despachados en la venta original. RN-VEN-17. */
+  botellonesEntregados: number
+  /** Botellones devueltos por el cliente en la venta original. RN-VEN-17. */
+  botellonesRecibidos: number
 }
 
 /**
@@ -129,6 +133,8 @@ export function correccionDesde(venta: VentaDelListado): Correccion {
      * caer en el bug UTC que este archivo ya documenta.
      */
     ocurrioEnOriginal: aaaaMmDdEnLaPlanta(venta.createdAt),
+    botellonesEntregados: venta.botellonesEntregados,
+    botellonesRecibidos: venta.botellonesRecibidos,
   }
 }
 
@@ -175,7 +181,18 @@ export function Mostrador({
    * de futuro — acá solo se muestra y se envía.
    */
   const [ocurrioEn, setOcurrioEn] = useState(correccion?.ocurrioEnOriginal ?? HOY)
-  const [sinVacio, setSinVacio] = useState(0)
+  /*
+   * Botellones despachados / recibidos en esta transacción — RN-VEN-17.
+   *
+   * Alta: defaults 1-a-1 sobre la cantidad de botellones en el carrito. El
+   * operador ajusta si el cliente compra sin traer vacíos o devuelve extras.
+   *
+   * Corrección: pre-cargados con los valores de la venta original — la
+   * corrección puede moverlos, y si los deja como están el server los toma
+   * como delta=0 y no inserta compensatorios.
+   */
+  const [entregados, setEntregados] = useState(correccion?.botellonesEntregados ?? 0)
+  const [recibidos, setRecibidos] = useState(correccion?.botellonesRecibidos ?? 0)
   const [motivo, setMotivo] = useState('')
 
   /*
@@ -285,12 +302,14 @@ export function Mostrador({
   }, 0)
 
   /*
-   * Se recorta solo cuando el carrito baja: dejar un `sinVacio` mayor que los
-   * botellones vendidos haría que el servidor rechace con un número que la
-   * pantalla ya sabía que estaba mal.
+   * Cap visual sobre `entregados` solo en alta: dejar un valor mayor que los
+   * botellones del carrito haría que el servidor rechace con `BOTELLONES_SIN_RESPALDO`
+   * un número que la pantalla ya sabía que estaba mal. En corrección el cap
+   * no aplica — el carrito pudo haber cambiado desde la venta original y la
+   * corrección está explícitamente autorizada a mover ambos campos.
    */
-  const salenSinVacio = Math.min(sinVacio, botellonesEnCarrito)
-  const botellonSinCliente = salenSinVacio > 0 && !cliente
+  const entregadosCap = corrigiendo ? entregados : Math.min(entregados, botellonesEnCarrito)
+  const botellonSinCliente = (entregadosCap > 0 || recibidos > 0) && !cliente
 
   const excedidos = items.filter((i) => i.cantidad > vendibleDe(i.productoId))
   const creditoSinCliente = medioDePago === 'credito' && !cliente
@@ -305,9 +324,9 @@ export function Mostrador({
       <input type="hidden" name="requiereFactura" value={requiereFactura ? 'si' : 'no'} />
       {corrigiendo ? (
         <input type="hidden" name="ventaId" value={correccion.ventaId} />
-      ) : (
-        <input type="hidden" name="botellonesSinVacio" value={salenSinVacio} />
-      )}
+      ) : null}
+      <input type="hidden" name="botellonesEntregados" value={entregadosCap} />
+      <input type="hidden" name="botellonesRecibidos" value={recibidos} />
 
       {/*
         Corrigiendo, el título lo pone el modal: repetirlo acá serían dos
@@ -628,45 +647,49 @@ export function Mostrador({
       </section>
 
       {/*
-        Corrigiendo no se pregunta por el vacío: el envase ya salió y sigue
-        afuera, anotado en la venta original. Volver a descontarlo del parque
-        inventaría un botellón que nunca salió.
+        RN-VEN-17. Alta: defaults 1-a-1 sobre la cantidad de botellones del
+        carrito (intercambio normal — caso común). Corrección: muestra los
+        mismos dos campos, pre-cargados con los valores originales, editables.
+        El server inserta los movimientos según el delta contra la original.
       */}
-      {botellonesEnCarrito > 0 && !corrigiendo ? (
+      {botellonesEnCarrito > 0 || (corrigiendo && (correccion.botellonesEntregados > 0 || correccion.botellonesRecibidos > 0)) ? (
         <div className="rounded-lg border border-sutil p-4">
           <p className="text-[13px] text-principal">
-            {botellonesEnCarrito === 1
-              ? '¿Trajo el botellón vacío?'
-              : `¿Trajo los ${botellonesEnCarrito} botellones vacíos?`}
+            {corrigiendo
+              ? 'Botellones despachados y recibidos en la venta original. Ajustá si el registro estaba mal.'
+              : '¿Cuántos botellones se llevan y cuántos traen de vuelta?'}
           </p>
-          {/*
-            La recarga normal es un intercambio y no mueve nada, así que el
-            default es «sí»: el caso común no cuesta ningún clic.
-
-            Lo que se pregunta es CUÁNTOS no trajo, y no un sí/no, porque en el
-            mostrador se dice «vendí tres, trajo dos» — y eso es UN envase que
-            sale, no tres ni ninguno.
-          */}
           <p className="mt-1 text-[13px] text-tenue">
-            Si se lleva alguno sin devolver el vacío, queda anotado a su nombre. No se le cobra:
-            el envase sigue siendo de la planta.
+            Por defecto, un intercambio 1 a 1. Ajustá si el cliente compra sin devolver o devuelve sin comprar.
           </p>
 
-          <label className="aq-etiqueta-campo mt-3">
-            <span>Se lleva sin devolver</span>
-            <input
-              type="number"
-              min={0}
-              max={botellonesEnCarrito}
-              value={salenSinVacio}
-              onChange={(e) => setSinVacio(Number(e.target.value))}
-              className="aq-campo aq-cifra w-24"
-            />
-          </label>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="aq-etiqueta-campo">
+              <span>Entregados</span>
+              <input
+                type="number"
+                min={0}
+                {...(corrigiendo ? {} : { max: botellonesEnCarrito })}
+                value={entregadosCap}
+                onChange={(e) => setEntregados(Number(e.target.value))}
+                className="aq-campo aq-cifra w-full"
+              />
+            </label>
+            <label className="aq-etiqueta-campo">
+              <span>Recibidos</span>
+              <input
+                type="number"
+                min={0}
+                value={recibidos}
+                onChange={(e) => setRecibidos(Number(e.target.value))}
+                className="aq-campo aq-cifra w-full"
+              />
+            </label>
+          </div>
 
           {botellonSinCliente ? (
             <p className="mt-3 text-[13px] text-alerta">
-              Un botellón que sale sin vacío queda a cargo de alguien. Elija el cliente arriba: sin
+              Un botellón que sale o vuelve queda a cargo de alguien. Elija el cliente arriba: sin
               nombre no hay a quién reclamárselo.
             </p>
           ) : null}

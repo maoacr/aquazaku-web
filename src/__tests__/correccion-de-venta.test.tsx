@@ -86,6 +86,8 @@ function venta(sobrescribe: Partial<VentaDelListado> = {}): VentaDelListado {
     motivoAnulacion: null,
     corrigeAId: null,
     corregidaPorId: null,
+    botellonesEntregados: 0,
+    botellonesRecibidos: 0,
     lineas: [
       {
         productoId: 'p-1',

@@ -656,11 +656,11 @@ export function Mostrador({
         <div className="rounded-lg border border-sutil p-4">
           <p className="text-[13px] text-principal">
             {corrigiendo
-              ? 'Botellones despachados y recibidos en la venta original. Ajustá si el registro estaba mal.'
+              ? 'Botellones despachados y recibidos en la venta original. Ajuste si el registro estaba mal.'
               : '¿Cuántos botellones se llevan y cuántos traen de vuelta?'}
           </p>
           <p className="mt-1 text-[13px] text-tenue">
-            Por defecto, un intercambio 1 a 1. Ajustá si el cliente compra sin devolver o devuelve sin comprar.
+            Por defecto, un intercambio 1 a 1. Ajuste si el cliente compra sin devolver o devuelve sin comprar.
           </p>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2">

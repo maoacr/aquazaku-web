@@ -143,6 +143,8 @@ export function Mostrador({
   stock,
   correccion,
   alCorregir,
+  enModal = false,
+  alRegistrar,
 }: {
   productos: Producto[]
   stock: ResumenDeStock[]
@@ -158,8 +160,32 @@ export function Mostrador({
   correccion?: Correccion
   /** Qué hacer cuando la corrección salió bien. Cierra el modal. */
   alCorregir?: () => void
+  /**
+   * El alta vive dentro de un modal, no en una pantalla.
+   *
+   * Es el mismo modo que la corrección: el modal ya pone el título y el
+   * padding, así que el `<h2>` interno y la `aq-tarjeta` se omiten para no
+   * quedar dos encabezados y dos cajas a cuatro centímetros uno del otro.
+   * Campos, validaciones, server action y defaults siguen siendo los mismos.
+   */
+  enModal?: boolean
+  /**
+   * Qué hacer cuando el alta salió bien dentro de un modal. Cierra el modal.
+   *
+   * La limpieza de los campos (carrito vacío, cliente en null, etc.) es
+   * innecesaria acá: al cerrarse, el `<Modal>` desmonta el contenido, y
+   * remontar es más barato que acordarse de limpiar — lo dice el propio
+   * `Modal` en su comentario de cabecera.
+   */
+  alRegistrar?: () => void
 }) {
   const corrigiendo = correccion !== undefined
+  /*
+   * Modo modal: o por corrección (siempre dentro de un modal) o por alta
+   * dentro del modal nuevo. La forma es la misma —el modal provee título y
+   * padding—, así que se deriva acá y se usa en className y en el encabezado.
+   */
+  const modoModal = enModal || corrigiendo
 
   const [estado, accion, enviando] = useActionState(
     corrigiendo ? corregirVentaAction : registrarVentaAction,
@@ -218,6 +244,16 @@ export function Mostrador({
      */
     if (corrigiendo) {
       alCorregir?.()
+      return
+    }
+
+    /*
+     * Alta dentro del modal: el padre cierra, y al cerrarse el `<Modal>`
+     * desmonta este componente. Remontar la próxima vez sale más barato que
+     * limpiar estado a mano.
+     */
+    if (enModal) {
+      alRegistrar?.()
       return
     }
 
@@ -345,7 +381,7 @@ export function Mostrador({
   return (
     <form
       action={accion}
-      className={corrigiendo ? 'grid gap-5' : 'aq-tarjeta grid gap-5 p-5'}
+      className={modoModal ? 'grid gap-5' : 'aq-tarjeta grid gap-5 p-5'}
     >
       <input type="hidden" name="items" value={JSON.stringify(items)} />
       <input type="hidden" name="medioDePago" value={medioDePago} />
@@ -358,7 +394,8 @@ export function Mostrador({
 
       {/*
         Corrigiendo, el título lo pone el modal: repetirlo acá serían dos
-        encabezados a cuatro centímetros uno del otro diciendo lo mismo.
+        encabezados a cuatro centímetros uno del otro diciendo lo mismo. Lo
+        mismo aplica al alta dentro del modal nuevo — el modal pone el título.
       */}
       {corrigiendo ? (
         <>
@@ -400,7 +437,7 @@ export function Mostrador({
             </span>
           </label>
         </>
-      ) : (
+      ) : enModal ? null : (
         <div>
           <h2 className="aq-titulo-tarjeta text-principal">Registrar una venta</h2>
           <p className="mt-1 text-[13px] text-tenue">

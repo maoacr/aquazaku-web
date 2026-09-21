@@ -1,4 +1,4 @@
-import { Mostrador } from '@/components/ventas/mostrador'
+import { BotonDeNuevaVenta } from '@/components/ventas/boton-de-nueva-venta'
 import { UltimasVentas } from '@/components/ventas/ultimas-ventas'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch } from '@/lib/api-server'
@@ -37,7 +37,13 @@ export default async function VentasPage() {
         </p>
       </header>
 
-      <Mostrador productos={productos.filter((p) => p.activo)} stock={stock} />
+      {/*
+        El alta de venta vive dentro de un modal — el mismo `<Modal>` que ya
+        reusa la corrección y la anulación. El botón lo abre; el formulario
+        (productos, stock, cliente, base, botellones, código, factura) es
+        exactamente el mismo `<Mostrador>` de siempre, sin cambios.
+      */}
+      <BotonDeNuevaVenta productos={productos.filter((p) => p.activo)} stock={stock} />
 
       <section className="grid gap-3">
         <h2 className="aq-micro text-tenue">Últimas ventas</h2>

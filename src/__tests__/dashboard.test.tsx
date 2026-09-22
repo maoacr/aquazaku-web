@@ -290,6 +290,88 @@ describe('el tablero compone paneles según lo que el rol puede ver', () => {
   })
 
   /**
+   * La lista completa de «para llamar» se mudó a `/modulos/seguimientos`. El
+   * tablero avisa con un pendiente que cuenta cuántos hay y lleva a la lista.
+   *
+   * Esta es la prueba de que la mudanza no se quedó a medias: si alguien borra
+   * el pendiente del tablero y deja la sección renderizada en otra parte, este
+   * test no falla. Pero si BORRA el pendiente, sí — y eso es lo que protege.
+   */
+  it('cuando hay clientes para llamar, avisa con la cantidad y lleva a Seguimientos', async () => {
+    responde({
+      stock: [stock()],
+      aLlamar: [
+        {
+          clienteId: 'c1',
+          nombre: 'Yeimy Padilla',
+          documento: '79123456',
+          diasSinComprar: 12,
+          urgencia: 'urgente',
+          telefonos: [],
+        },
+      ],
+    })
+
+    await pintar()
+
+    /*
+     * «1 cliente» — singular — y NO «1 clientes» ni «1 cliente(s)». El «(s)»
+     * no lo dice nadie, y la concuerda la vigila el mismo helper `contar()` que
+     * usan los otros pendientes.
+     */
+    expect(screen.getByText('1 cliente para llamar')).toBeInTheDocument()
+    const aviso = screen.getByRole('link', { name: /seguimientos/i })
+    expect(aviso).toHaveAttribute('href', '/modulos/seguimientos')
+  })
+
+  /**
+   * Con plural: la concuerda. Sin este test, pasar siempre el singular
+   * parecería correcto.
+   */
+  it('cuenta en plural cuando hay más de un cliente para llamar', async () => {
+    responde({
+      stock: [stock()],
+      aLlamar: [
+        {
+          clienteId: 'c1',
+          nombre: 'Yeimy Padilla',
+          documento: '79123456',
+          diasSinComprar: 12,
+          urgencia: 'urgente',
+          telefonos: [],
+        },
+        {
+          clienteId: 'c2',
+          nombre: 'Tienda La Esquina',
+          documento: '900123456',
+          diasSinComprar: 6,
+          urgencia: 'aviso',
+          telefonos: [],
+        },
+      ],
+    })
+
+    await pintar()
+
+    expect(screen.getByText('2 clientes para llamar')).toBeInTheDocument()
+  })
+
+  /**
+   * Sin nadie a quien llamar, el tablero NO inventa el pendiente: una buena
+   * noticia se dice con el saludo («No hay nada esperando»), no con una
+   * sección que aparece y desaparece.
+   */
+  it('sin clientes para llamar, no suma el pendiente', async () => {
+    responde({ stock: [stock()], aLlamar: [] })
+
+    await pintar()
+
+    expect(screen.queryByText(/clientes? para llamar/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /seguimientos/i })).toBeNull()
+    expect(screen.getByText(/no hay nada esperando/i)).toBeInTheDocument()
+  })
+
+  /**
    * La franja del nivel observado es lo que hace que el dibujo del tanque sea
    * comparable con la realidad en vez de decorativo.
    */

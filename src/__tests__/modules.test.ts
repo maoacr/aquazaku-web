@@ -21,12 +21,15 @@ describe('computeVisibleModules()', () => {
      // produjo, aunque no pueda cerrar el día ni ver los tanques.
     // M5 le suma clientes: la cartera es suya.
     // M6 le suma ventas: cierra los numeros y necesita ver la cartera.
+    // M15 le suma seguimientos: la cartera también es esto —quién se atrasó
+    // y a quién hay que llamar antes de que se vaya.
     expect(ids).toEqual([
       'productos',
       'stock',
       'insumos',
       'produccion',
       'clientes',
+      'seguimientos',
       'ventas',
       // M7: la cartera incluye lo que el cliente tiene prestado, no solo lo que debe.
       'retornables',
@@ -54,6 +57,8 @@ describe('computeVisibleModules()', () => {
       'productos',
       'stock',
       'clientes',
+      // M15: la lista de a quién llamar — la mira antes de salir a la calle.
+      'seguimientos',
       // M6: vende en la calle. Ve las SUYAS — eso lo recorta `api/`.
       'ventas',
       // M7: los VE y no los opera — quien entrega en la calle trabaja por ruta,
@@ -71,6 +76,8 @@ describe('computeVisibleModules()', () => {
       'produccion',
       // M5: atiende el mostrador, así que registra y verifica clientes.
       'clientes',
+      // M15: la lista de a quién llamar — el mostrador es donde más se usa.
+      'seguimientos',
       // M6: y es quien cobra.
       'ventas',
       // M7: entrega botellones y presta bases desde el mostrador.
@@ -95,10 +102,14 @@ describe('computeVisibleModules()', () => {
 
     // M5 suma el tercero: el `seller` los consigue, el `pos` los atiende en el
     // mostrador y el `contador` los necesita para la cartera.
+    // M15 suma el quinto: los cuatro roles tienen `clientes:ver`, que es lo
+    // que pide `/clientes/a-llamar`. Vender, atender el mostrador o cerrar la
+    // cartera — todos arrancan mirando a quién llamar.
     expect(paraTodos.map((m) => m.id)).toEqual([
       'productos',
       'stock',
       'clientes',
+      'seguimientos',
       'ventas',
       'retornables',
     ])
@@ -129,6 +140,7 @@ describe('computeVisibleModules()', () => {
       'insumos',
       'produccion',
       'clientes',
+      'seguimientos',
       'ventas',
       'retornables',
       'proveedores',

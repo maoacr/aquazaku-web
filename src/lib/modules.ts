@@ -5,6 +5,7 @@ import {
   Contact,
   Factory,
   FileSpreadsheet,
+  ListChecks,
   Package,
   PackageOpen,
   Receipt,
@@ -102,6 +103,22 @@ export const ALL_MODULES: MenuModule[] = [
     label: 'Clientes',
     href: '/modulos/clientes',
     icono: Contact,
+    roles: ['admin', 'seller', 'pos', 'contador'],
+  },
+  /*
+   * M15. Los cuatro roles tienen `clientes:ver`, que es lo que pide
+   * `/clientes/a-llamar`, así que los cuatro ven esta pantalla. Es la lista
+   * de clientes atrasados — «para llamar», en el lenguaje del quehacer— y
+   * arrancó como una sección del tablero. Se mudó a su propia vista porque
+   * la lista completa con teléfonos y WhatsApp pesa demasiado para vivir
+   * arriba de los gráficos: el tablero avisa con una línea, esta pantalla
+   * es la que se recorre al empezar el día.
+   */
+  {
+    id: 'seguimientos',
+    label: 'Seguimientos',
+    href: '/modulos/seguimientos',
+    icono: ListChecks,
     roles: ['admin', 'seller', 'pos', 'contador'],
   },
   // Los cuatro roles ven ventas, pero no las mismas: `pos` y `seller` ven las

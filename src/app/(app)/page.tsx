@@ -1,9 +1,8 @@
-import { AlertTriangle, Boxes, PackageX, TriangleAlert } from 'lucide-react'
+import { AlertTriangle, Boxes, PackageX, PhoneCall, TriangleAlert } from 'lucide-react'
 import Link from 'next/link'
 import { BarrasConUmbral } from '@/components/graficos/barras-con-umbral'
 import { BarrasDiarias, DIAS_VISIBLES, cuantosCierres } from '@/components/graficos/barras-diarias'
 import { Tanque } from '@/components/graficos/tanque'
-import { ClientesParaLlamar } from '@/components/clientes/para-llamar'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch, getServerUser } from '@/lib/api-server'
 import type {
@@ -139,6 +138,29 @@ export default async function TableroPage() {
           },
         ]
       : []),
+
+    /*
+     * La lista completa de "para llamar" vive en `/modulos/seguimientos`.
+     * Acá solo se avisa — con la cantidad exacta y el link a la lista
+     * completa — para que el tablero siga cumpliendo su rol de «vistazo
+     * general del negocio».
+     *
+     * El `null` de `aLlamar` ya está descartado por la condición: si el
+     * 403 lo negara, no habría con qué contar.
+     */
+    ...(aLlamar && aLlamar.length > 0
+      ? [
+          {
+            id: 'a-llamar',
+            Icono: PhoneCall,
+            titulo: `${contar(aLlamar.length, 'cliente')} para llamar`,
+            detalle:
+              'Llevan una semana o más sin comprar. Una llamada a tiempo evita que se pasen a otra planta.',
+            href: '/modulos/seguimientos',
+            accion: 'Ir a Seguimientos',
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -175,15 +197,13 @@ export default async function TableroPage() {
       ) : null}
 
       {/*
-        Va acá arriba, con lo que espera una decisión, y no abajo con los
-        gráficos. Es la misma regla que gobierna esta pantalla: primero qué
-        hacer, después cómo venimos. Una lista de llamadas debajo de tres
-        gráficos es una lista que nadie ve.
+        La lista completa de "para llamar" se mudó a `/modulos/seguimientos` —
+        acá arriba queda solo el AVISO, con la acción al lado. Es la misma
+        regla que cualquier pendiente: número sin acción es decoración.
 
         `aLlamar` puede ser `null` si el rol no puede verla — el 403 decide, no
         una copia de la matriz de permisos.
       */}
-      {aLlamar ? <ClientesParaLlamar clientes={aLlamar} /> : null}
 
       {saldos ? (
         <section className="aq-tarjeta grid gap-4 p-5">

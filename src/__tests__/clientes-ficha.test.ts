@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   cambiarEstadoAction,
   configurarCreditoAction,
+  desactivarClienteAction,
   verificarDocumentoAction,
 } from '@/app/(app)/modulos/clientes/actions'
 
@@ -286,5 +287,81 @@ describe('cambiarEstadoAction()', () => {
     const estado = await cambiarEstadoAction({}, form({ clienteId: 'cli-1', activo: 'no' }))
 
     expect(estado.error).toBe('No tiene permiso para hacer esto.')
+  })
+})
+
+/**
+ * Desactivar con reversion de stock — RN-CLI-02 + RN-BAS-04 + RN-ENV-04.
+ *
+ * Es OTRO endpoint que `cambiarEstadoAction`: este devuelve bases y
+ * botellones al stock físico, el otro solo cambia la columna. Por eso
+ * va por `POST /:id/desactivar` y no por `PATCH /:id/estado`.
+ */
+describe('desactivarClienteAction()', () => {
+  it('va por POST a la ruta nueva, no por el toggle', async () => {
+    respondeSiempre(200, { basesDevueltas: 0, botellonesDevueltos: 0 })
+
+    await desactivarClienteAction({}, form({ clienteId: 'cli-1', motivo: 'se mudó de pueblo' }))
+
+    expect(ultimoPedido().url).toBe('/clientes/cli-1/desactivar')
+    expect(ultimoPedido().metodo).toBe('POST')
+  })
+
+  it('manda el motivo limpio, sin espacios al borde', async () => {
+    respondeSiempre(200, { basesDevueltas: 0, botellonesDevueltos: 0 })
+
+    await desactivarClienteAction({}, form({ clienteId: 'cli-1', motivo: '   se mudó de pueblo   ' }))
+
+    expect(ultimoPedido().body).toEqual({ motivo: 'se mudó de pueblo' })
+  })
+
+  it('avisa cuántas bases y cuántos botellones volvieron al stock', async () => {
+    respondeSiempre(200, { basesDevueltas: 3, botellonesDevueltos: 5 })
+
+    const estado = await desactivarClienteAction(
+      {},
+      form({ clienteId: 'cli-1', motivo: 'se mudó de pueblo y no quiere seguir registrado' }),
+    )
+
+    expect(estado.ok).toMatch(/3 bases devueltas al parque/)
+    expect(estado.ok).toMatch(/5 botellones devueltos a la bodega/)
+  })
+
+  it('singulariza cuando hay una sola base o un solo botellón', async () => {
+    respondeSiempre(200, { basesDevueltas: 1, botellonesDevueltos: 1 })
+
+    const estado = await desactivarClienteAction(
+      {},
+      form({ clienteId: 'cli-1', motivo: 'se mudó de pueblo y no quiere seguir registrado' }),
+    )
+
+    expect(estado.ok).toMatch(/1 base devuelta al parque/)
+    expect(estado.ok).toMatch(/1 botellón devuelto a la bodega/)
+  })
+
+  it('omite los conteos cuando el cliente no tenía nada a su nombre', async () => {
+    respondeSiempre(200, { basesDevueltas: 0, botellonesDevueltos: 0 })
+
+    const estado = await desactivarClienteAction(
+      {},
+      form({ clienteId: 'cli-1', motivo: 'se mudó de pueblo y no quiere seguir registrado' }),
+    )
+
+    expect(estado.ok).not.toMatch(/base/)
+    expect(estado.ok).not.toMatch(/botellón/)
+    expect(estado.ok).toMatch(/Cliente desactivado/)
+  })
+
+  it('refresca la ficha, la lista y Retornables (porque el stock cambió)', async () => {
+    respondeSiempre(200, { basesDevueltas: 1, botellonesDevueltos: 0 })
+
+    await desactivarClienteAction(
+      {},
+      form({ clienteId: 'cli-1', motivo: 'se mudó de pueblo y no quiere seguir registrado' }),
+    )
+
+    expect(rutasRefrescadas()).toContain('/modulos/clientes')
+    expect(rutasRefrescadas()).toContain('/modulos/clientes/cli-1')
+    expect(rutasRefrescadas()).toContain('/modulos/retornables')
   })
 })

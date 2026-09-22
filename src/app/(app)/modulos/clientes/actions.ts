@@ -301,6 +301,64 @@ export async function cambiarEstadoAction(
   return exito(activo ? 'Cliente reactivado.' : 'Cliente desactivado. Su historial queda.')
 }
 
+/**
+ * Desactivar un cliente revirtiendo lo que tiene en su poder.
+ *
+ * Es OTRO endpoint que `cambiarEstadoAction`: este devuelve bases y
+ * botellones al stock físico, mientras que el otro solo cambia la columna
+ * `activo`. La reversion es una operación con efectos (mueve stock), y
+ * por eso pide un motivo escrito: tres meses después alguien tiene que
+ * poder reconstruir por qué.
+ *
+ * La validacion del motivo la hace `api/` (mínimo 10 caracteres). Acá
+ * se exige lo mismo para poder decir qué falta antes del viaje, igual
+ * que `corregirVentaAction` y `anularVentaAction`.
+ *
+ * El aviso de éxito incluye los conteos: «se desactivó con N bases y M
+ * botellones devueltos» es lo que quien apretó el botón quiere ver, y
+ * ademas es lo que confirma que el `api/` hizo su parte.
+ */
+export async function desactivarClienteAction(
+  _previo: EstadoDeFormulario,
+  formData: FormData,
+): Promise<EstadoDeFormulario> {
+  const id = String(formData.get('clienteId') ?? '')
+  const motivo = String(formData.get('motivo') ?? '').trim()
+
+  const res = await apiServerFetchRaw(`/clientes/${id}/desactivar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ motivo }),
+  })
+
+  if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos desactivar al cliente.') }
+
+  const { basesDevueltas, botellonesDevueltos } = (await res.json()) as {
+    basesDevueltas: number
+    botellonesDevueltos: number
+  }
+
+  revalidatePath(RUTA)
+  revalidatePath(`${RUTA}/${id}`)
+  revalidatePath('/modulos/retornables')
+
+  const partes: string[] = ['Cliente desactivado. Su historial queda.']
+  if (basesDevueltas > 0) {
+    partes.push(`${basesDevueltas} base${basesDevueltas === 1 ? '' : 's'} devuelta${basesDevueltas === 1 ? '' : 's'} al parque.`)
+  }
+  if (botellonesDevueltos > 0) {
+    /*
+     * El plural de «botellón» es «botellones»: el acento se pierde, no se
+     * agrega una «es» al singular. Por eso la palabra cambia entera cuando
+     * no es uno, en lugar de sumar un sufijo.
+     */
+    const palabra = botellonesDevueltos === 1 ? 'botellón' : 'botellones'
+    partes.push(`${botellonesDevueltos} ${palabra} devuelto${botellonesDevueltos === 1 ? '' : 's'} a la bodega.`)
+  }
+
+  return exito(partes.join(' '))
+}
+
 export type { EstadoDeFormulario }
 
 /**

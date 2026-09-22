@@ -7,14 +7,16 @@ import {
   agregarTelefonoAction,
   cambiarEstadoAction,
   configurarCreditoAction,
+  desactivarClienteAction,
   desactivarTelefonoAction,
   type EstadoDeFormulario,
   verificarDocumentoAction,
 } from '@/app/(app)/modulos/clientes/actions'
 import { FormError } from '@/components/auth/form-error'
+import { Modal } from '@/components/ui/modal'
 import { CamposDeDireccion } from './campos-de-direccion'
 import type { Departamento, FichaDeCliente, Municipio, Telefono } from '@/lib/api-types'
-import { useAvisoDeExito } from '@/lib/formulario-cliente'
+import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
 
 const INICIAL: EstadoDeFormulario = {}
 
@@ -206,33 +208,184 @@ export function AgregarDireccion({
 /**
  * Baja y alta — RN-CLI-02.
  *
- * El botón dice «Desactivar», no «Eliminar», porque eso es lo que pasa: el
- * historial queda. `api/` tampoco expone `DELETE` y la base lo tiene revocado.
+ * ── Dos direcciones, dos botones ────────────────────────────────────────────
+ *
+ * Reactivar es un toggle inocuo: cambia una columna y nada más. Desactivar
+ * es OTRA cosa: devuelve al stock físico las bases y botellones a nombre
+ * del cliente. Mezclar las dos en un solo form ocultaba lo que pasaba, y
+ * «Desactivar» sin modal era apretar un botón que movía stock sin pedir
+ * confirmación.
+ *
+ * Por eso la desactivación se hace dentro de un `<Modal>` con los conteos
+ * y motivo obligatorio, mientras la reactivación sigue siendo un botón
+ * directo: es lo que cabe en un toggle de una columna.
  */
 export function CambiarEstado({ cliente }: { cliente: FichaDeCliente }) {
   const [estado, accion, enviando] = useActionState(cambiarEstadoAction, INICIAL)
+  const [desactivando, setDesactivando] = useState(false)
   const idError = useId()
 
   useAvisoDeExito(estado)
 
+  if (!cliente.activo) {
+    /*
+     * Ya está inactivo: solo queda reactivar. La pantalla no muestra un
+     * botón de desactivar que rebotaría con `CLIENTE_YA_INACTIVO`: un
+     * botón que siempre falla enseña a ignorar los errores.
+     */
+    return (
+      <form action={accion} className="grid gap-3">
+        <input type="hidden" name="clienteId" value={cliente.id} />
+        <input type="hidden" name="activo" value="si" />
+        <FormError id={idError}>{estado.error}</FormError>
+
+        <p className="text-[14px] text-secundario">
+          Este cliente está desactivado y no aparece en operaciones nuevas. Su historial,
+          deudas y botellones quedan registrados.
+        </p>
+
+        <button
+          type="submit"
+          disabled={enviando}
+          className="aq-boton aq-boton-secundario justify-self-start"
+        >
+          {enviando ? 'Guardando…' : 'Reactivar cliente'}
+        </button>
+      </form>
+    )
+  }
+
   return (
-    <form action={accion} className="grid gap-3">
+    <>
+      <div className="grid gap-3">
+        <p className="text-[14px] text-secundario">
+          Un cliente desactivado deja de aparecer en operaciones nuevas. Su historial y sus
+          deudas quedan registrados.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => setDesactivando(true)}
+          className="aq-boton aq-boton-destructivo justify-self-start"
+        >
+          Desactivar cliente
+        </button>
+      </div>
+
+      <Modal
+        abierto={desactivando}
+        cerrar={() => setDesactivando(false)}
+        titulo={`Desactivar a ${cliente.nombre}`}
+      >
+        <FormularioDeDesactivacion cliente={cliente} alTerminar={() => setDesactivando(false)} />
+      </Modal>
+    </>
+  )
+}
+
+/**
+ * La confirmación de desactivar — pide motivo y muestra qué se va a mover.
+ *
+ * El motivo NO es opcional: es lo único que tres meses después explica
+ * por qué este cliente quedó inactivo y qué stock volvió al parque. El
+ * piso lo pone `api/`; acá se exige el mismo para poder decir qué falta
+ * antes del viaje, sin devolver un 422 que nadie iba a leer.
+ */
+function FormularioDeDesactivacion({
+  cliente,
+  alTerminar,
+}: {
+  cliente: FichaDeCliente
+  /** Cierra el modal cuando la operación quedó registrada. */
+  alTerminar: () => void
+}) {
+  const [estado, accion, enviando] = useActionState(desactivarClienteAction, INICIAL)
+  const [motivo, setMotivo] = useState('')
+  const idError = useId()
+
+  useAvisoDeExito(estado)
+  useLimpiezaAlRegistrar(estado.token, alTerminar)
+
+  /*
+   * Los conteos vienen en la ficha — RN-CLI-06.
+   *
+   * No se piden al abrir el modal: `FichaDeCliente.saldos.bases` y
+   * `saldos.botellones` ya viajan con la página (se piden en
+   * `clientes/[id]/page.tsx`), y traerlos de nuevo sería un viaje extra
+   * solo para mostrar dos números.
+   *
+   * Cuando los módulos que los calculan no están conectados, llegan en
+   * `null`. Mostrar `null` con un guion al lado sería mentir — «0
+   * bases» dice «este cliente no tiene nada», «sin registrar todavía»
+   * dice «todavía no sabemos». La distinción importa porque la
+   * consecuencia es distinta.
+   */
+  const bases = cliente.saldos.bases
+  const botellones = cliente.saldos.botellones
+  const hayAlgoQueVolver =
+    (bases !== null && bases > 0) || (botellones !== null && botellones > 0)
+
+  return (
+    <form action={accion} className="grid gap-4">
       <input type="hidden" name="clienteId" value={cliente.id} />
-      <input type="hidden" name="activo" value={cliente.activo ? 'no' : 'si'} />
+
+      <p className="text-[14px] text-principal">
+        {hayAlgoQueVolver
+          ? 'Esta desactivación mueve stock:'
+          : 'Este cliente no tiene bases ni botellones a su nombre.'}
+      </p>
+
+      {hayAlgoQueVolver ? (
+        <ul className="grid gap-1 rounded-lg border border-sutil p-3 text-[14px] text-secundario">
+          {bases !== null && bases > 0 ? (
+            <li>
+              <strong className="text-principal">{bases}</strong> base{bases === 1 ? '' : 's'}
+              {' '}prestad{bases === 1 ? 'a' : 'as'} vuelven al parque y quedan disponibles.
+            </li>
+          ) : null}
+          {botellones !== null && botellones > 0 ? (
+            <li>
+              <strong className="text-principal">{botellones}</strong> botellón
+              {botellones === 1 ? '' : 'es'} en poder del cliente vuelven a la bodega.
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
+
+      <p className="text-[13px] text-tenue">
+        El historial del cliente —ventas, cobros, devoluciones— queda registrado. Esta
+        operación no se puede deshacer desde acá; reactivarlo después sí, pero el stock
+        ya devuelto no vuelve solo a su nombre.
+      </p>
+
       <FormError id={idError}>{estado.error}</FormError>
 
-      <p className="text-[14px] text-secundario">
-        {cliente.activo
-          ? 'Un cliente desactivado deja de aparecer en operaciones nuevas. Su historial, sus deudas y sus botellones quedan.'
-          : 'Este cliente está desactivado y no aparece en operaciones nuevas.'}
-      </p>
+      <label className="aq-etiqueta-campo">
+        <span>
+          Por qué se desactiva <span className="text-alerta">·</span>{' '}
+          <span className="font-normal normal-case text-tenue">obligatorio</span>
+        </span>
+        <textarea
+          name="motivo"
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+          rows={2}
+          placeholder="Se mudó de pueblo y no quiere seguir registrado"
+          aria-describedby={idError}
+          className="aq-campo"
+        />
+        <span className="mt-1 text-[13px] font-normal normal-case text-tenue">
+          Queda en la bitácora con su nombre y la hora, y se usa para reconstruir el cambio
+          si alguien lo pregunta dentro de tres meses.
+        </span>
+      </label>
 
       <button
         type="submit"
-        disabled={enviando}
-        className={`aq-boton justify-self-start ${cliente.activo ? 'aq-boton-destructivo' : 'aq-boton-secundario'}`}
+        disabled={enviando || motivo.trim().length < 10}
+        className="aq-boton aq-boton-destructivo justify-self-start"
       >
-        {enviando ? 'Guardando…' : cliente.activo ? 'Desactivar cliente' : 'Reactivar cliente'}
+        {enviando ? 'Desactivando…' : 'Desactivar cliente'}
       </button>
     </form>
   )

@@ -114,17 +114,17 @@ function TarjetaDeVenta({
   stock?: ResumenDeStock[]
 }) {
   /*
-   * ── Corregida y anulada se dibujan igual de apagadas, y dicen distinto ────
+   * ── Anulada se dibuja apagada; Modificada, igual que una confirmada ────────
    *
-   * Las dos dejaron de contar, así que las dos van en tono secundario: el monto
-   * de una venta que no cuenta no puede competir con el de una que sí.
-   *
-   * Pero lo que PASÓ es distinto, y el sello lo nombra. «Anulada» a secas sobre
-   * una venta corregida escondería que existe una venta vigente que la
-   * reemplaza, y quien cuadra la caja buscaría una plata que sí está.
+   * Una venta anulada DEJÓ DE CONTAR: su monto va en tono secundario y el
+   * sello expone el motivo. Una modificada ES la venta vigente —tiene
+   * `estado='confirmada'` y `corrigeAId` apuntando a la vieja— y se dibuja
+   * como una más, con un sello que avisa «esta reemplazó a otra» sin
+   * apagar nada. Confundirlas fue el problema original: la tarjeta
+   * quedaba en gris como si la plata se hubiera perdido.
    */
-  const corregida = venta.estado === 'corregida'
-  const anulada = venta.estado !== 'confirmada'
+  const anulada = venta.estado === 'anulada'
+  const modificada = venta.estado === 'confirmada' && venta.corrigeAId !== null
   const enLaFichaDelCliente = desde === 'la-ficha-del-cliente'
 
   return (
@@ -176,15 +176,17 @@ function TarjetaDeVenta({
         ) : null}
 
         {/*
-          Y si fue CORREGIDA, se dice que hay otra venta en su lugar — RN-VEN-16.
+          Si fue MODIFICADA, se dice que reemplazó a otra — RN-VEN-16.
 
-          Sin esto, la tarjeta muestra un monto apagado y un motivo, y se lee
-          como plata que se perdió. Lo que pasó es lo contrario: la venta existe,
-          con otros números, unos centímetros más arriba en la misma lista.
+          Sin esto, la tarjeta muestra los números definitivos sin contexto:
+          alguien que esté mirando la lista tiene que poder distinguir una
+          venta que se corrigió de una que nunca se tocó. La vieja corregida
+          ya no se lista (el backend la filtra), así que esta fila es la
+          única referencia al reemplazo.
         */}
-        {corregida ? (
+        {modificada ? (
           <p className="mt-1 text-[13px] text-tenue">
-            La reemplazó otra venta, que es la que cuenta.
+            Reemplazó a una venta anterior — los números de esta son los que cuentan.
           </p>
         ) : null}
       </div>
@@ -197,8 +199,8 @@ function TarjetaDeVenta({
           <span className="text-[13px] text-tenue">{MEDIO[venta.medioDePago]}</span>
         </p>
 
-        <Estado tono={anulada ? 'expuesto' : 'cubierto'}>
-          {corregida ? 'Corregida' : anulada ? 'Anulada' : 'Confirmada'}
+        <Estado tono={anulada ? 'expuesto' : modificada ? 'justo' : 'cubierto'}>
+          {anulada ? 'Anulada' : modificada ? 'Modificada' : 'Confirmada'}
         </Estado>
 
         {/*

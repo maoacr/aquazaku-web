@@ -387,34 +387,30 @@ describe('el motivo no es opcional', () => {
 })
 
 /**
- * ── Corregida NO se lee igual que anulada ───────────────────────────────────
+ * ── Modificada es la venta que REEMPLAZÓ a otra — UX de la lista ───────────
  *
- * Las dos dejaron de contar y las dos se dibujan apagadas. Pero una venta
- * corregida tiene una sucesora VIVA, y decir solo «Anulada» esconde que la
- * plata está unos centímetros más arriba en la misma lista.
+ * Una venta con `estado='confirmada'` y `corrigeAId != null` es la que cuenta
+ * después de una corrección: la vieja (estado='corregida') ya no aparece en
+ * la lista, y esta la representa. El sello «Modificada» y el texto abajo
+ * son los que avisan que pasó algo ahí, sin que la fila se apague como
+ * una anulada.
  */
-describe('la tarjeta de una venta corregida', () => {
-  const corregida = {
-    estado: 'corregida' as const,
-    anuladaEn: '2026-09-15T21:00:00.000Z',
-    motivoAnulacion: 'se cargaron 2 y habían salido 5',
-    corregidaPorId: 'v2',
+describe('la tarjeta de una venta modificada', () => {
+  const modificada = {
+    estado: 'confirmada' as const,
+    corrigeAId: 'v-anterior',
   }
 
-  it('lleva su propio sello', () => {
-    montar(corregida)
-    expect(screen.getByText('Corregida')).toBeInTheDocument()
+  it('lleva el sello «Modificada», no «Confirmada» ni «Anulada»', () => {
+    montar(modificada)
+    expect(screen.getByText('Modificada')).toBeInTheDocument()
+    expect(screen.queryByText('Confirmada')).not.toBeInTheDocument()
     expect(screen.queryByText('Anulada')).not.toBeInTheDocument()
   })
 
-  it('dice que hay otra venta en su lugar', () => {
-    montar(corregida)
-    expect(screen.getByText(/La reemplazó otra venta/)).toBeInTheDocument()
-  })
-
-  it('y muestra por qué se corrigió', () => {
-    montar(corregida)
-    expect(screen.getByText('se cargaron 2 y habían salido 5')).toBeInTheDocument()
+  it('avisa que reemplazó a una venta anterior', () => {
+    montar(modificada)
+    expect(screen.getByText(/Reemplazó a una venta anterior/)).toBeInTheDocument()
   })
 })
 

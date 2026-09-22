@@ -3,6 +3,7 @@ import { EditarDireccion } from '@/components/clientes/editar-direccion'
 import { EditarNombre } from '@/components/clientes/editar-nombre'
 import Link from 'next/link'
 import { BotonDeDireccion } from '@/components/clientes/boton-de-direccion'
+import { PestanasDeVentas, pestanaDesde } from '@/components/ventas/pestanas-de-ventas'
 import {
   TelefonosDelCliente,
   CambiarEstado,
@@ -50,10 +51,14 @@ const METODO: Record<MetodoDeVerificacion, string> = {
  */
 export default async function FichaDeClientePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams?: Promise<{ tab?: string }>
 }) {
   const { id } = await params
+  const sp = searchParams ? await searchParams : undefined
+  const tab = pestanaDesde(sp?.tab)
 
   /*
    * ── La deuda se pide aparte, y puede no venir ────────────────────────────
@@ -359,11 +364,35 @@ export default async function FichaDeClientePage({
             </p>
           </div>
 
-          <UltimasVentas
-            ventas={ventas}
-            desde="la-ficha-del-cliente"
-            {...(productos && stock && { productos: productos.filter((p) => p.activo), stock })}
-          />
+          {(() => {
+            /*
+             * El endpoint ya recortó por `?clienteId` y filtró las
+             * `estado='corregida'`. Lo que queda es `confirmada` o
+             * `anulada`, y el split es trivial.
+             */
+            const vigentes = ventas.filter((v) => v.estado === 'confirmada')
+            const anuladas = ventas.filter((v) => v.estado === 'anulada')
+            const mostradas = tab === 'anuladas' ? anuladas : vigentes
+
+            return (
+              <>
+                <PestanasDeVentas
+                  tab={tab}
+                  conteos={{ vigentes: vigentes.length, anuladas: anuladas.length }}
+                  basePath={`/modulos/clientes/${id}`}
+                />
+
+                <UltimasVentas
+                  ventas={mostradas}
+                  desde="la-ficha-del-cliente"
+                  {...(productos && stock && {
+                    productos: productos.filter((p) => p.activo),
+                    stock,
+                  })}
+                />
+              </>
+            )
+          })()}
         </section>
       ) : null}
 

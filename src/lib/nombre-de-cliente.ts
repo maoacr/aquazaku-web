@@ -47,3 +47,63 @@ export function faltaElNombre(tipo: 'residencial' | 'comercial', n: Nombre): boo
     ? n.nombreLibre.trim() === ''
     : n.primerNombre.trim() === '' || n.apellidos.trim() === ''
 }
+
+/**
+ * El nombre, acomodado a lo que de verdad escribieron — RN-CLI-20.
+ *
+ * ── El problema ─────────────────────────────────────────────────────────────
+ *
+ * La base guarda el nombre de DOS formas y no acepta mezclas:
+ *
+ * · **partido** — `primer_nombre` + `apellidos`, que van juntos o no van
+ *   (`clientes_nombre_partido_completo`);
+ * · **libre** — `nombre_libre`, una sola cadena.
+ *
+ * Quien atiende no sabe eso, y no tiene por qué. Escribe «Rosa» en el primer
+ * campo porque es lo único que le dijeron, aprieta registrar, y la base
+ * rechaza un nombre partido a medias. El formulario le estaba pidiendo que
+ * completara un apellido que nadie dio — o sea, que lo inventara.
+ *
+ * ── Lo que hace ─────────────────────────────────────────────────────────────
+ *
+ * Si el partido está completo, va partido: es el mejor dato, y habilita buscar
+ * por apellido. Si está a medias, lo que haya escrito se junta y viaja como
+ * nombre libre — que es exactamente lo que es.
+ *
+ * El apodo viaja aparte siempre: es otro campo, y el buscador lo mira.
+ * Cuando es lo ÚNICO que dieron, también se usa como nombre — «La Flaca» es
+ * como la conocen, y es mejor identificador que una ficha sin nombre.
+ *
+ * Devuelve `null` cuando no escribieron NADA. Ese es el único caso sin salida:
+ * `clientes.nombre` es una columna generada `NOT NULL`, y esa venta va sin
+ * cliente.
+ */
+export function nombreParaGuardar(n: Nombre): Partial<Nombre> | null {
+  const limpio = (v: string | undefined) => v?.trim() ?? ''
+
+  const libre = limpio(n.nombreLibre)
+  const primero = limpio(n.primerNombre)
+  const segundo = limpio(n.segundoNombre)
+  const apellidos = limpio(n.apellidos)
+  const apodo = limpio(n.apodo)
+
+  const conApodo = (base: Partial<Nombre>) => (apodo ? { ...base, apodo } : base)
+
+  if (libre) return conApodo({ nombreLibre: libre })
+
+  if (primero && apellidos) {
+    return conApodo({ primerNombre: primero, ...(segundo && { segundoNombre: segundo }), apellidos })
+  }
+
+  /*
+   * Partido a medias: se junta en el orden en que se escribe un nombre. No se
+   * pierde nada —«Rosa» sigue siendo «Rosa»— y deja de pedir el apellido que
+   * nadie dio.
+   */
+  const suelto = [primero, segundo, apellidos].filter(Boolean).join(' ')
+  if (suelto) return conApodo({ nombreLibre: suelto })
+
+  if (apodo) return { nombreLibre: apodo, apodo }
+
+  return null
+}

@@ -153,9 +153,16 @@ export function DocumentoPrimero({
     <fieldset className="grid gap-3">
       <legend className="aq-micro text-tenue">El documento, primero</legend>
 
+      {/*
+        Dice que es opcional ANTES del campo, no después — RN-CLI-20.
+        
+        Quien atiende no lee la ayuda de abajo cuando el cliente ya dijo que no
+        lo da: mira el campo, lo ve vacío, y duda si puede seguir. La duda es lo
+        que hace inventar un número.
+      */}
       <p className="text-[13px] text-tenue">
-        Se comprueba mientras lo escribe: si ese cliente ya está, no hace falta cargarlo de
-        nuevo.
+        Si lo dan, se comprueba mientras lo escribe y evita cargar dos veces al mismo
+        cliente. Si no lo dan, el registro sigue igual: alcanza con el nombre.
       </p>
 
       <div className="flex flex-wrap items-start gap-4">
@@ -219,14 +226,13 @@ export function DocumentoPrimero({
             name="numeroDocumento"
             value={numero}
             onChange={(e) => setNumero(e.target.value)}
-            required
             inputMode="numeric"
             autoComplete="off"
             placeholder="79123456"
             className="aq-campo aq-cifra"
           />
           <span className="mt-1 font-normal normal-case text-[13px] text-tenue">
-            Sin el dígito de verificación: lo calcula el sistema.
+            Opcional. Sin el dígito de verificación: lo calcula el sistema.
           </span>
         </label>
       </div>

@@ -174,15 +174,37 @@ export default async function FichaDeClientePage({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <p className="aq-bajada text-secundario">
-            {cliente.tipoDocumento === 'CC' ? 'Cédula' : 'NIT'}{' '}
-            <Cifra>{cliente.documento}</Cifra>
-            {cliente.tipoDocumento === 'NIT' ? (
-              <span className="ml-2 text-[13px] text-tenue">
-                — el dígito después del guion lo calcula el sistema, no se guarda
+          {/*
+            Tres estados, no dos — RN-CLI-20.
+
+            Acá había un ternario binario: `=== 'CC' ? 'Cédula' : 'NIT'`. Desde
+            que el documento es opcional, un cliente sin documento caía en la
+            rama del NIT y la ficha decía que tenía uno. Un dato inventado por
+            la forma de un `if`, que es la peor clase: nadie sospecha de la
+            pantalla.
+
+            El caso sin documento se DICE, y dice además qué se pierde. Callarlo
+            haría ver la ficha igual de completa que la de alguien identificado.
+          */}
+          {cliente.tipoDocumento ? (
+            <p className="aq-bajada text-secundario">
+              {cliente.tipoDocumento === 'CC' ? 'Cédula' : 'NIT'}{' '}
+              <Cifra>{cliente.documento}</Cifra>
+              {cliente.tipoDocumento === 'NIT' ? (
+                <span className="ml-2 text-[13px] text-tenue">
+                  — el dígito después del guion lo calcula el sistema, no se guarda
+                </span>
+              ) : null}
+            </p>
+          ) : (
+            <p className="aq-bajada text-tenue">
+              Sin documento
+              <span className="ml-2 text-[13px]">
+                — se puede agregar después; hasta entonces no se puede verificar ni
+                habilitarle crédito
               </span>
-            ) : null}
-          </p>
+            </p>
+          )}
 
           <Estado tono={nivel}>
             {cliente.verificacionEstado === 'verificado' ? 'Verificado' : 'Sin verificar'}

@@ -447,6 +447,20 @@ export interface Venta {
   botellonesEntregados: number
   /** Cuántos botellones trajo el cliente en esta transacción. RN-VEN-17. */
   botellonesRecibidos: number
+
+  /**
+   * A dónde se entregó — RN-VEN-18.
+   *
+   * `null` en la venta de mostrador sin cliente, y también en las que se
+   * registraron antes de que la columna existiera: no se rellenaron hacia
+   * atrás porque rellenar habría sido inventar.
+   *
+   * La etiqueta —«la casa», «el local»— es lo que se lee de un vistazo; la
+   * nomenclatura completa la arma `api/` y la trae el selector cuando hace
+   * falta elegir.
+   */
+  direccionId: string | null
+  direccionEtiqueta: string | null
 }
 
 /**

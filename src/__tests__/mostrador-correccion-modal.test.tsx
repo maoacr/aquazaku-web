@@ -51,6 +51,8 @@ const stock: ResumenDeStock[] = [{ productoId: 'p-1', vendible: 100 } as Resumen
 const ventaOriginal: VentaDelListado = {
   id: 'ven-1',
   clienteId: null,
+  direccionId: 'd1',
+  direccionEtiqueta: 'la casa',
   clienteNombre: null,
   clienteDocumento: null,
   tipoClienteAlMomento: null,

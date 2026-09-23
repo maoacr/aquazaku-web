@@ -9,6 +9,7 @@ import { EstadoDelParque } from '@/components/retornables/estado-del-parque'
 import {
   AjustarBotellones,
   ComprarBotellones,
+  DescartarBotellones,
   EntregaYRetorno,
 } from '@/components/retornables/movimientos-de-botellon'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
@@ -88,6 +89,12 @@ export default async function RetornablesPage() {
 
         <EntregaYRetorno />
         <ComprarBotellones />
+        {/*
+          Dar de baja va ANTES del ajuste, y el orden importa: quien viene a
+          descontar tres botellones rotos encuentra primero el formulario que
+          registra la rotura, y no el que la esconde como diferencia de conteo.
+        */}
+        <DescartarBotellones />
         <AjustarBotellones />
       </section>
 

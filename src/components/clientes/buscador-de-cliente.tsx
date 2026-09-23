@@ -227,7 +227,18 @@ export function BuscadorDeCliente({
         <div className="flex items-center justify-between gap-3 rounded-md bg-elevada px-3 py-2">
           <span className="min-w-0">
             <span className="block truncate text-[15px] text-principal">{elegido.nombre}</span>
-            <span className="aq-cifra block text-[13px] text-tenue">{elegido.documento}</span>
+            {/*
+              «Sin documento» se DICE — RN-CLI-20.
+
+              Un hueco en blanco donde antes iba la cédula se lee como un error
+              de carga. Y acá el documento es justo lo que confirma que es esa
+              persona y no otra con el mismo apellido: desde que puede faltar,
+              quien elige tiene que saber que en este cliente no hay nada que
+              confirmar.
+            */}
+            <span className="aq-cifra block text-[13px] text-tenue">
+              {elegido.documento ?? 'Sin documento'}
+            </span>
           </span>
 
           <button
@@ -331,7 +342,7 @@ export function BuscadorDeCliente({
                     ) : null}
                   </span>
                   <span className="aq-cifra aq-panel-flotante-secundario shrink-0 text-[13px]">
-                    {cliente.documento}
+                    {cliente.documento ?? 'Sin documento'}
                   </span>
                 </li>
               ))}

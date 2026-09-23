@@ -10,6 +10,20 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
 
     /*
+     * 30 s y no los 5 s de fábrica.
+     *
+     * Bajo `--coverage` la instrumentación frena cada tecla, y los casos que
+     * tipean mucho —dos filas de teléfono, cuatro campos de nombre— cruzan los
+     * 5 s en una máquina cargada. Pasaban solos y fallaban en la corrida con
+     * cobertura, que es exactamente la forma de un flake: un rojo que no dice
+     * nada sobre el código.
+     *
+     * Va en la config y no en el comando para que valga en las dos corridas y
+     * en CI, y nadie tenga que acordarse del flag.
+     */
+    testTimeout: 30_000,
+
+    /*
      * Los tests corren en UTC porque ahí corre PRODUCCIÓN.
      *
      * El contenedor no define `TZ`, así que Node arranca en UTC. Una Mac

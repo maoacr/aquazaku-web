@@ -5,7 +5,7 @@ import { apiServerFetch, apiServerFetchRaw } from '@/lib/api-server'
 import type { AvisoDeCruce, Cliente, Departamento, Direccion, Municipio } from '@/lib/api-types'
 import { cuerpoDeError } from '@/lib/form-errors'
 import { type EstadoDeFormulario, exito } from '@/lib/formulario'
-import { type Nombre, faltaElNombre, soloLoEscrito } from '@/lib/nombre-de-cliente'
+import { type Nombre, nombreParaGuardar } from '@/lib/nombre-de-cliente'
 
 /**
  * Mutaciones de clientes — M5.
@@ -74,8 +74,21 @@ export async function crearClienteAction(
       ...siHay('apellidos'),
       ...siHay('apodo'),
       tipo: String(formData.get('tipo') ?? 'residencial'),
-      tipoDocumento: String(formData.get('tipoDocumento') ?? 'CC'),
-      numeroDocumento: texto('numeroDocumento'),
+
+      /*
+       * El documento solo viaja si lo escribieron — RN-CLI-20.
+       *
+       * Mandar `numeroDocumento: ''` NO es lo mismo que omitirlo: `api/`
+       * distingue «no lo dieron» de «lo dieron vacío», y la cadena vacía
+       * rebota con un 400 de validación que no dice qué campo.
+       *
+       * Y el tipo va SOLO si va el número: sin número, el tipo no identifica
+       * nada y la base lo rechaza (`clientes_documento_completo`).
+       */
+      ...(texto('numeroDocumento') && {
+        tipoDocumento: String(formData.get('tipoDocumento') ?? 'CC'),
+        numeroDocumento: texto('numeroDocumento'),
+      }),
       ...(telefono && { telefono: { numero: telefono } }),
     }),
   })
@@ -86,7 +99,16 @@ export async function crearClienteAction(
 
   revalidatePath(RUTA)
   return {
-    ...exito(`${cliente.nombre} quedó registrado con documento ${cliente.documento}.`),
+    /*
+     * El mensaje menciona el documento SOLO si hay uno. Sin este `if`, un
+     * cliente registrado con el nombre nada más confirmaba «quedó registrado
+     * con documento null», que suena a que algo salió mal.
+     */
+    ...exito(
+      cliente.documento
+        ? `${cliente.nombre} quedó registrado con documento ${cliente.documento}.`
+        : `${cliente.nombre} quedó registrado.`,
+    ),
     cliente,
     ...(cliente.aviso && { aviso: cliente.aviso }),
   }
@@ -143,22 +165,30 @@ export async function editarClienteAction(
   }
 
   /*
-   * Se ataja antes del viaje. `api/` lo rechaza igual —y la base detrás—, pero
-   * un campo vacío es un error que se ve sin preguntarle a nadie.
+   * El nombre se acomoda a lo que escribieron — RN-CLI-20.
+   *
+   * Antes exigía la forma partida COMPLETA y rechazaba «Rosa» sin apellido.
+   * Eso es pedir que inventen un apellido, y acá duele más que en el alta:
+   * quien edita a alguien guardado sin partir tiene exactamente ese nombre.
+   *
+   * `null` es el único error real: no escribieron NADA, y `api/` reemplaza el
+   * nombre entero — guardarlo así le borraría el que tenía.
    */
-  if (faltaElNombre(tipo, nombre)) {
+  const aGuardar = nombreParaGuardar(nombre)
+
+  if (!aGuardar) {
     return {
       error:
         tipo === 'comercial'
           ? 'El negocio necesita un nombre: como aparece en el letrero.'
-          : 'Un nombre de pila sin apellidos no identifica a nadie. Van los dos.',
+          : 'Escriba al menos cómo se llama. Vaciarlo del todo le borraría el nombre que tiene.',
     }
   }
 
   const res = await apiServerFetchRaw(`/clientes/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(soloLoEscrito(nombre)),
+    body: JSON.stringify(aGuardar),
   })
 
   if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos guardar el nombre.') }
@@ -551,8 +581,9 @@ export async function crearClienteRapidoAction(datos: {
   apellidos?: string
   apodo?: string
   tipo: 'residencial' | 'comercial'
-  tipoDocumento: 'CC' | 'NIT'
-  numeroDocumento: string
+  /** Opcional desde RN-CLI-20: se registra con el nombre nada más. */
+  tipoDocumento?: 'CC' | 'NIT'
+  numeroDocumento?: string
   telefono?: { numero: string; etiqueta?: string }
   /**
    * Varios teléfonos, en el mismo viaje — M16.

@@ -147,13 +147,38 @@ describe('lo que viaja a api/', () => {
 })
 
 describe('lo que se ataja antes del viaje', () => {
-  it('una persona sin apellidos no gasta un viaje a api/', async () => {
-    const estado = await editarClienteAction(
+  /**
+   * Una persona sin apellidos SÍ se guarda — RN-CLI-20.
+   *
+   * Antes se atajaba acá con «un nombre de pila sin apellidos no identifica a
+   * nadie». Desde que un cliente se registra con lo que quiso dar, ese es el
+   * caso normal: exigir el apellido es pedir que lo inventen.
+   *
+   * Viaja como `nombreLibre` porque la base guarda el nombre partido COMPLETO
+   * o libre, y no acepta mezclas.
+   */
+  it('una persona sin apellidos viaja como nombre libre', async () => {
+    respondeSiempre(200, { nombre: 'Rosa' })
+
+    await editarClienteAction(
       {},
       form({ clienteId: 'cli-1', tipo: 'residencial', primerNombre: 'Rosa', apellidos: '' }),
     )
 
-    expect(estado.error).toMatch(/apellidos/i)
+    expect(ultimoPedido().body).toEqual({ nombreLibre: 'Rosa' })
+  })
+
+  /*
+   * Vaciarlo del todo sí se ataja: `api/` reemplaza el nombre ENTERO, así que
+   * guardar sin nada le borraría el que tiene.
+   */
+  it('vaciar el nombre del todo no gasta un viaje a api/', async () => {
+    const estado = await editarClienteAction(
+      {},
+      form({ clienteId: 'cli-1', tipo: 'residencial' }),
+    )
+
+    expect(estado.error).toMatch(/al menos cómo se llama/i)
     expect(apiServerFetchRaw).not.toHaveBeenCalled()
   })
 

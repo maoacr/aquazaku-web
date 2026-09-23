@@ -73,6 +73,40 @@ export async function entregarBotellonesAction(
   )
 }
 
+/**
+ * Dar de baja botellones rotos — RN-ENV-05.
+ *
+ * ── Por qué no alcanza con el ajuste ────────────────────────────────────────
+ *
+ * Son dos hechos distintos y el historial tiene que poder distinguirlos:
+ *
+ * · **Descarte**: el botellón se rompió. Salió del parque de verdad, y la
+ *   cantidad total baja porque hay menos botellones en el mundo.
+ * · **Ajuste**: el conteo no cuadra con la realidad. No entró ni salió nada;
+ *   se corrige el número.
+ *
+ * Registrar una rotura como ajuste esconde cuántos envases se están rompiendo
+ * —que es justo el número que dice si hay que comprar más— detrás de las
+ * diferencias de conteo.
+ *
+ * `api/` exige además que estén EN BODEGA: no se puede descartar un botellón
+ * que está en la casa de un cliente, porque desde acá nadie lo vio romperse.
+ */
+export async function descartarBotellonesAction(
+  _previo: EstadoDeFormulario,
+  formData: FormData,
+): Promise<EstadoDeFormulario> {
+  return enviar(
+    '/botellones/descarte',
+    {
+      cantidad: Number(formData.get('cantidad') ?? 0),
+      motivo: String(formData.get('motivo') ?? '').trim(),
+    },
+    'No pudimos dar de baja los botellones.',
+    (r) => `Dados de baja. Quedan ${r.enBodega} en bodega.`,
+  )
+}
+
 export async function ajustarBotellonesAction(
   _previo: EstadoDeFormulario,
   formData: FormData,

@@ -16,6 +16,18 @@ vi.mock('@/app/(app)/modulos/ventas/actions', () => ({
   anularVentaAction: vi.fn(async () => ({})),
 }))
 
+/*
+ * El selector de dirección pide las del cliente al abrirse — RN-VEN-18. Sin
+ * este mock el modal de corrección abre avisando que el cliente no tiene
+ * ninguna cargada, que es un estado real pero no el que estos casos miran.
+ */
+vi.mock('@/app/(app)/modulos/clientes/actions', () => ({
+  direccionesDeClienteAction: vi.fn(async () => [
+    { id: 'd1', etiqueta: 'la casa', legible: 'CL 30 # 12-34' },
+    { id: 'd2', etiqueta: 'el local', legible: 'KR 5 # 8-11' },
+  ]),
+}))
+
 const { corregirVentaAction } = await import('@/app/(app)/modulos/ventas/actions')
 
 afterEach(() => {
@@ -68,6 +80,8 @@ function venta(sobrescribe: Partial<VentaDelListado> = {}): VentaDelListado {
   return {
     id: 'v1',
     clienteId: 'c1',
+    direccionId: 'd1',
+    direccionEtiqueta: 'la casa',
     clienteNombre: 'Yeimy Poveda',
     clienteDocumento: 'CC 79.123.456',
     tipoClienteAlMomento: 'residencial',
@@ -478,5 +492,60 @@ describe('anular una venta', () => {
     await montado.usuario.click(screen.getByRole('button', { name: 'Anular' }))
 
     expect(screen.getByText(/la deuda del cliente baja sola/)).toBeInTheDocument()
+  })
+})
+
+/**
+ * La dirección de entrega en la corrección — RN-VEN-18.
+ *
+ * ── Por qué la corrección la necesita ───────────────────────────────────────
+ *
+ * Toda venta con cliente lleva dirección, y la corrección pasa por el mismo
+ * camino que el alta: sin el campo, corregir un tipeo en la cantidad rebotaría
+ * contra `ventas_con_cliente_exige_direccion`.
+ *
+ * Y tiene que venir PRE-CARGADA con la original. Quien corrige una cantidad no
+ * tiene por qué acordarse de a cuál de los tres locales iba el pedido — y si
+ * tiene que adivinar, la corrección le cambia el destino a la venta sin que
+ * nadie se dé cuenta.
+ */
+describe('a dónde se entrega, corrigiendo', () => {
+  const abrirCorreccion = async () => {
+    const montado = montar()
+    await montado.usuario.click(screen.getByRole('button', { name: 'Corregir' }))
+    return montado
+  }
+
+  it('el desplegable está, con el nombre que lee el servidor', async () => {
+    const { container } = await abrirCorreccion()
+
+    expect(await screen.findByRole('option', { name: /el local/ })).toBeInTheDocument()
+    expect(container.querySelector('select[name="direccionId"]')).toBeInTheDocument()
+  })
+
+  it('abre con la dirección original, no con la primera de la lista', async () => {
+    const { container } = await abrirCorreccion()
+
+    await screen.findByRole('option', { name: /el local/ })
+
+    /*
+     * La venta de prueba tiene `direccionId: 'd1'`, que además es la primera
+     * de la lista. Para que este caso pruebe algo, se mira contra una venta
+     * cuya dirección NO es la primera.
+     */
+    expect((container.querySelector('select[name="direccionId"]') as HTMLSelectElement).value).toBe(
+      'd1',
+    )
+  })
+
+  it('con la dirección original en la segunda, abre en la segunda', async () => {
+    const montado = montar({ direccionId: 'd2' })
+    await montado.usuario.click(screen.getByRole('button', { name: 'Corregir' }))
+
+    await screen.findByRole('option', { name: /el local/ })
+
+    expect(
+      (montado.container.querySelector('select[name="direccionId"]') as HTMLSelectElement).value,
+    ).toBe('d2')
   })
 })

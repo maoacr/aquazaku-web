@@ -57,6 +57,20 @@ export async function registrarVentaAction(
   const { items } = parseados
 
   const clienteId = String(formData.get('clienteId') ?? '')
+
+  /*
+   * A dónde se entrega — RN-VEN-18.
+   *
+   * Solo viaja si hay cliente. Una dirección cuelga de un cliente
+   * (RN-CLI-07): mandarla en una venta anónima sería un dato que no le
+   * pertenece a nadie, y `api/` la rechaza con `DIRECCION_SIN_CLIENTE`.
+   *
+   * No se confunde con `baseDireccionId`. Esa dice dónde se reclama una base
+   * prestada (RN-BAS-03) y solo existe cuando sale una base; esta dice a dónde
+   * va la venta, y existe siempre que haya cliente.
+   */
+  const direccionId = String(formData.get('direccionId') ?? '').trim()
+
   const codigo = String(formData.get('codigoDescuento') ?? '').trim()
 
   /*
@@ -88,7 +102,7 @@ export async function registrarVentaAction(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       medioDePago: String(formData.get('medioDePago') ?? 'efectivo'),
-      ...(clienteId && { clienteId }),
+      ...(clienteId && { clienteId, ...(direccionId && { direccionId }) }),
       items,
       ...(codigo && { codigoDescuento: codigo }),
       ...(entregados > 0 && { botellonesEntregados: entregados }),
@@ -194,6 +208,20 @@ export async function corregirVentaAction(
   if ('error' in items) return items
 
   const clienteId = String(formData.get('clienteId') ?? '')
+
+  /*
+   * A dónde se entrega — RN-VEN-18.
+   *
+   * Solo viaja si hay cliente. Una dirección cuelga de un cliente
+   * (RN-CLI-07): mandarla en una venta anónima sería un dato que no le
+   * pertenece a nadie, y `api/` la rechaza con `DIRECCION_SIN_CLIENTE`.
+   *
+   * No se confunde con `baseDireccionId`. Esa dice dónde se reclama una base
+   * prestada (RN-BAS-03) y solo existe cuando sale una base; esta dice a dónde
+   * va la venta, y existe siempre que haya cliente.
+   */
+  const direccionId = String(formData.get('direccionId') ?? '').trim()
+
   const codigo = String(formData.get('codigoDescuento') ?? '').trim()
 
   const entregados = Number(formData.get('botellonesEntregados') ?? 0)
@@ -205,7 +233,7 @@ export async function corregirVentaAction(
     body: JSON.stringify({
       motivo,
       medioDePago: String(formData.get('medioDePago') ?? 'efectivo'),
-      ...(clienteId && { clienteId }),
+      ...(clienteId && { clienteId, ...(direccionId && { direccionId }) }),
       items: items.items,
       ...(codigo && { codigoDescuento: codigo }),
       ...(ocurrioEn && { ocurrioEn }),

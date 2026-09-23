@@ -87,9 +87,18 @@ export function useDireccionesDe(cliente: ClienteElegido | null) {
 export function SelectorDeDireccion({
   cliente,
   name,
+  elegida,
 }: {
   cliente: ClienteElegido | null
   name: string
+  /**
+   * Cuál viene elegida de antes — la corrección de una venta la necesita.
+   *
+   * Va como `defaultValue` y no como `value`: el campo lo lee el `FormData`
+   * del formulario, no hay estado que sincronizar, y con `value` sin `onChange`
+   * el desplegable quedaría congelado en la original.
+   */
+  elegida?: string
 }) {
   const { direcciones, cargando } = useDireccionesDe(cliente)
 
@@ -119,7 +128,25 @@ export function SelectorDeDireccion({
         tres: ninguna cambiaba el resultado. Era mecanismo para un problema que
         el navegador ya resuelve.
       */}
-      <select name={name} className="aq-campo">
+      {/*
+        El `key` con los ids, y no es decoración.
+
+        `defaultValue` lo aplica React al MONTAR. Las direcciones llegan DESPUÉS
+        del primer render, así que el `<select>` se monta vacío y el valor
+        pre-cargado no se aplica nunca: la corrección de una venta abría en
+        «Elija una» y le cambiaba el destino sin que nadie lo notara.
+
+        Con el `key` atado a las opciones, el desplegable se remonta cuando
+        llegan y ahí sí toma el default. Se probó antes esperar a que cargaran
+        para dibujarlo, y es peor: `cargando` sigue pendiente mientras esté en
+        vuelo la consulta del cliente ANTERIOR, y el campo se congela.
+      */}
+      <select
+        key={direcciones.map((d) => d.id).join(',')}
+        name={name}
+        defaultValue={elegida}
+        className="aq-campo"
+      >
         {direcciones.length === 1 ? null : <option value="">Elija una</option>}
         {direcciones.map((d) => (
           <option key={d.id} value={d.id}>

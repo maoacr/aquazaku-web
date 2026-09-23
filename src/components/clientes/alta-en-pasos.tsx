@@ -9,9 +9,9 @@ import {
   CamposDeNombre,
   NOMBRE_VACIO,
   type Nombre,
-  soloLoEscrito,
 } from '@/components/clientes/campos-de-nombre'
-import { DocumentoPrimero, type EstadoDelDocumento } from '@/components/clientes/documento-primero'
+import { nombreParaGuardar } from '@/lib/nombre-de-cliente'
+import { DocumentoPrimero } from '@/components/clientes/documento-primero'
 import { Modal } from '@/components/ui/modal'
 import type { Cliente, Departamento, Municipio } from '@/lib/api-types'
 
@@ -95,7 +95,6 @@ export function AltaEnPasos({
   const [tipo, setTipo] = useState<'residencial' | 'comercial'>('residencial')
   const [tipoDocumento, setTipoDocumento] = useState<'CC' | 'NIT'>('CC')
   const [numeroDocumento, setNumeroDocumento] = useState(documentoInicial)
-  const [estadoDelDocumento, setEstadoDelDocumento] = useState<EstadoDelDocumento>('vacio')
   const [nombre, setNombre] = useState<Nombre>(NOMBRE_VACIO)
 
   /*
@@ -155,25 +154,37 @@ export function AltaEnPasos({
     }
   }
 
-  const hayNombre = Boolean(
-    tipo === 'comercial' ? nombre.nombreLibre?.trim() : nombre.primerNombre?.trim() && nombre.apellidos?.trim(),
-  )
-  const documentoServible = numeroDocumento.replace(/\D/g, '').length >= 3
-  const documentoLibre = estadoDelDocumento === 'libre' || estadoDelDocumento === 'cruce'
-
   /*
-   * El paso 1 exige documento Y nombre. Sin documento no hay a quién reclamarle
-   * nada (RN-CLI-13), y sin nombre el cliente es una cédula suelta.
+   * Lo que se va a guardar como nombre, acomodado a lo que escribieron.
    *
-   * También frena si el documento está TOMADO: avanzar sería hacer escribir un
-   * nombre para un cliente que ya existe.
+   * `null` solo si NO escribieron nada: la base guarda el nombre partido o
+   * libre, y un «Rosa» sin apellido viaja como libre en vez de rebotar
+   * pidiendo un apellido que nadie dio (RN-CLI-20).
    */
-  const puedeAvanzar = paso === 1 ? documentoServible && documentoLibre && hayNombre : true
+  const nombreAGuardar = nombreParaGuardar(nombre)
 
   const escritos = telefonos.filter((t) => t.numero.trim().length > 0)
   const hayTelefonoCorto = escritos.some((t) => t.numero.trim().length < 7)
 
   function registrar() {
+    /*
+     * El nombre es lo único que la base no puede guardar vacío: `clientes.nombre`
+     * es una columna generada `NOT NULL`, y un cliente sin nombre no se puede
+     * volver a encontrar — el buscador busca por nombre, apellidos, apodo y
+     * documento.
+     *
+     * Se contesta ACÁ y no apagando el botón. Un botón gris no dice qué falta;
+     * este mensaje sí, y además dice qué hacer cuando de verdad no hay nombre:
+     * esa venta va sin cliente.
+     */
+    if (!nombreAGuardar) {
+      setPaso(1)
+      setError(
+        'Escriba al menos cómo se llama —el nombre, el del negocio o el apodo—. Si no quieren dar ni eso, registre la venta sin cliente.',
+      )
+      return
+    }
+
     if (hayTelefonoCorto) {
       setError('Un teléfono tiene al menos 7 dígitos. Bórrelo o complételo.')
       return
@@ -236,10 +247,23 @@ export function AltaEnPasos({
          * El helper ya existía para esto. Lo escribí sin usarlo y costó cinco
          * intentos fallidos en el navegador.
          */
-        ...soloLoEscrito(nombre),
+        ...nombreAGuardar,
         tipo,
-        tipoDocumento,
-        numeroDocumento: numeroDocumento.replace(/\D/g, ''),
+
+        /*
+         * El documento solo viaja si lo escribieron — RN-CLI-20.
+         *
+         * Mandar `numeroDocumento: ''` no es omitirlo: `api/` distingue «no lo
+         * dieron» de «lo dieron vacío», y la cadena vacía rebota con un 400 de
+         * validación que no dice qué campo. Es exactamente la clase de error
+         * que ya costó cinco intentos con las partes del nombre.
+         *
+         * El tipo va solo si va el número: sin número no identifica nada.
+         */
+        ...(numeroDocumento.replace(/\D/g, '') && {
+          tipoDocumento,
+          numeroDocumento: numeroDocumento.replace(/\D/g, ''),
+        }),
         ...(escritos.length > 0 && {
           telefonos: escritos.map((t) => ({
             numero: t.numero.trim(),
@@ -294,7 +318,6 @@ export function AltaEnPasos({
               onTipoDocumento={setTipoDocumento}
               numero={numeroDocumento}
               onNumero={setNumeroDocumento}
-              onEstado={setEstadoDelDocumento}
             />
 
             {/*
@@ -426,7 +449,6 @@ export function AltaEnPasos({
 
           <Botones
             paso={paso}
-            puedeAvanzar={puedeAvanzar}
             enviando={enviando}
             hayTelefono={escritos.length > 0}
             siguiente={() => irAlPaso(paso === 1 ? 2 : 3)}
@@ -469,7 +491,6 @@ function Progreso({ paso }: { paso: 1 | 2 | 3 }) {
  */
 function Botones({
   paso,
-  puedeAvanzar,
   enviando,
   hayTelefono,
   siguiente,
@@ -477,7 +498,6 @@ function Botones({
   cerrar,
 }: {
   paso: 1 | 2 | 3
-  puedeAvanzar: boolean
   enviando: boolean
   hayTelefono: boolean
   siguiente: () => void
@@ -524,7 +544,6 @@ function Botones({
         <button
           type="button"
           onClick={siguiente}
-          disabled={!puedeAvanzar}
           className="aq-boton aq-boton-primario"
         >
           {paso === 2 && !hayTelefono ? 'Seguir sin teléfono' : 'Siguiente'}

@@ -24,6 +24,8 @@ function venta(sobrescribe: Partial<VentaDelListado> = {}): VentaDelListado {
   return {
     id: 'v1',
     clienteId: 'c1',
+    direccionId: 'd1',
+    direccionEtiqueta: 'la casa',
     clienteNombre: 'Yeimy Poveda',
     clienteDocumento: 'CC 79.123.456',
     tipoClienteAlMomento: 'residencial',

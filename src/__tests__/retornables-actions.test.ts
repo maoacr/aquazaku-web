@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ajustarBotellonesAction,
+  descartarBotellonesAction,
   comprarBasesAction,
   comprarBotellonesAction,
   darDeAltaBaseAction,
@@ -466,5 +467,66 @@ describe('los errores compartidos', () => {
     const estado = await descartarBaseAction({}, form({ baseId: 'base-1', motivo: 'x' }))
 
     expect(estado.token).toBeUndefined()
+  })
+})
+
+/**
+ * Dar de baja botellones rotos — RN-ENV-05.
+ *
+ * ── Lo que este bloque vigila de verdad ─────────────────────────────────────
+ *
+ * Que el descarte NO termine pegándole al ajuste. Son dos endpoints distintos
+ * porque son dos hechos distintos: uno saca botellones del parque, el otro
+ * corrige un conteo. Si el formulario de «dar de baja» mandara al ajuste, la
+ * pantalla se vería igual y el historial dejaría de poder responder cuántos
+ * envases se rompen al mes — que es el número que dice cuándo comprar más.
+ *
+ * La URL es la mitad del contrato, y es la mitad que ningún test de componente
+ * mira.
+ */
+describe('descartarBotellonesAction()', () => {
+  it('pega al endpoint del descarte, no al del ajuste', async () => {
+    respondeSiempre(201, { enBodega: 115 })
+
+    await descartarBotellonesAction({}, form({ cantidad: '3', motivo: 'se rompieron en el lavado' }))
+
+    expect(ultimoPedido().url).toBe('/botellones/descarte')
+    expect(ultimoPedido().metodo).toBe('POST')
+  })
+
+  it('la cantidad viaja como número, no como el texto del input', async () => {
+    respondeSiempre(201, { enBodega: 115 })
+
+    await descartarBotellonesAction({}, form({ cantidad: '3', motivo: 'se rompieron' }))
+
+    expect(ultimoPedido().body).toMatchObject({ cantidad: 3, motivo: 'se rompieron' })
+  })
+
+  it('el motivo viaja recortado', async () => {
+    respondeSiempre(201, { enBodega: 115 })
+
+    await descartarBotellonesAction({}, form({ cantidad: '1', motivo: '  se rajó  ' }))
+
+    expect(ultimoPedido().body.motivo).toBe('se rajó')
+  })
+
+  it('el mensaje dice cuántos quedan en bodega', async () => {
+    respondeSiempre(201, { enBodega: 115 })
+
+    const estado = await descartarBotellonesAction({}, form({ cantidad: '3', motivo: 'rotos' }))
+
+    expect(estado.ok).toBe('Dados de baja. Quedan 115 en bodega.')
+  })
+
+  /*
+   * El rechazo de `api/` llega tal cual: dice cuántos hay en bodega y cuántos
+   * se están descartando. Un genérico obligaría a ir a contar a otra pantalla.
+   */
+  it('si no alcanzan en bodega, se muestra lo que dijo el servidor', async () => {
+    respondeSiempre(422, { mensaje: 'en la bodega hay 2 botellones y se están descartando 5' })
+
+    const estado = await descartarBotellonesAction({}, form({ cantidad: '5', motivo: 'rotos' }))
+
+    expect(estado.error).toMatch(/hay 2 botellones/)
   })
 })

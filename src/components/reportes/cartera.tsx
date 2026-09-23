@@ -43,7 +43,7 @@ export function TablaDeCartera({ cartera }: { cartera: CarteraDeCliente[] }) {
             <tr key={c.clienteId} className="border-b border-sutil/50">
               <td className="py-2 pr-4 text-principal">
                 {c.cliente}
-                <span className="block aq-cifra text-[13px] text-tenue">{c.documento}</span>
+                <span className="block aq-cifra text-[13px] text-tenue">{c.documento ?? 'Sin documento'}</span>
               </td>
               {tramos.map((t) => (
                 <td key={t} className="aq-cifra py-2 pr-4 text-right tabular-nums text-secundario">

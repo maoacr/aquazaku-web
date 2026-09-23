@@ -24,12 +24,24 @@ const INICIAL: EstadoDeFormulario = {}
  * registrar al cliente otra vez: dos fichas parten su deuda y sus botellones en
  * dos, y ninguna de las dos es real.
  *
- * ── La forma de los campos sale del DATO, no del tipo ───────────────────────
+ * ── La forma sale del TIPO, y el dato se acomoda ───────────────────────────
  *
- * `nombreLibre` es el nombre de un negocio **o el de alguien cargado sin
- * partir**. Un formulario guiado por `cliente.tipo` le pediría a ese residencial
- * primer nombre y apellidos —vacíos—, y como `api/` reemplaza el nombre entero,
- * guardarlo le borraría el único nombre que tiene.
+ * Antes salía del dato: `nombreLibre` presente ⇒ un solo campo. Tenía sentido
+ * cuando eso casi siempre era un negocio.
+ *
+ * Desde RN-CLI-20 es el caso MÁS COMÚN de una persona: quien se registra con
+ * «Rosa» y nada más se guarda en `nombreLibre`, porque la base no acepta un
+ * nombre partido a medias. Con la regla vieja, editar a Rosa abría el
+ * formulario de un negocio — y para partir su nombre había que borrarlo y
+ * escribirlo de nuevo.
+ *
+ * Ahora un residencial ve SIEMPRE los campos partidos, y lo que estaba en
+ * `nombreLibre` viene puesto en el primer nombre: es lo más probable que sea, y
+ * completar el apellido es escribir una palabra en vez de rehacer el nombre.
+ *
+ * No se pierde nada al guardar: si dejan solo el primer nombre, vuelve a viajar
+ * como `nombreLibre` (`nombreParaGuardar`). El formulario dejó de exigir la
+ * forma completa.
  *
  * ── Se abre con el nombre PUESTO ────────────────────────────────────────────
  *
@@ -111,11 +123,24 @@ function FormularioDeNombre({
   })
 
   /*
-   * Cómo está nombrado HOY, que no siempre es `cliente.tipo`. Es también lo que
-   * la acción necesita para saber qué le falta al nombre antes de gastar un
-   * viaje a `api/`, así que viaja con el formulario.
+   * La forma sale del TIPO del cliente. Un negocio se nombra con una sola
+   * cadena; una persona, con partes.
    */
-  const forma = cliente.nombreLibre ? 'comercial' : 'residencial'
+  const forma = cliente.tipo === 'comercial' ? 'comercial' : 'residencial'
+
+  /*
+   * Y a la persona guardada sin partir se le PRE-CARGA lo que tenía en el
+   * primer nombre. Sin esto, abrir a «Rosa» mostraría cuatro campos vacíos y
+   * guardar le borraría el único nombre que tiene — `api/` reemplaza el nombre
+   * entero.
+   *
+   * El apodo se respeta si ya existe; si el apodo era TODO lo que había, el
+   * primer nombre queda con esa misma palabra, que es como la conocen.
+   */
+  const inicial =
+    forma === 'residencial' && cliente.nombreLibre
+      ? { ...cliente, nombreLibre: '', primerNombre: cliente.nombreLibre }
+      : cliente
 
   return (
     <form action={accion} className="grid gap-5 sm:grid-cols-2">
@@ -126,7 +151,7 @@ function FormularioDeNombre({
         <FormError id={idError}>{estado.error}</FormError>
       </div>
 
-      <CamposDeNombre tipo={forma} inicial={cliente} />
+      <CamposDeNombre tipo={forma} inicial={inicial} />
 
       <p className="text-[13px] text-tenue sm:col-span-2">
         Lo que borre acá se borra. El nombre se guarda entero, así que un segundo nombre o un

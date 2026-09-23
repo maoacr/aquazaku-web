@@ -9,7 +9,7 @@ import {
 } from '@/app/(app)/modulos/ventas/actions'
 import { FormError } from '@/components/auth/form-error'
 import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
-import { EntregaDeBase } from '@/components/retornables/entrega-de-base'
+import { EntregaDeBase, SelectorDeDireccion } from '@/components/retornables/entrega-de-base'
 import { Cifra } from '@/components/stock/cifra'
 import type { ClienteElegido, Producto, ResumenDeStock, VentaDelListado } from '@/lib/api-types'
 import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
@@ -83,6 +83,7 @@ export interface Correccion {
    * y la nota sobre D10 en el comment del action.
    */
   ocurrioEnOriginal: string
+  direccionId: string | null
   /** Botellones despachados en la venta original. RN-VEN-17. */
   botellonesEntregados: number
   /** Botellones devueltos por el cliente en la venta original. RN-VEN-17. */
@@ -133,6 +134,14 @@ export function correccionDesde(venta: VentaDelListado): Correccion {
      * caer en el bug UTC que este archivo ya documenta.
      */
     ocurrioEnOriginal: aaaaMmDdEnLaPlanta(venta.createdAt),
+    /*
+     * La dirección original, para que el selector abra con ella — RN-VEN-18.
+     *
+     * Sin esto, corregir un tipeo en la cantidad obligaría a volver a elegir a
+     * cuál de los tres locales iba el pedido, y quien corrige no tiene por qué
+     * acordarse.
+     */
+    direccionId: venta.direccionId ?? null,
     botellonesEntregados: venta.botellonesEntregados,
     botellonesRecibidos: venta.botellonesRecibidos,
   }
@@ -473,6 +482,28 @@ export function Mostrador({
         elegido={cliente}
         onElegir={setCliente}
         sinCliente="Sin cliente se cobra la lista residencial."
+      />
+
+      {/*
+        A dónde se entrega — RN-VEN-18.
+
+        Va pegado al cliente porque depende de él y porque es obligatorio
+        cuando hay uno: `api/` rechaza con `VENTA_SIN_DIRECCION` la venta a un
+        cliente que no dice dónde se entrega.
+
+        Es el MISMO selector que usa la base, con otro `name`. Con una sola
+        dirección queda elegida sola —preguntar entre una opción es una
+        pregunta que no existe— y con varias hay que elegir.
+
+        Aparece también corrigiendo, a diferencia de la base: corregir puede
+        cambiar el cliente, y la dirección tiene que ser de ESE cliente —lo
+        exige la foránea compuesta de `api/`—. Sin el selector, corregir el
+        cliente sería imposible de completar.
+      */}
+      <SelectorDeDireccion
+        cliente={cliente}
+        name="direccionId"
+        elegida={correccion?.direccionId ?? undefined}
       />
 
       {/*

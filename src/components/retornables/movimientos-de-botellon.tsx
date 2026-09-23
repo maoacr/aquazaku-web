@@ -3,6 +3,7 @@
 import { useActionState, useId, useState } from 'react'
 import {
   ajustarBotellonesAction,
+  descartarBotellonesAction,
   comprarBotellonesAction,
   entregarBotellonesAction,
   type EstadoDeFormulario,
@@ -142,6 +143,82 @@ export function ComprarBotellones() {
 
         <button type="submit" disabled={enviando} className="aq-boton aq-boton-secundario">
           {enviando ? 'Registrando…' : 'Registrar'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+/**
+ * Dar de baja botellones rotos — RN-ENV-05.
+ *
+ * ── Por qué no es el ajuste ─────────────────────────────────────────────────
+ *
+ * Son dos hechos distintos, y el historial tiene que poder separarlos:
+ *
+ * · **Descarte**: el botellón se rompió. Salió del parque de verdad — hay menos
+ *   botellones en el mundo.
+ * · **Ajuste**: el conteo no cuadraba. No entró ni salió nada; se corrige el
+ *   número.
+ *
+ * Registrar una rotura como ajuste esconde cuántos envases se rompen al mes
+ * —que es el número que dice cuándo hay que comprar más— entre las diferencias
+ * de conteo.
+ *
+ * ── Y por qué solo de la bodega ─────────────────────────────────────────────
+ *
+ * `api/` exige que estén en bodega, y es correcto: un botellón en la casa de un
+ * cliente nadie de acá lo vio romperse. Ese caso entra cuando vuelve — o queda
+ * como cargo, que es otra conversación (RN-ENV-09).
+ */
+export function DescartarBotellones() {
+  const [estado, accion, enviando] = useActionState(descartarBotellonesAction, INICIAL)
+  const idError = useId()
+
+  useAvisoDeExito(estado)
+
+  return (
+    <form key={estado.token ?? 'inicial'} action={accion} className="aq-tarjeta grid gap-4 p-5">
+      <div>
+        <h2 className="aq-titulo-tarjeta text-principal">Dar de baja botellones rotos</h2>
+        <p className="mt-1 text-[13px] text-tenue">
+          Salen del parque para siempre. Solo los que están en la bodega: uno que está en
+          la casa de un cliente no se puede dar de baja desde acá.
+        </p>
+      </div>
+
+      <FormError id={idError}>{estado.error}</FormError>
+
+      <div className="flex flex-wrap items-end gap-4">
+        <label className="aq-etiqueta-campo">
+          <span>Cuántos</span>
+          <input
+            name="cantidad"
+            type="number"
+            required
+            min="1"
+            step="1"
+            className="aq-campo aq-cifra"
+          />
+        </label>
+
+        {/*
+          El motivo es obligatorio, y no por trámite: es la única operación que
+          hace desaparecer botellones. Sin explicación, la ley de conservación
+          cierra igual mientras alguien da de baja lo que quiera.
+        */}
+        <label className="aq-etiqueta-campo min-w-[16rem] flex-1">
+          <span>Por qué</span>
+          <input
+            name="motivo"
+            required
+            placeholder="Se rompieron tres en el lavado del martes"
+            className="aq-campo"
+          />
+        </label>
+
+        <button type="submit" disabled={enviando} className="aq-boton aq-boton-destructivo">
+          {enviando ? 'Dando de baja…' : 'Dar de baja'}
         </button>
       </div>
     </form>

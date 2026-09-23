@@ -72,13 +72,17 @@ describe('el recorrido', () => {
   })
 
   /*
-   * El paso 1 no deja avanzar sin documento. Es el dato que identifica al
-   * cliente: sin él no hay a quién reclamarle nada (RN-CLI-13).
+   * Del 1 se pasa sin documento — RN-CLI-20, que reemplaza a RN-CLI-13.
+   *
+   * Era obligatorio, y en el mostrador mucha gente no lo quiere dar: la salida
+   * que había encontrado la planta era colgarle esas ventas al cliente-tacho
+   * «POS Aquazaku», donde conviven cientos de personas sin cartera propia ni a
+   * quién llamar.
    */
-  it('no deja pasar del 1 sin documento', async () => {
+  it('deja pasar del 1 sin documento', async () => {
     render(<AltaEnPasos {...props} />)
 
-    expect(screen.getByRole('button', { name: /Siguiente/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled()
   })
 
   it('con documento libre y nombre, avanza al 2', async () => {
@@ -89,7 +93,6 @@ describe('el recorrido', () => {
     await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
     await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
 
-    await waitFor(() => expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled())
     await usuario.click(screen.getByRole('button', { name: /Siguiente/ }))
 
     expect(screen.getByText(/Paso 2 de 3/)).toBeInTheDocument()
@@ -102,7 +105,6 @@ describe('el recorrido', () => {
     await escribirDocumento('79123456')
     await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
     await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
-    await waitFor(() => expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled())
     await usuario.click(screen.getByRole('button', { name: /Siguiente/ }))
 
     await usuario.click(screen.getByRole('button', { name: /Volver al paso anterior/ }))
@@ -127,7 +129,17 @@ describe('el documento tomado frena en el paso 1', () => {
    *
    * Con el nombre completo, lo ÚNICO que puede frenar el paso es el documento.
    */
-  it('no deja avanzar aunque el nombre esté completo, y ofrece su ficha', async () => {
+  /**
+   * El documento tomado AVISA y ofrece la ficha — RN-CLI-20 cambió el freno.
+   *
+   * Antes apagaba «Siguiente». Un botón gris no dice por qué está gris, y quien
+   * atiende termina cambiando un dígito para encenderlo — creando justo la
+   * segunda ficha que el aviso venía a evitar.
+   *
+   * Lo accionable es el ENLACE: lleva al cliente que ya existe. Eso es lo que
+   * este caso vigila, y por eso el enlace se sigue exigiendo.
+   */
+  it('avisa que ya existe y ofrece su ficha, sin trabar el paso', async () => {
     const usuario = userEvent.setup()
     buscarClientesAction.mockResolvedValue([cliente()])
     render(<AltaEnPasos {...props} />)
@@ -137,7 +149,7 @@ describe('el documento tomado frena en el paso 1', () => {
     await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
 
     expect(await screen.findByRole('link', { name: /ficha|ver/i })).toBeInTheDocument()
-    await waitFor(() => expect(screen.getByRole('button', { name: /Siguiente/ })).toBeDisabled())
+    expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled()
   })
 })
 
@@ -147,7 +159,6 @@ describe('los pasos 2 y 3 se pueden saltar', () => {
     await escribirDocumento('79123456')
     await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
     await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
-    await waitFor(() => expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled())
     await usuario.click(screen.getByRole('button', { name: /Siguiente/ }))
     if (n === 3) await usuario.click(screen.getByRole('button', { name: /Siguiente|sin teléfono/i }))
   }
@@ -184,7 +195,6 @@ describe('el envío', () => {
     await escribirDocumento('79123456')
     await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
     await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
-    await waitFor(() => expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled())
     await usuario.click(screen.getByRole('button', { name: /Siguiente/ }))
 
     await usuario.type(screen.getByRole('textbox', { name: /Teléfono 1/ }), '3001234567')
@@ -228,7 +238,6 @@ describe('el envío', () => {
     await escribirDocumento('79123456')
     await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
     await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
-    await waitFor(() => expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled())
     await usuario.click(screen.getByRole('button', { name: /Siguiente/ }))
     await usuario.click(screen.getByRole('button', { name: /Siguiente|sin teléfono/i }))
     await usuario.click(screen.getByRole('button', { name: /Registrar/ }))
@@ -256,7 +265,6 @@ describe('varios teléfonos', () => {
     await escribirDocumento('79123456')
     await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
     await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
-    await waitFor(() => expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled())
     await usuario.click(screen.getByRole('button', { name: /Siguiente/ }))
   }
 
@@ -355,7 +363,6 @@ describe('el paso 3 no se puede saltar', () => {
     await escribirDocumento('79123456')
     await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
     await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
-    await waitFor(() => expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled())
 
     for (const paso of [1, 2, 3]) {
       for (const boton of screen.getAllByRole('button')) {
@@ -373,7 +380,6 @@ describe('el paso 3 no se puede saltar', () => {
     await escribirDocumento('79123456')
     await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
     await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
-    await waitFor(() => expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled())
     await usuario.click(screen.getByRole('button', { name: /Siguiente/ }))
     await usuario.click(screen.getByRole('button', { name: /sin teléfono/i }))
 
@@ -399,7 +405,6 @@ describe('la dirección a medias', () => {
     await escribirDocumento('79123456')
     await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
     await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
-    await waitFor(() => expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled())
     await usuario.click(screen.getByRole('button', { name: /Siguiente/ }))
     await usuario.click(screen.getByRole('button', { name: /sin teléfono/i }))
   }
@@ -428,5 +433,163 @@ describe('la dirección a medias', () => {
 
     await waitFor(() => expect(crearClienteRapidoAction).toHaveBeenCalledTimes(1))
     expect(crearClienteRapidoAction.mock.calls[0]![0]).not.toHaveProperty('direccion')
+  })
+})
+
+/**
+ * El documento dejó de ser un bloqueante — RN-CLI-20.
+ *
+ * ── Qué problema resuelve ───────────────────────────────────────────────────
+ *
+ * En el mostrador mucha gente no quiere dar el documento. Con el campo
+ * obligatorio, la salida que encontró la planta fue crear un cliente «POS
+ * Aquazaku» y colgarle TODAS esas ventas: un tacho donde conviven cientos de
+ * personas, sin cartera propia, sin historial y sin a quién llamar.
+ *
+ * Con el nombre y el teléfono que sí dieron, el registro ya sirve para lo que
+ * se hizo. El cliente-tacho sigue existiendo, ahora para lo que de verdad es:
+ * quien no quiere dar NI el nombre.
+ */
+describe('registrar con lo que el cliente quiso dar', () => {
+  it('ningún campo apaga el botón: se avanza sin haber escrito nada', () => {
+    render(<AltaEnPasos {...props} />)
+
+    expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled()
+  })
+
+  it('el número de documento no está marcado como obligatorio', () => {
+    render(<AltaEnPasos {...props} />)
+
+    expect(screen.getByRole('textbox', { name: /Número/ })).not.toBeRequired()
+  })
+
+  /*
+   * Y el documento NO viaja vacío: `api/` distingue «no lo dieron» de «lo
+   * dieron vacío», y la cadena vacía rebota con un 400 que no dice qué campo.
+   */
+  it('sin documento, el alta no manda las claves vacías', async () => {
+    const usuario = userEvent.setup()
+    render(<AltaEnPasos {...props} />)
+
+    await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
+    await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
+    await usuario.click(screen.getByRole('button', { name: /Siguiente/ }))
+    await usuario.click(screen.getByRole('button', { name: /sin teléfono/i }))
+    await usuario.click(screen.getByRole('button', { name: /Registrar/ }))
+
+    await waitFor(() => expect(crearClienteRapidoAction).toHaveBeenCalledTimes(1))
+
+    const enviado = crearClienteRapidoAction.mock.calls[0]![0]
+    expect(enviado).not.toHaveProperty('numeroDocumento')
+    expect(enviado).not.toHaveProperty('tipoDocumento')
+    expect(enviado).toMatchObject({ primerNombre: 'Rosa', apellidos: 'Padilla' })
+  })
+
+  /*
+   * Lo que SÍ sigue frenando: un documento que ya está tomado. Avanzar sería
+   * hacer escribir un nombre para un cliente que ya existe.
+   */
+  /*
+   * Un documento ya tomado AVISA, no traba. El aviso lleva a la ficha de quien
+   * ya existe, que es lo accionable; apagar el botón solo dejaba a alguien
+   * mirando un gris sin saber por qué.
+   */
+  it('un documento ya tomado avisa y deja seguir', async () => {
+    buscarClientesAction.mockResolvedValue([cliente()])
+    render(<AltaEnPasos {...props} />)
+
+    await escribirDocumento('79123456')
+
+    expect(await screen.findByText(/ya está registrado con ese documento/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Siguiente/ })).toBeEnabled()
+  })
+
+  /**
+   * El nombre se contesta AL APRETAR, no apagando el botón.
+   *
+   * Es lo único que la base no puede guardar vacío. Un botón gris no dice qué
+   * falta —y quien atiende termina inventando un dato para encenderlo—; este
+   * mensaje dice el campo y qué hacer si de verdad no hay nombre.
+   */
+  it('sin nombre, al registrar dice qué falta y vuelve al paso 1', async () => {
+    const usuario = userEvent.setup()
+    render(<AltaEnPasos {...props} />)
+
+    await usuario.click(screen.getByRole('button', { name: /Siguiente/ }))
+    await usuario.click(screen.getByRole('button', { name: /sin teléfono/i }))
+    await usuario.click(screen.getByRole('button', { name: /Registrar/ }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/al menos cómo se llama/)
+    expect(screen.getByText(/Paso 1 de 3/)).toBeInTheDocument()
+    expect(crearClienteRapidoAction).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * El nombre se acomoda a lo que escribieron — RN-CLI-20.
+ *
+ * ── El defecto que este bloque existe para impedir ──────────────────────────
+ *
+ * La base guarda el nombre partido (`primerNombre` + `apellidos`, que van
+ * juntos o no van) o libre (`nombreLibre`), y no acepta mezclas. El formulario
+ * exigía el partido COMPLETO: quien escribía «Rosa» porque es lo único que le
+ * dijeron veía «Falta el nombre y los apellidos» y no podía registrar.
+ *
+ * Eso es pedirle que invente un apellido. Lo reportó el usuario probándolo.
+ */
+describe('el nombre a medias se guarda igual', () => {
+  const registrar = async (usuario: ReturnType<typeof userEvent.setup>) => {
+    await usuario.click(screen.getByRole('button', { name: /Siguiente/ }))
+    await usuario.click(screen.getByRole('button', { name: /sin teléfono/i }))
+    await usuario.click(screen.getByRole('button', { name: /Registrar/ }))
+    await waitFor(() => expect(crearClienteRapidoAction).toHaveBeenCalledTimes(1))
+    return crearClienteRapidoAction.mock.calls[0]![0]
+  }
+
+  it('solo el primer nombre viaja como nombre libre, no como partido a medias', async () => {
+    const usuario = userEvent.setup()
+    render(<AltaEnPasos {...props} />)
+
+    await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
+
+    const enviado = await registrar(usuario)
+    expect(enviado).toMatchObject({ nombreLibre: 'Rosa' })
+    expect(enviado).not.toHaveProperty('primerNombre')
+  })
+
+  it('solo los apellidos también alcanzan', async () => {
+    const usuario = userEvent.setup()
+    render(<AltaEnPasos {...props} />)
+
+    await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla Gómez')
+
+    expect(await registrar(usuario)).toMatchObject({ nombreLibre: 'Padilla Gómez' })
+  })
+
+  /* Con el partido completo SÍ va partido: es el mejor dato, deja buscar por apellido. */
+  it('con nombre y apellidos completos, viaja partido', async () => {
+    const usuario = userEvent.setup()
+    render(<AltaEnPasos {...props} />)
+
+    await usuario.type(screen.getByRole('textbox', { name: /Primer nombre/ }), 'Rosa')
+    await usuario.type(screen.getByRole('textbox', { name: /Apellidos/ }), 'Padilla')
+
+    const enviado = await registrar(usuario)
+    expect(enviado).toMatchObject({ primerNombre: 'Rosa', apellidos: 'Padilla' })
+    expect(enviado).not.toHaveProperty('nombreLibre')
+  })
+
+  /*
+   * El apodo solo: «La Flaca» es como la conocen, y es mejor identificador que
+   * una ficha sin nombre. Viaja como nombre Y como apodo — el buscador mira
+   * los dos.
+   */
+  it('con solo el apodo, se registra con el apodo', async () => {
+    const usuario = userEvent.setup()
+    render(<AltaEnPasos {...props} />)
+
+    await usuario.type(screen.getByRole('textbox', { name: /Apodo/ }), 'La Flaca')
+
+    expect(await registrar(usuario)).toMatchObject({ nombreLibre: 'La Flaca', apodo: 'La Flaca' })
   })
 })

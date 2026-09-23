@@ -146,12 +146,49 @@ describe('crearClienteAction() — lo que viaja a api/', () => {
     expect(ultimoPedido().body).not.toHaveProperty('apodo')
   })
 
-  it('sin tipo ni tipo de documento, asume residencial con cédula', async () => {
+  it('sin tipo, asume residencial', async () => {
     respondeSiempre(201, CREADO)
 
     await crearClienteAction({}, form({ primerNombre: 'Rosa', apellidos: 'Padilla' }))
 
-    expect(ultimoPedido().body).toMatchObject({ tipo: 'residencial', tipoDocumento: 'CC' })
+    expect(ultimoPedido().body).toMatchObject({ tipo: 'residencial' })
+  })
+
+  /**
+   * Sin número, el documento NO viaja — RN-CLI-20.
+   *
+   * ── Por qué el tipo tampoco ─────────────────────────────────────────────
+   *
+   * El formulario siempre tiene una de las dos fichas marcada: CC viene
+   * elegida de arranque. Mandarla sola registraría un cliente con tipo de
+   * documento y sin documento, que no identifica nada — y la base lo rechaza
+   * con `clientes_documento_completo`.
+   *
+   * Es la clase de campo que viaja «porque estaba en el formulario», no
+   * porque alguien lo haya decidido.
+   */
+  it('sin número, no viaja el documento — ni el tipo, que siempre está marcado', async () => {
+    respondeSiempre(201, CREADO)
+
+    await crearClienteAction({}, form({ primerNombre: 'Rosa', apellidos: 'Padilla' }))
+
+    expect(ultimoPedido().body).not.toHaveProperty('numeroDocumento')
+    expect(ultimoPedido().body).not.toHaveProperty('tipoDocumento')
+  })
+
+  /*
+   * Vacío tampoco es «lo dieron vacío»: `api/` distingue ausente de vacío, y
+   * una cadena vacía rebota con un 400 que no dice qué campo.
+   */
+  it('un número en blanco se omite, no se manda vacío', async () => {
+    respondeSiempre(201, CREADO)
+
+    await crearClienteAction(
+      {},
+      form({ primerNombre: 'Rosa', apellidos: 'Padilla', numeroDocumento: '   ' }),
+    )
+
+    expect(ultimoPedido().body).not.toHaveProperty('numeroDocumento')
   })
 
   it('respeta el tipo y el documento cuando vienen elegidos', async () => {
@@ -159,10 +196,20 @@ describe('crearClienteAction() — lo que viaja a api/', () => {
 
     await crearClienteAction(
       {},
-      form({ nombreLibre: 'Tienda La Esquina', tipo: 'comercial', tipoDocumento: 'NIT' }),
+      form({
+        nombreLibre: 'Tienda La Esquina',
+        tipo: 'comercial',
+        tipoDocumento: 'NIT',
+        // Con número, porque desde RN-CLI-20 el tipo viaja SOLO si va el número.
+        numeroDocumento: '900123456',
+      }),
     )
 
-    expect(ultimoPedido().body).toMatchObject({ tipo: 'comercial', tipoDocumento: 'NIT' })
+    expect(ultimoPedido().body).toMatchObject({
+      tipo: 'comercial',
+      tipoDocumento: 'NIT',
+      numeroDocumento: '900123456',
+    })
   })
 
   /*

@@ -127,14 +127,37 @@ describe('abre con lo que ya estaba', () => {
 })
 
 /**
- * La forma sale del DATO, no del tipo.
+ * La forma sale del TIPO, y el dato se acomoda — RN-CLI-20.
  *
- * `nombreLibre` es «el de un negocio, o el de alguien cargado sin partir». A un
- * residencial nombrado así, un formulario guiado por `cliente.tipo` le pediría
- * primer nombre y apellidos —vacíos— y al guardar borraría lo único que tenía.
+ * ── El defecto que este bloque existe para impedir ──────────────────────────
+ *
+ * Antes salía del DATO: `nombreLibre` presente ⇒ un solo campo. Tenía sentido
+ * cuando eso casi siempre era un negocio.
+ *
+ * Desde que un cliente se registra con lo que quiso dar, «Rosa» sin apellido se
+ * guarda en `nombreLibre` —la base no acepta un nombre partido a medias— y
+ * editarla abría el formulario de un NEGOCIO. Para partirle el nombre había que
+ * borrarlo y escribirlo de nuevo. Lo reportó el usuario usándolo.
  */
-describe('la forma sale de cómo está nombrado', () => {
-  it('un residencial cargado sin partir edita su nombre libre', () => {
+describe('la forma sale del tipo de cliente', () => {
+  it('una persona guardada sin partir ve los campos partidos, con su nombre puesto', () => {
+    abrir(
+      cliente({
+        nombre: 'Rosa',
+        nombreLibre: 'Rosa',
+        primerNombre: null,
+        segundoNombre: null,
+        apellidos: null,
+        tipo: 'residencial',
+      }),
+    )
+
+    expect(campo(/Primer nombre/).value).toBe('Rosa')
+    expect(screen.queryByRole('textbox', { name: /Nombre del negocio/ })).not.toBeInTheDocument()
+  })
+
+  /* Un negocio sigue viendo su campo único: así se nombra un negocio. */
+  it('un comercial sigue con el campo único', () => {
     abrir(
       cliente({
         nombre: 'Tienda de la esquina',
@@ -142,7 +165,7 @@ describe('la forma sale de cómo está nombrado', () => {
         primerNombre: null,
         segundoNombre: null,
         apellidos: null,
-        tipo: 'residencial',
+        tipo: 'comercial',
       }),
     )
 
@@ -166,20 +189,20 @@ describe('lo que viaja escondido en el formulario', () => {
     expect(ocultos).toEqual({ clienteId: 'cli-1', tipo: 'residencial' })
   })
 
-  it('un cliente nombrado libre viaja como comercial, sea cual sea su tipo', () => {
+  it('la forma que viaja es la del TIPO, no la de cómo estaba guardado', () => {
     abrir(
       cliente({
-        nombreLibre: 'Tienda de la esquina',
+        nombreLibre: 'Rosa',
         primerNombre: null,
         apellidos: null,
         tipo: 'residencial',
       }),
     )
 
-    const formulario = screen.getByRole('textbox', { name: /Nombre del negocio/ }).closest('form')!
+    const formulario = screen.getByRole('textbox', { name: /Primer nombre/ }).closest('form')!
     const tipo = formulario.querySelector('input[name="tipo"]') as HTMLInputElement
 
-    expect(tipo.value).toBe('comercial')
+    expect(tipo.value).toBe('residencial')
   })
 
   /** `nombre` es una columna generada: si viajara, `api/` rechazaría la edición. */

@@ -36,9 +36,10 @@ const botellon: Producto = {
 const stock: ResumenDeStock[] = [{ productoId: 'p-1', vendible: 100 } as ResumenDeStock]
 
 const montar = () => {
-  render(<Mostrador productos={[botellon]} stock={stock} />)
+  const { container } = render(<Mostrador productos={[botellon]} stock={stock} />)
   return {
     usuario: userEvent.setup(),
+    container,
     agregarBotellon: () =>
       screen.getByRole('button', { name: /Agregar uno de Recarga/i }),
   }
@@ -107,5 +108,71 @@ describe('los defaults de los dos campos de botellones siguen al carrito', () =>
     await usuario.click(agregarBotellon())
     expect(recibidos().value).toBe('3')
     expect(entregados().value).toBe('2')
+  })
+})
+
+/**
+ * Tocar uno congela los DOS — RN-VEN-17.
+ *
+ * ── El defecto que este bloque existe para impedir ──────────────────────────
+ *
+ * El flag de «el operador se hizo cargo» es UNO para los dos campos. Cuando los
+ * defaults se sincronizaban con un `useEffect`, eso salía gratis: el efecto ya
+ * había ESCRITO los dos valores en el estado, así que el campo intacto
+ * conservaba el suyo.
+ *
+ * Al pasar a derivarlos durante el render —para sacar el `set-state-in-effect`
+ * que React marca— el campo intacto se quedó con su estado inicial, que es
+ * cero. Escribir 3 en «Recibidos» con dos botellones en el carrito dejaba
+ * «Entregados» en 0: dos botellones que salen del parque y no quedan a cargo
+ * de nadie.
+ *
+ * El caso de arriba lo atrapó en una dirección. Este cubre la otra, que es la
+ * peligrosa: la que pierde lo que SALE.
+ */
+describe('tocar un campo no borra el default del otro', () => {
+  it('escribir en «Recibidos» deja «Entregados» con lo que mostraba', async () => {
+    const { usuario, agregarBotellon } = montar()
+
+    await usuario.click(agregarBotellon())
+    await usuario.click(agregarBotellon())
+    expect(entregados().value).toBe('2')
+
+    await usuario.clear(recibidos())
+    await usuario.type(recibidos(), '3')
+
+    expect(entregados().value).toBe('2')
+  })
+
+  it('escribir en «Entregados» deja «Recibidos» con lo que mostraba', async () => {
+    const { usuario, agregarBotellon } = montar()
+
+    await usuario.click(agregarBotellon())
+    await usuario.click(agregarBotellon())
+    expect(recibidos().value).toBe('2')
+
+    await usuario.clear(entregados())
+    await usuario.type(entregados(), '1')
+
+    expect(recibidos().value).toBe('2')
+  })
+
+  /*
+   * Y lo que viaja al servidor es eso mismo. El campo se ve bien y el oculto
+   * manda otra cosa es el error que ningún test de pantalla atrapa.
+   */
+  it('lo congelado es también lo que viaja', async () => {
+    const { usuario, agregarBotellon, container } = montar()
+
+    await usuario.click(agregarBotellon())
+    await usuario.click(agregarBotellon())
+    await usuario.clear(recibidos())
+    await usuario.type(recibidos(), '3')
+
+    const oculto = (name: string) =>
+      (container.querySelector(`input[name="${name}"]`) as HTMLInputElement).value
+
+    expect(oculto('botellonesEntregados')).toBe('2')
+    expect(oculto('botellonesRecibidos')).toBe('3')
   })
 })

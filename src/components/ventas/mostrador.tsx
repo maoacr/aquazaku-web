@@ -1,7 +1,7 @@
 'use client'
 
 import { Minus, Plus } from 'lucide-react'
-import { useActionState, useEffect, useId, useState } from 'react'
+import { useActionState, useId, useState } from 'react'
 import {
   type EstadoDeVenta,
   corregirVentaAction,
@@ -220,18 +220,23 @@ export function Mostrador({
    * Botellones despachados / recibidos en esta transacción — RN-VEN-17.
    *
    * Alta: defaults 1-a-1 sobre la cantidad de botellones en el carrito. El
-   * operador ajusta si el cliente compra sin devolver o devuelve extras. El
-   * `useEffect` que sigue mantiene los defaults sincronizados con el carrito
-   * mientras el operador no haya tocado los campos — agregar o sacar
-   * botellones del carrito arrastra los dos números hasta la nueva cantidad.
+   * operador ajusta si el cliente compra sin devolver o devuelve extras.
+   *
+   * Lo que se guarda acá es SOLO lo que el operador tecleó: el default se
+   * deriva del carrito más abajo, no se copia a estado. Mientras no toque
+   * nada, agregar o sacar botellones del carrito arrastra los dos números.
    *
    * Corrección: pre-cargados con los valores de la venta original — la
    * corrección puede moverlos, y si los deja como están el server los toma
    * como delta=0 y no inserta compensatorios. El flag `botellonesDirty` no
    * se usa en corrección.
    */
-  const [entregados, setEntregados] = useState(correccion?.botellonesEntregados ?? 0)
-  const [recibidos, setRecibidos] = useState(correccion?.botellonesRecibidos ?? 0)
+  const [entregadosTecleados, setEntregadosTecleados] = useState(
+    correccion?.botellonesEntregados ?? 0,
+  )
+  const [recibidosTecleados, setRecibidosTecleados] = useState(
+    correccion?.botellonesRecibidos ?? 0,
+  )
   const [botellonesDirty, setBotellonesDirty] = useState(false)
   const [motivo, setMotivo] = useState('')
 
@@ -273,8 +278,8 @@ export function Mostrador({
     setRequiereFactura(false)
     setManuales({})
     setBotellonesDirty(false)
-    setEntregados(0)
-    setRecibidos(0)
+    setEntregadosTecleados(0)
+    setRecibidosTecleados(0)
   })
 
   const vendibleDe = (id: string) => stock.find((s) => s.productoId === id)?.vendible ?? 0
@@ -355,24 +360,58 @@ export function Mostrador({
   }, 0)
 
   /*
-   * Mantener los defaults sincronizados con el carrito en alta — RN-VEN-17.
+   * Los defaults se DERIVAN del carrito, no se sincronizan con un efecto
+   * — RN-VEN-17.
    *
-   * Mientras el operador no haya tocado los campos (flag `botellonesDirty`),
-   * cada cambio en `botellonesEnCarrito` arrastra `entregados` y `recibidos`
-   * al nuevo valor: agregar una recarga de botellón pinta 1 y 1; subir a
-   * cinco pinta 5 y 5. En el momento que el operador edita uno de los dos,
-   * el flag se prende y dejamos de sobrescribir — lo que tipeó gana hasta
-   * que se registre la venta o se limpie el formulario.
+   * ── Qué muestra cada campo ────────────────────────────────────────────────
    *
-   * En corrección el flag y el effect son no-ops: los valores ya vienen de
-   * la venta original y el operador decide si los mueve.
+   * · Corrigiendo: lo que tenía la venta original, y lo que el operador mueva.
+   * · En alta, sin tocar nada: la cantidad de botellones del carrito. Agregar
+   *   una recarga pinta 1 y 1; subir a cinco pinta 5 y 5.
+   * · En alta, después de tocarlo: lo que tecleó, hasta registrar o limpiar.
+   *
+   * ── Por qué no un `useEffect` ─────────────────────────────────────────────
+   *
+   * Acá vivía uno que llamaba a `setEntregados`/`setRecibidos` para copiar el
+   * carrito al estado. Es el patrón que React marca —`set-state-in-effect`— y
+   * la razón es que el estado copiado tiene una vida propia que puede
+   * desincronizarse del original: hay un render con el valor viejo antes de que
+   * el efecto corra, y a partir de ahí hay DOS fuentes de verdad para el mismo
+   * número.
+   *
+   * En un campo que decide cuántos botellones salen del parque, dos fuentes de
+   * verdad es exactamente el terreno donde ya apareció un doble conteo.
+   *
+   * Derivado no hay nada que sincronizar: el valor se calcula de lo que hay.
+   * Lo que se guarda en estado es solo lo que el operador TECLEÓ, que es el
+   * único dato que el sistema no puede recalcular.
    */
-  useEffect(() => {
-    if (corrigiendo) return
+  const entregados =
+    corrigiendo || botellonesDirty ? entregadosTecleados : botellonesEnCarrito
+  const recibidos = corrigiendo || botellonesDirty ? recibidosTecleados : botellonesEnCarrito
+
+  /*
+   * Tocar UNO de los dos congela los DOS, con lo que estaban mostrando.
+   *
+   * El flag es uno solo para los dos campos —tocar cualquiera significa «yo me
+   * hago cargo de estos números»— y por eso hay que guardar también el que no
+   * se tocó: si no, el otro pierde su default derivado y cae a cero.
+   *
+   * Con el efecto viejo esto salía gratis, porque el efecto ya había ESCRITO
+   * los dos valores en el estado. Derivando, el estado del campo intacto sigue
+   * en su valor inicial y hay que sembrarlo acá.
+   *
+   * Lo encontró el test de los defaults: escribir 3 en «Recibidos» dejaba
+   * «Entregados» en 0 con dos botellones en el carrito — dos botellones que
+   * salen del parque y no quedan a cargo de nadie.
+   */
+  const tomarElControl = () => {
     if (botellonesDirty) return
-    setEntregados(botellonesEnCarrito)
-    setRecibidos(botellonesEnCarrito)
-  }, [botellonesEnCarrito, botellonesDirty, corrigiendo])
+
+    setEntregadosTecleados(entregados)
+    setRecibidosTecleados(recibidos)
+    setBotellonesDirty(true)
+  }
 
   /*
    * Cap visual sobre `entregados` solo en alta: dejar un valor mayor que los
@@ -768,8 +807,8 @@ export function Mostrador({
                 {...(corrigiendo ? {} : { max: botellonesEnCarrito })}
                 value={entregadosCap}
                 onChange={(e) => {
-                  setEntregados(Number(e.target.value))
-                  setBotellonesDirty(true)
+                  tomarElControl()
+                  setEntregadosTecleados(Number(e.target.value))
                 }}
                 className="aq-campo aq-cifra w-full"
               />
@@ -781,8 +820,8 @@ export function Mostrador({
                 min={0}
                 value={recibidos}
                 onChange={(e) => {
-                  setRecibidos(Number(e.target.value))
-                  setBotellonesDirty(true)
+                  tomarElControl()
+                  setRecibidosTecleados(Number(e.target.value))
                 }}
                 className="aq-campo aq-cifra w-full"
               />

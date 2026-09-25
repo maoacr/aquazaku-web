@@ -259,6 +259,26 @@ describe('la urgencia no vive solo en el color', () => {
     expect(screen.getByText(/urgente/, { selector: '.sr-only' })).toBeInTheDocument()
   })
 
+  it('la tercera franja existe y se nombra: al día', () => {
+    render(
+      <ClientesParaLlamar
+        productos={[]}
+        stock={[]}
+        canal="botellones"
+        filas={[fila({ urgencia: 'al-dia', diasSinComprar: 2 })]}
+      />,
+    )
+
+    /*
+     * La lista dejó de filtrar por el umbral: quien compró anteayer también
+     * aparece. Sin este estado, consultar «¿cuándo compró éste?» exigía
+     * esperar a que se atrasara.
+     */
+    expect(screen.getByTitle('Al día')).toBeInTheDocument()
+    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.queryByTitle('Urgente')).not.toBeInTheDocument()
+  })
+
   it('un aviso no se anuncia como urgente', () => {
     render(
       <ClientesParaLlamar productos={[]} stock={[]}
@@ -283,7 +303,8 @@ describe('la urgencia no vive solo en el color', () => {
       />,
     )
 
-    expect(screen.getByText(/y 1 hace rato que está sin recibir/)).toBeInTheDocument()
+    expect(screen.getByText(/1 lleva tanto sin recibir/)).toBeInTheDocument()
+    expect(screen.getByText(/y 0 al día/)).toBeInTheDocument()
   })
 })
 
@@ -292,18 +313,26 @@ describe('la lista vacía', () => {
    * Se DICE. Una tabla que desaparece se lee como una tabla rota: quien la vio
    * ayer y hoy no la encuentra no piensa «no hay nadie», piensa «se cayó algo».
    */
-  it('en botellones dice que todo está al día', () => {
+  /*
+   * El vacío cambió de significado.
+   *
+   * Cuando la lista filtraba por el umbral, vacía quería decir «nadie
+   * atrasado» — una buena noticia. Ahora entran todos los que alguna vez
+   * compraron, así que vacía significa que NADIE compró nunca de este tipo de
+   * producto: un hecho distinto y mucho más raro. Decir lo anterior sería
+   * tranquilizar por el motivo equivocado.
+   */
+  it('en botellones dice que todavía no hay ninguna venta, no que todo está al día', () => {
     render(<ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[]} />)
 
-    expect(screen.getAllByText(/La lista está al día/).length).toBeGreaterThan(0)
+    expect(screen.getByText(/Todavía no hay ninguna venta de botellón/)).toBeInTheDocument()
+    expect(screen.queryByText(/al día/)).not.toBeInTheDocument()
   })
 
   it('en otros productos habla de pacas, no de botellones', () => {
     render(<ClientesParaLlamar productos={[]} stock={[]} canal="otros" filas={[]} />)
 
-    expect(screen.getAllByText(/Ninguna dirección está atrasada con pacas/).length).toBeGreaterThan(
-      0,
-    )
+    expect(screen.getByText(/Todavía no hay ninguna venta de pacas/)).toBeInTheDocument()
   })
 })
 

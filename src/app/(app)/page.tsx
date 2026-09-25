@@ -70,6 +70,14 @@ export default async function TableroPage() {
         )
       : null
 
+  /*
+   * Las direcciones con algo que hacer: aviso o urgente. Las verdes están en la
+   * lista pero no son un pendiente.
+   */
+  const atrasadas = aLlamar
+    ? [...aLlamar.botellones, ...aLlamar.otros].filter((f) => f.urgencia !== 'al-dia').length
+    : 0
+
   const pendientes = [
     ...(stock.some((p) => p.vencido > 0)
       ? [
@@ -145,6 +153,15 @@ export default async function TableroPage() {
      * completa — para que el tablero siga cumpliendo su rol de «vistazo
      * general del negocio».
      *
+     * ── Cuenta solo lo ATRASADO, no la lista entera ──────────────────────
+     *
+     * Seguimientos muestra ahora TODAS las direcciones que alguna vez
+     * compraron, incluidas las que están al día. El tablero no puede seguirlas
+     * a todas: «182 direcciones para llamar» sería falso y, peor, dejaría de
+     * significar nada el día que de verdad haya doscientas atrasadas.
+     *
+     * Acá se cuentan las amarillas y las rojas — las que tienen algo que hacer.
+     *
      * ── El aviso suma los DOS canales ────────────────────────────────────
      *
      * Y cuenta DIRECCIONES, no clientes: la unidad de la lista es la puerta,
@@ -159,12 +176,12 @@ export default async function TableroPage() {
      * El `null` de `aLlamar` ya está descartado por la condición: si el
      * 403 lo negara, no habría con qué contar.
      */
-    ...(aLlamar && aLlamar.botellones.length + aLlamar.otros.length > 0
+    ...(atrasadas > 0
       ? [
           {
             id: 'a-llamar',
             Icono: PhoneCall,
-            titulo: `${contar(aLlamar.botellones.length + aLlamar.otros.length, 'dirección', 'direcciones')} para llamar`,
+            titulo: `${contar(atrasadas, 'dirección', 'direcciones')} para llamar`,
             detalle:
               'Llevan una semana o más sin recibir. Una llamada a tiempo evita que se pasen a otra planta.',
             href: '/modulos/seguimientos',

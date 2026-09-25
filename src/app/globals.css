@@ -2455,6 +2455,24 @@ select.aq-campo:not([size]):not([multiple]) {
 .aq-modal {
   margin: auto;
   width: min(42rem, calc(100vw - 2rem));
+  /*
+   * ── La top layer no hereda la tipografía de donde nació ──────────────────
+   *
+   * Un `<dialog>` se DIBUJA en la top layer pero sigue siendo hijo de donde se
+   * declaró en el DOM, así que hereda de su padre todo lo heredable.
+   *
+   * Seguimientos montó uno dentro de la celda del lápiz, que lleva
+   * `whitespace-nowrap` y `text-right` para que la columna no se estire. El
+   * resultado, medido: `white-space: nowrap` en TODO el formulario y 1007 px de
+   * desborde — ningún texto podía envolver.
+   *
+   * No se arregla en la celda: el próximo modal que alguien monte dentro de una
+   * tabla volvería a romperse igual, y el síntoma no señala la causa. Se
+   * arregla acá, porque un modal no debe depender del lugar desde donde se
+   * abrió.
+   */
+  white-space: normal;
+  text-align: start;
   max-height: calc(100dvh - 4rem);
   overflow-y: auto;
   border: 1px solid var(--aq-tarjeta-fondo-canto);

@@ -70,6 +70,7 @@ export function ClientesParaLlamar({
    * esa tarea avanza.
    */
   const urgentes = filas.filter((f) => f.urgencia === 'urgente').length
+  const alDia = filas.filter((f) => f.urgencia === 'al-dia').length
   const sinAsignar = filas.filter((f) => f.ventaSinDireccion).length
 
   return (
@@ -84,7 +85,7 @@ export function ClientesParaLlamar({
       */}
       {filas.length > 0 ? (
         <p className="text-[13px] text-tenue">
-          {resumen(canal, urgentes)}
+          {resumen(canal, urgentes, alDia)}
           {/*
             La leyenda del asterisco, al estilo planilla: se explica UNA vez
             arriba en vez de repetir un badge en cada fila. Y dice cuántas hay,
@@ -167,22 +168,58 @@ export function ClientesParaLlamar({
   )
 }
 
-function resumen(canal: 'botellones' | 'otros', urgentes: number): string {
-  const cuerpo =
+/**
+ * La bajada, ahora que la lista es el padrón completo.
+ *
+ * Antes decía «estas direcciones ya pasaron ese punto», y era cierto porque
+ * abajo del umbral nadie entraba. Ahora entran todos los que alguna vez
+ * compraron, así que la frase tenía que dejar de describir a TODAS las filas y
+ * pasar a decir qué es cada color — que es lo que alguien necesita saber para
+ * leer la columna.
+ */
+function resumen(canal: 'botellones' | 'otros', urgentes: number, alDia: number): string {
+  const que =
     canal === 'botellones'
-      ? 'Un botellón de casa dura alrededor de una semana. Estas direcciones ya pasaron ese punto'
-      : 'Estas direcciones llevan días sin llevar nada que no sea botellón'
+      ? 'Todas las direcciones que alguna vez llevaron botellón'
+      : 'Todas las direcciones que alguna vez llevaron algo que no es botellón'
 
-  return urgentes > 0
-    ? `${cuerpo}, y ${urgentes} hace rato que ${urgentes === 1 ? 'está' : 'están'} sin recibir`
-    : `${cuerpo}.`
+  const atrasadas =
+    urgentes > 0
+      ? `${urgentes} ${urgentes === 1 ? 'lleva' : 'llevan'} tanto sin recibir que probablemente ya compró en otro lado`
+      : 'ninguna está en rojo'
+
+  return `${que}, ordenadas por días sin recibir: ${atrasadas}, y ${alDia} al día.`
 }
 
+/**
+ * El vacío dejó de significar «todos al día».
+ *
+ * Cuando la lista filtraba por el umbral, vacía quería decir «nadie atrasado» —
+ * una buena noticia. Ahora vacía significa que NADIE compró nunca de este tipo
+ * de producto, que es un hecho distinto y mucho más raro. Decir lo anterior
+ * sería tranquilizar por el motivo equivocado.
+ */
 function vacio(canal: 'botellones' | 'otros'): string {
   return canal === 'botellones'
-    ? 'Nadie está atrasado: todas las direcciones recibieron agua hace poco. La lista está al día.'
-    : 'Ninguna dirección está atrasada con pacas ni con nada que no sea botellón.'
+    ? 'Todavía no hay ninguna venta de botellón con cliente. Acá van a aparecer en cuanto se registre la primera.'
+    : 'Todavía no hay ninguna venta de pacas ni de nada que no sea botellón.'
 }
+
+/**
+ * Las tres franjas, cada una con su forma.
+ *
+ * `clases` cambia la ESTRUCTURA de la píldora y no solo el tinte: rellena con
+ * anillo, hueca con anillo, y sin nada. Es lo que la hace legible en escala de
+ * grises, donde los tres tonos son el mismo gris.
+ *
+ * `palabra` es el canal que no depende de ver: va en el `title` y en el
+ * `sr-only`.
+ */
+const TONO = {
+  urgente: { palabra: 'Urgente', clases: 'bg-error-fondo text-error-texto ring-1 ring-error' },
+  aviso: { palabra: 'Aviso', clases: 'text-alerta-texto ring-1 ring-alerta-borde' },
+  'al-dia': { palabra: 'Al día', clases: 'text-tenue' },
+} as const
 
 function Fila({
   fila,
@@ -193,8 +230,6 @@ function Fila({
   productos: Producto[]
   stock: ResumenDeStock[]
 }) {
-  const urgente = fila.urgencia === 'urgente'
-
   /*
    * `padding` y no `className`: el default de `Td` es `py-2.5` y sumarle
    * `py-1.5` dejaría las dos clases peleando por precedencia de CSS. Acá el
@@ -218,39 +253,31 @@ function Fila({
       */}
       <Td padding={relleno} className="w-px whitespace-nowrap text-center">
         {/*
-          ── La urgencia es RELLENO contra CONTORNO, no dos colores ───────────
+          ── Tres franjas, tres FORMAS ────────────────────────────────────────
 
-          Antes la palabra «urgente» iba debajo del número. Era larga, le robaba
-          protagonismo a la cifra y no cabía en su columna.
+          Relleno / contorno / sin contorno. La diferencia NO puede vivir en el
+          color: medidos, los tonos de fondo de urgente y aviso contrastan entre
+          sí 1.14:1 en escala de grises (1.016:1 en modo claro). Quien no separa
+          rojo de ámbar no vería ninguna diferencia, y esta pantalla se recorre
+          de reojo entre cliente y cliente.
 
-          Sacarla y dejar solo el color NO era una opción: medidos, los dos
-          tonos de fondo son `#5A1610` y `#4A3305`, que en escala de grises
-          contrastan entre sí **1.14:1** — y en modo claro, 1.016:1. O sea nada.
-          Quien no separa rojo de ámbar habría perdido la urgencia entera.
+          Con tres franjas el problema se agrava: tres tonos que en gris son el
+          mismo gris. Por eso cada una cambia de ESTRUCTURA —relleno, anillo,
+          nada— y no solo de tinte. Se distingue sin leer y sin color.
 
-          La diferencia se mudó a la FORMA: lo urgente va relleno y con anillo
-          fuerte, el aviso va hueco. Relleno contra hueco se ve sin leer y se ve
-          en grises, así que la palabra deja de hacer falta en pantalla — y el
-          número puede crecer, que es lo que esta columna vino a mostrar.
-
-          Para el lector de pantalla la palabra SIGUE: en `sr-only`. Un canal que
-          se quita de la vista no se quita del documento.
+          La palabra sigue existiendo, en `sr-only`: salir de la VISTA no es
+          salir del documento.
         */}
         <span
-          title={urgente ? 'Urgente' : 'Aviso'}
-          className={`aq-cifra inline-flex min-w-[2.5rem] items-center justify-center rounded px-1.5 py-1 text-[17px] leading-none font-semibold tabular-nums ${
-            urgente
-              ? 'bg-error-fondo text-error-texto ring-1 ring-error'
-              : 'text-secundario ring-1 ring-sutil'
-          }`}
+          title={TONO[fila.urgencia].palabra}
+          className={`aq-cifra inline-flex min-w-[2.5rem] items-center justify-center rounded px-1.5 py-1 text-[17px] leading-none font-semibold tabular-nums ${TONO[fila.urgencia].clases}`}
         >
           {fila.diasSinComprar}
           {/*
             El asterisco cuelga del NÚMERO, que es lo que está en duda — no de
             la dirección, que es real. La dirección de la fila existe y es del
             cliente; lo que no se registró es a cuál de sus puertas fue LA
-            VENTA, así que este conteo es del cliente y no de esta dirección.
-            La leyenda de arriba lo explica una vez, como en una planilla.
+            VENTA. La leyenda de arriba lo explica una vez, como en una planilla.
           */}
           {fila.ventaSinDireccion ? (
             <span aria-hidden className="ml-px align-super text-[11px] opacity-70">
@@ -259,7 +286,7 @@ function Fila({
           ) : null}
         </span>
         <span className="sr-only">
-          {` días sin recibir, ${urgente ? 'urgente' : 'aviso'}`}
+          {` días sin recibir, ${TONO[fila.urgencia].palabra.toLowerCase()}`}
           {fila.ventaSinDireccion
             ? '. El conteo viene de una venta que no registró a qué dirección se entregó'
             : ''}

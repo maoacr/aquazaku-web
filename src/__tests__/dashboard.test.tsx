@@ -375,6 +375,43 @@ describe('el tablero compone paneles según lo que el rol puede ver', () => {
    * noticia se dice con el saludo («No hay nada esperando»), no con una
    * sección que aparece y desaparece.
    */
+  /**
+   * Seguimientos muestra TODAS las direcciones que alguna vez compraron,
+   * incluidas las que están al día. El tablero no puede seguirlas a todas:
+   * «182 direcciones para llamar» sería falso y dejaría de significar nada el
+   * día que de verdad haya doscientas atrasadas.
+   */
+  it('las direcciones al día NO cuentan como pendiente', async () => {
+    responde({
+      stock: [stock()],
+      aLlamar: {
+        botellones: [
+          aLlamar({ direccionId: 'd1', urgencia: 'urgente' }),
+          aLlamar({ direccionId: 'd2', urgencia: 'al-dia', diasSinComprar: 2 }),
+          aLlamar({ direccionId: 'd3', urgencia: 'al-dia', diasSinComprar: 1 }),
+        ],
+        otros: [aLlamar({ clienteId: 'c2', direccionId: 'd4', urgencia: 'aviso' })],
+      },
+    })
+
+    await pintar()
+
+    /* Cuatro filas en la lista; dos con algo que hacer. */
+    expect(screen.getByText('2 direcciones para llamar')).toBeInTheDocument()
+  })
+
+  it('con TODAS al día, no suma el pendiente aunque la lista tenga filas', async () => {
+    responde({
+      stock: [stock()],
+      aLlamar: { botellones: [aLlamar({ urgencia: 'al-dia', diasSinComprar: 1 })], otros: [] },
+    })
+
+    await pintar()
+
+    expect(screen.queryByText(/direcci(ón|ones) para llamar/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/no hay nada esperando/i)).toBeInTheDocument()
+  })
+
   it('sin nadie para llamar, no suma el pendiente', async () => {
     responde({ stock: [stock()], aLlamar: { botellones: [], otros: [] } })
 

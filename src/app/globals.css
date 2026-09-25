@@ -1717,6 +1717,8 @@ input:not([type='checkbox'], [type='radio'], [type='hidden']) {
     row-gap: 0.125rem;
     padding: 0.625rem 0.75rem;
     box-shadow: inset 0 1px 0 0 var(--aq-tabla-linea);
+    /* El ancla de la acción, que se posiciona contra la fila. Ver más abajo. */
+    position: relative;
   }
 
   .aq-tabla-apilada tbody td {
@@ -1733,22 +1735,81 @@ input:not([type='checkbox'], [type='radio'], [type='hidden']) {
   }
 
   /*
-   * La primera celda —la cifra— ocupa el alto de las otras tres. Es lo que
-   * mantiene la columna de números recorrible hacia abajo, que es la razón de
-   * ser de esta pantalla.
+   * La cifra manda la columna izquierda; todo lo demás se apila en la derecha.
+   *
+   * La colocación es EXPLÍCITA y no por `span`. La primera versión decía
+   * `grid-row: span 3` contando las celdas que había ese día, y al agregar la
+   * quinta columna —el lápiz— esa quinta celda se caía debajo del número en
+   * vez de seguir a las otras. Un layout que hay que recontar cada vez que la
+   * tabla gana una columna es un layout que se va a romper en silencio.
+   *
+   * Fijando la columna de cada celda, la cantidad deja de importar.
    */
   .aq-tabla-apilada tbody td:first-child {
-    grid-row: span 3;
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .aq-tabla-apilada tbody td:not(:first-child) {
+    grid-column: 2;
+  }
+
+  /*
+   * La acción de la fila va DEBAJO del número, no en una línea propia.
+   *
+   * Medido a 375 px: con el lápiz apilado en la columna derecha, la fila pasaba
+   * de 81 px a 124 — un 53 % más alto, justo lo que esta tabla vino a arreglar.
+   * Y la columna izquierda tenía ese espacio vacío esperando, porque el número
+   * ocupa una línea y la fila mide tres.
+   */
+  .aq-tabla-apilada tbody td:last-child {
+    /*
+     * Fuera del flujo de la grilla, no en una celda propia.
+     *
+     * Tres intentos, los tres medidos a 375 px sobre una fila de 81 px:
+     *
+     *   1. En la columna derecha → 124 px. El lápiz se llevaba una línea
+     *      entera, un 53 % más alto: justo lo que esta tabla vino a arreglar.
+     *   2. En la fila 2 de la columna izquierda → 104 px. Mejor, pero el área
+     *      táctil de 44 px estiraba esa fila de la grilla, y el estirón se
+     *      contagiaba a la dirección que vive al lado.
+     *   3. Absoluta → 81 px. La acción no aporta alto porque ocupa el espacio
+     *      que la columna del número ya tenía vacío debajo.
+     *
+     * El área táctil sigue midiendo 44 px: lo que se saca del flujo es su
+     * contribución al alto, no su blanco clicable.
+     */
+    /*
+     * El área de grilla tiene que declararse IGUAL, aunque la celda esté fuera
+     * de flujo. `position: absolute` dentro de una grilla se resuelve contra el
+     * ÁREA de la celda, no contra la fila — y como `:last-child` también
+     * matchea `:not(:first-child)`, su área seguía siendo la columna 2. El
+     * lápiz aparecía 76 px a la derecha, encima del teléfono.
+     *
+     * Con el área en la columna 1 fila 2, `top: 0` lo apoya en el espacio que
+     * el número deja vacío debajo suyo.
+     */
+    grid-column: 1;
+    grid-row: 2;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3.25rem;
+    text-align: center;
   }
 
   /*
    * La fila de «no hay nada» es una sola celda con `colspan`: tiene que cruzar
-   * las dos columnas o queda estrujada en 2.75 rem. Sin esto, la lista vacía
+   * las dos columnas o queda estrujada en la primera. Sin esto, la lista vacía
    * —el estado que MÁS se mira, porque significa que el trabajo está al día— se
-   * ve roto.
+   * ve rota.
+   *
+   * Va ÚLTIMA a propósito: esa celda es `:last-child` y también `[colspan]`, y
+   * las dos reglas pesan igual. Gana la que se declaró después.
    */
   .aq-tabla-apilada tbody td[colspan] {
     grid-column: 1 / -1;
+    grid-row: auto;
   }
 }
 

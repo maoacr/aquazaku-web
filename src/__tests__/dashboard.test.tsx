@@ -51,6 +51,7 @@ function aLlamar(sobrescribe: Partial<DireccionALlamar> = {}): DireccionALlamar 
     diasSinComprar: 12,
     urgencia: 'urgente',
     ventaSinDireccion: false,
+    ventaId: 'v1',
     telefonos: [],
     ...sobrescribe,
   }

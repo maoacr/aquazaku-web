@@ -38,6 +38,7 @@ const fila = (parcial: Partial<DireccionALlamar> = {}): DireccionALlamar => ({
   diasSinComprar: 10,
   urgencia: 'urgente',
   ventaSinDireccion: false,
+  ventaId: 'v1',
   telefonos: [],
   ...parcial,
 })

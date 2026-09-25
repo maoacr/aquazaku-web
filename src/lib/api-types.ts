@@ -823,6 +823,14 @@ export interface DireccionALlamar {
    * dirección.
    */
   ventaSinDireccion: boolean
+  /**
+   * La venta que fijó este reloj — la más reciente que cuenta para esta fila.
+   *
+   * Es sobre la que se actúa: el lápiz de la fila le asigna una de las
+   * direcciones del cliente, corrigiéndola. Sin el id, la fila sabría que hay
+   * algo que arreglar y no cuál.
+   */
+  ventaId: string
   telefonos: TelefonoParaLlamar[]
 }
 

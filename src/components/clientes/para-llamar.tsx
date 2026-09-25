@@ -2,6 +2,7 @@ import { MapPinOff, MessageCircle, PhoneOff } from 'lucide-react'
 import Link from 'next/link'
 import { Encabezados, SinResultados, Tabla, Td, Th } from '@/components/ui/tabla'
 import type { DireccionALlamar, TelefonoParaLlamar } from '@/lib/api-types'
+import { AsignarDireccion } from './asignar-direccion'
 
 /**
  * Las direcciones para llamar — M15.
@@ -121,6 +122,15 @@ export function ClientesParaLlamar({
           <Th>Cliente</Th>
           <Th>Dirección</Th>
           <Th>Teléfonos</Th>
+          {/*
+            Sin título visible: una columna de iconos no se nombra dos veces.
+            Pero la celda del encabezado tiene que existir igual, o la tabla
+            queda con cuatro títulos y cinco celdas por fila — y un lector de
+            pantalla anuncia cada lápiz bajo el título «Teléfonos».
+          */}
+          <Th>
+            <span className="sr-only">Acciones</span>
+          </Th>
         </Encabezados>
 
         <tbody>
@@ -130,7 +140,7 @@ export function ClientesParaLlamar({
              * tabla rota: quien la vio ayer y hoy no la encuentra no piensa «no
              * hay nadie», piensa «se cayó algo».
              */
-            <SinResultados columnas={4}>{vacio(canal)}</SinResultados>
+            <SinResultados columnas={5}>{vacio(canal)}</SinResultados>
           ) : (
             filas.map((fila) => (
               <Fila key={`${fila.clienteId}-${fila.direccionId ?? 'sin-direccion'}`} fila={fila} />
@@ -309,6 +319,25 @@ function Fila({ fila }: { fila: DireccionALlamar }) {
             ))}
           </span>
         )}
+      </Td>
+
+      {/*
+        ── El lápiz ─────────────────────────────────────────────────────────
+
+        Abre la corrección que le asigna la dirección a la venta que fijó este
+        reloj. Por qué es una corrección y no una edición, y qué garantiza,
+        está en `asignar-direccion.tsx`.
+
+        `text-right` y no centrado: pegado al borde derecho, la columna de
+        lápices se recorre igual que la de números, y no le roba ancho a los
+        teléfonos.
+      */}
+      <Td padding="px-1.5 py-1" className="w-px whitespace-nowrap text-right align-middle">
+        <AsignarDireccion
+          ventaId={fila.ventaId}
+          clienteId={fila.clienteId}
+          nombre={fila.nombre}
+        />
       </Td>
     </tr>
   )

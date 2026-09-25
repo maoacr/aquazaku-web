@@ -813,7 +813,15 @@ export interface DireccionALlamar {
   etiqueta: string | null
   direccion: string | null
   diasSinComprar: number
-  urgencia: 'aviso' | 'urgente'
+  /**
+   * En qué franja cae esta dirección.
+   *
+   * `al-dia` existe porque la lista dejó de ser solo «a quién llamar» y pasó a
+   * ser el padrón completo: quien compró hace dos días también aparece, en
+   * verde. Los umbrales siguen siendo parámetros y siguen decidiendo el corte —
+   * lo que dejaron de decidir es quién entra.
+   */
+  urgencia: 'al-dia' | 'aviso' | 'urgente'
   /**
    * La venta que fijó este reloj no registró a qué dirección se entregó.
    *
@@ -823,6 +831,14 @@ export interface DireccionALlamar {
    * dirección.
    */
   ventaSinDireccion: boolean
+  /**
+   * La venta que fijó este reloj — la más reciente que cuenta para esta fila.
+   *
+   * Es sobre la que se actúa: el lápiz de la fila le asigna una de las
+   * direcciones del cliente, corrigiéndola. Sin el id, la fila sabría que hay
+   * algo que arreglar y no cuál.
+   */
+  ventaId: string
   telefonos: TelefonoParaLlamar[]
 }
 

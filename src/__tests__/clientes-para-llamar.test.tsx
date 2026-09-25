@@ -38,6 +38,7 @@ const fila = (parcial: Partial<DireccionALlamar> = {}): DireccionALlamar => ({
   diasSinComprar: 10,
   urgencia: 'urgente',
   ventaSinDireccion: false,
+  ventaId: 'v1',
   telefonos: [],
   ...parcial,
 })
@@ -45,10 +46,16 @@ const fila = (parcial: Partial<DireccionALlamar> = {}): DireccionALlamar => ({
 /** La fila de la tabla que contiene ese texto — el sujeto de casi todo acá. */
 const filaCon = (texto: string | RegExp) => screen.getByText(texto).closest('tr')!
 
+/*
+ * `productos` y `stock` van vacíos en todos los casos: los consume el mostrador
+ * que abre el lápiz, y acá ese modal nunca se abre. Lo que estos tests miran es
+ * la fila.
+ */
+
 describe('una fila por dirección', () => {
   it('un cliente con dos direcciones aparece dos veces, con su cuenta cada una', () => {
     render(
-      <ClientesParaLlamar
+      <ClientesParaLlamar productos={[]} stock={[]}
         canal="botellones"
         filas={[
           fila({ direccionId: 'd1', etiqueta: 'el local', diasSinComprar: 20 }),
@@ -63,14 +70,14 @@ describe('una fila por dirección', () => {
   })
 
   it('la dirección se lee en la fila, no hay que abrir la ficha para saber cuál es', () => {
-    render(<ClientesParaLlamar canal="botellones" filas={[fila()]} />)
+    render(<ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[fila()]} />)
 
     expect(screen.getByText('Calle 5 # 3 - 20')).toBeInTheDocument()
     expect(screen.getByText(/la casa/)).toBeInTheDocument()
   })
 
   it('el nombre lleva a la ficha del cliente', () => {
-    render(<ClientesParaLlamar canal="botellones" filas={[fila({ clienteId: 'abc-123' })]} />)
+    render(<ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[fila({ clienteId: 'abc-123' })]} />)
 
     expect(screen.getByRole('link', { name: 'Yeimy Padilla' })).toHaveAttribute(
       'href',
@@ -94,7 +101,7 @@ describe('la marca de la venta sin dirección asignada', () => {
    * cuál de sus puertas fue LA VENTA, o sea que la duda es sobre el conteo.
    */
   it('la fila marcada lo explica a quien no ve el asterisco', () => {
-    render(<ClientesParaLlamar canal="botellones" filas={[fila({ ventaSinDireccion: true })]} />)
+    render(<ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[fila({ ventaSinDireccion: true })]} />)
 
     expect(
       screen.getByText(/no registró a qué dirección se entregó/, { selector: '.sr-only' }),
@@ -102,14 +109,14 @@ describe('la marca de la venta sin dirección asignada', () => {
   })
 
   it('la fila con dirección propia NO se marca', () => {
-    render(<ClientesParaLlamar canal="botellones" filas={[fila({ ventaSinDireccion: false })]} />)
+    render(<ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[fila({ ventaSinDireccion: false })]} />)
 
     expect(screen.queryByText(/no registró a qué dirección/)).not.toBeInTheDocument()
   })
 
   it('la cabecera dice CUÁNTAS quedan, para poder ver que la tarea avanza', () => {
     render(
-      <ClientesParaLlamar
+      <ClientesParaLlamar productos={[]} stock={[]}
         canal="botellones"
         filas={[
           fila({ direccionId: 'd1', ventaSinDireccion: true }),
@@ -125,35 +132,71 @@ describe('la marca de la venta sin dirección asignada', () => {
   })
 
   it('sin ninguna marcada, la cabecera no menciona el tema', () => {
-    render(<ClientesParaLlamar canal="botellones" filas={[fila()]} />)
+    render(<ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[fila()]} />)
 
     expect(screen.queryByText(/el conteo viene de una venta/)).not.toBeInTheDocument()
   })
 })
 
-describe('el cliente sin ninguna dirección cargada', () => {
+describe('la fila cuya venta no registró dirección', () => {
   /*
-   * Aparece igual. Es el mismo criterio que «sin teléfono cargado»: la lista
-   * existe para mostrar trabajo, y acá el trabajo es cargarle la dirección. Una
-   * fila que se va sola es trabajo que nadie ve.
+   * ── La queja que reescribió el modelo ───────────────────────────────────
+   *
+   * Una versión anterior repartía esas ventas entre TODAS las direcciones del
+   * cliente, y cada fila mostraba una dirección concreta al lado de un conteo
+   * que no era de esa puerta. Se leía como si ya estuviera asignada.
+   *
+   * Ahora la celda dice qué falta hacer. Es la diferencia entre una etiqueta
+   * que miente y una acción que se puede tocar.
    */
-  it('aparece, y lo dice en vez de mostrar una celda vacía', () => {
+  it('dice «Asignar una dirección» en vez de mostrar una', () => {
     render(
       <ClientesParaLlamar
+        productos={[]}
+        stock={[]}
         canal="botellones"
-        filas={[fila({ direccionId: null, etiqueta: null, direccion: null })]}
+        filas={[fila({ direccionId: null, etiqueta: null, direccion: null, ventaSinDireccion: true })]}
       />,
     )
 
     expect(screen.getByRole('link', { name: 'Yeimy Padilla' })).toBeInTheDocument()
-    expect(screen.getByText('Sin dirección cargada')).toBeInTheDocument()
+    expect(screen.getByText('Asignar una dirección')).toBeInTheDocument()
+  })
+
+  it('la fila con dirección propia muestra la dirección, no la acción', () => {
+    render(
+      <ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[fila()]} />,
+    )
+
+    expect(screen.getByText('Calle 5 # 3 - 20')).toBeInTheDocument()
+    expect(screen.queryByText('Asignar una dirección')).not.toBeInTheDocument()
+  })
+
+  it('el lápiz se nombra según lo que va a hacer', () => {
+    render(
+      <ClientesParaLlamar
+        productos={[]}
+        stock={[]}
+        canal="botellones"
+        filas={[fila({ direccionId: null, etiqueta: null, direccion: null, ventaSinDireccion: true })]}
+      />,
+    )
+
+    /*
+     * «Asignarle la dirección» y no «Corregir la venta»: quien usa lector de
+     * pantalla tiene que saber qué botón está tocando, y en esta fila el
+     * trabajo concreto es el domicilio.
+     */
+    expect(
+      screen.getByRole('button', { name: /Asignarle la dirección a la venta de Yeimy Padilla/ }),
+    ).toBeInTheDocument()
   })
 })
 
 describe('a qué número se escribe', () => {
   it('el enlace de WhatsApp usa el número de SU línea, no el del vecino', () => {
     render(
-      <ClientesParaLlamar
+      <ClientesParaLlamar productos={[]} stock={[]}
         canal="botellones"
         filas={[
           fila({
@@ -176,7 +219,7 @@ describe('a qué número se escribe', () => {
 
   it('un fijo se muestra pero NO ofrece WhatsApp', () => {
     render(
-      <ClientesParaLlamar
+      <ClientesParaLlamar productos={[]} stock={[]}
         canal="botellones"
         filas={[
           fila({
@@ -191,7 +234,7 @@ describe('a qué número se escribe', () => {
   })
 
   it('sin teléfono cargado la fila aparece igual: hay que saber que falta el dato', () => {
-    render(<ClientesParaLlamar canal="botellones" filas={[fila({ telefonos: [] })]} />)
+    render(<ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[fila({ telefonos: [] })]} />)
 
     expect(screen.getByText('Sin teléfono cargado')).toBeInTheDocument()
   })
@@ -204,7 +247,7 @@ describe('la urgencia no vive solo en el color', () => {
    * al color; no lo reemplaza ni depende de él.
    */
   it('lo urgente se nombra, aunque la palabra no esté a la vista', () => {
-    render(<ClientesParaLlamar canal="botellones" filas={[fila({ urgencia: 'urgente' })]} />)
+    render(<ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[fila({ urgencia: 'urgente' })]} />)
 
     /*
      * `title` es lo que ve quien pasa el mouse; el `sr-only` es lo que oye
@@ -216,9 +259,29 @@ describe('la urgencia no vive solo en el color', () => {
     expect(screen.getByText(/urgente/, { selector: '.sr-only' })).toBeInTheDocument()
   })
 
-  it('un aviso no se anuncia como urgente', () => {
+  it('la tercera franja existe y se nombra: al día', () => {
     render(
       <ClientesParaLlamar
+        productos={[]}
+        stock={[]}
+        canal="botellones"
+        filas={[fila({ urgencia: 'al-dia', diasSinComprar: 2 })]}
+      />,
+    )
+
+    /*
+     * La lista dejó de filtrar por el umbral: quien compró anteayer también
+     * aparece. Sin este estado, consultar «¿cuándo compró éste?» exigía
+     * esperar a que se atrasara.
+     */
+    expect(screen.getByTitle('Al día')).toBeInTheDocument()
+    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.queryByTitle('Urgente')).not.toBeInTheDocument()
+  })
+
+  it('un aviso no se anuncia como urgente', () => {
+    render(
+      <ClientesParaLlamar productos={[]} stock={[]}
         canal="botellones"
         filas={[fila({ urgencia: 'aviso', diasSinComprar: 6 })]}
       />,
@@ -231,7 +294,7 @@ describe('la urgencia no vive solo en el color', () => {
 
   it('la cabecera cuenta cuántas urgentes hay', () => {
     render(
-      <ClientesParaLlamar
+      <ClientesParaLlamar productos={[]} stock={[]}
         canal="botellones"
         filas={[
           fila({ direccionId: 'd1', urgencia: 'urgente' }),
@@ -240,7 +303,8 @@ describe('la urgencia no vive solo en el color', () => {
       />,
     )
 
-    expect(screen.getByText(/y 1 hace rato que está sin recibir/)).toBeInTheDocument()
+    expect(screen.getByText(/1 lleva tanto sin recibir/)).toBeInTheDocument()
+    expect(screen.getByText(/y 0 al día/)).toBeInTheDocument()
   })
 })
 
@@ -249,24 +313,32 @@ describe('la lista vacía', () => {
    * Se DICE. Una tabla que desaparece se lee como una tabla rota: quien la vio
    * ayer y hoy no la encuentra no piensa «no hay nadie», piensa «se cayó algo».
    */
-  it('en botellones dice que todo está al día', () => {
-    render(<ClientesParaLlamar canal="botellones" filas={[]} />)
+  /*
+   * El vacío cambió de significado.
+   *
+   * Cuando la lista filtraba por el umbral, vacía quería decir «nadie
+   * atrasado» — una buena noticia. Ahora entran todos los que alguna vez
+   * compraron, así que vacía significa que NADIE compró nunca de este tipo de
+   * producto: un hecho distinto y mucho más raro. Decir lo anterior sería
+   * tranquilizar por el motivo equivocado.
+   */
+  it('en botellones dice que todavía no hay ninguna venta, no que todo está al día', () => {
+    render(<ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[]} />)
 
-    expect(screen.getAllByText(/La lista está al día/).length).toBeGreaterThan(0)
+    expect(screen.getByText(/Todavía no hay ninguna venta de botellón/)).toBeInTheDocument()
+    expect(screen.queryByText(/al día/)).not.toBeInTheDocument()
   })
 
   it('en otros productos habla de pacas, no de botellones', () => {
-    render(<ClientesParaLlamar canal="otros" filas={[]} />)
+    render(<ClientesParaLlamar productos={[]} stock={[]} canal="otros" filas={[]} />)
 
-    expect(screen.getAllByText(/Ninguna dirección está atrasada con pacas/).length).toBeGreaterThan(
-      0,
-    )
+    expect(screen.getByText(/Todavía no hay ninguna venta de pacas/)).toBeInTheDocument()
   })
 })
 
 describe('el encabezado de la tabla', () => {
   it('nombra las cuatro columnas: sin títulos, una planilla no se lee', () => {
-    render(<ClientesParaLlamar canal="botellones" filas={[fila()]} />)
+    render(<ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[fila()]} />)
 
     for (const columna of ['Días', 'Cliente', 'Dirección', 'Teléfonos']) {
       expect(screen.getByRole('columnheader', { name: columna })).toBeInTheDocument()

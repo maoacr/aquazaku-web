@@ -5,7 +5,7 @@ import {
 } from '@/components/clientes/pestanas-de-seguimientos'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch } from '@/lib/api-server'
-import type { SeguimientosALlamar } from '@/lib/api-types'
+import type { Producto, ResumenDeStock, SeguimientosALlamar } from '@/lib/api-types'
 
 /**
  * Seguimientos — M15.
@@ -57,7 +57,18 @@ export default async function SeguimientosPage({
   const sp = searchParams ? await searchParams : undefined
   const canal = canalDesde(sp?.canal)
 
-  const seguimientos = await apiServerFetch<SeguimientosALlamar>('/clientes/a-llamar')
+  /*
+   * El catálogo y el stock viajan con la pantalla porque el lápiz de cada fila
+   * abre el MOSTRADOR de Ventas, precargado con la venta a corregir — y el
+   * mostrador los necesita para el carrito, el piso de precio y el aviso de
+   * stock. Pedirlos al abrir el modal metería una espera en el momento en que
+   * alguien ya decidió actuar.
+   */
+  const [seguimientos, productos, stock] = await Promise.all([
+    apiServerFetch<SeguimientosALlamar>('/clientes/a-llamar'),
+    apiServerFetch<Producto[]>('/productos'),
+    apiServerFetch<ResumenDeStock[]>('/stock'),
+  ])
   const leidoEn = new Date()
 
   return (
@@ -79,7 +90,12 @@ export default async function SeguimientosPage({
         basePath="/modulos/seguimientos"
       />
 
-      <ClientesParaLlamar filas={seguimientos[canal]} canal={canal} />
+      <ClientesParaLlamar
+        filas={seguimientos[canal]}
+        canal={canal}
+        productos={productos}
+        stock={stock}
+      />
       <SelloDeHora leidoEn={leidoEn} />
     </div>
   )

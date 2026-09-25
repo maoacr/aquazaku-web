@@ -1,8 +1,13 @@
-import { MapPinOff, MessageCircle, PhoneOff } from 'lucide-react'
+import { MessageCircle, PhoneOff } from 'lucide-react'
 import Link from 'next/link'
 import { Encabezados, SinResultados, Tabla, Td, Th } from '@/components/ui/tabla'
-import type { DireccionALlamar, TelefonoParaLlamar } from '@/lib/api-types'
-import { AsignarDireccion } from './asignar-direccion'
+import type {
+  DireccionALlamar,
+  Producto,
+  ResumenDeStock,
+  TelefonoParaLlamar,
+} from '@/lib/api-types'
+import { CorregirLaVenta } from './corregir-la-venta'
 
 /**
  * Las direcciones para llamar — M15.
@@ -46,9 +51,14 @@ import { AsignarDireccion } from './asignar-direccion'
 export function ClientesParaLlamar({
   filas,
   canal,
+  productos,
+  stock,
 }: {
   filas: DireccionALlamar[]
   canal: 'botellones' | 'otros'
+  /* Los necesita el mostrador que abre el lápiz — es el mismo de Ventas. */
+  productos: Producto[]
+  stock: ResumenDeStock[]
 }) {
   /*
    * Los dos números que la cabecera necesita, contados una vez.
@@ -143,7 +153,12 @@ export function ClientesParaLlamar({
             <SinResultados columnas={5}>{vacio(canal)}</SinResultados>
           ) : (
             filas.map((fila) => (
-              <Fila key={`${fila.clienteId}-${fila.direccionId ?? 'sin-direccion'}`} fila={fila} />
+              <Fila
+                key={`${fila.clienteId}-${fila.direccionId ?? 'sin-direccion'}`}
+                fila={fila}
+                productos={productos}
+                stock={stock}
+              />
             ))
           )}
         </tbody>
@@ -169,7 +184,15 @@ function vacio(canal: 'botellones' | 'otros'): string {
     : 'Ninguna dirección está atrasada con pacas ni con nada que no sea botellón.'
 }
 
-function Fila({ fila }: { fila: DireccionALlamar }) {
+function Fila({
+  fila,
+  productos,
+  stock,
+}: {
+  fila: DireccionALlamar
+  productos: Producto[]
+  stock: ResumenDeStock[]
+}) {
   const urgente = fila.urgencia === 'urgente'
 
   /*
@@ -264,25 +287,23 @@ function Fila({ fila }: { fila: DireccionALlamar }) {
       <Td padding={relleno} className="md:max-w-[18rem]">
         {fila.direccionId === null ? (
           /*
-           * Cliente con compras y sin ninguna dirección cargada. Aparece igual
-           * —desaparecer sería esconder trabajo— y la ausencia se marca COMO
-           * ausencia: en cursiva, para que no compita con las direcciones
-           * reales de las otras filas.
+           * ── Acá NO va una dirección ─────────────────────────────────────
+           *
+           * Esta fila cuenta una venta que no registró a qué puerta fue. Una
+           * versión anterior mostraba igual una dirección del cliente —la
+           * repartía entre todas— y se leía como «acá se entregó hace 43
+           * días», que es justamente lo que nadie sabe. Peor: con dos
+           * direcciones salían dos filas idénticas reclamando puertas
+           * distintas.
+           *
+           * O tiene dirección o no la tiene. Y cuando no la tiene, lo que
+           * corresponde no es una etiqueta sino una ACCIÓN: el lápiz de la
+           * fila abre la corrección para asignársela.
            */
-          <span className="flex items-center gap-1.5 text-[13px] italic text-tenue">
-            <MapPinOff aria-hidden className="size-3.5 shrink-0" />
-            Sin dirección cargada
+          <span className="text-[13px] font-medium text-alerta-texto">
+            Asignar una dirección
           </span>
         ) : (
-          /*
-           * La dirección y su etiqueta en UNA línea, separadas por un punto.
-           *
-           * Estaban en dos, y la etiqueta usaba `aq-micro` —mayúsculas con
-           * tracking—. En el navegador a 375 px eso daba «CASA DE LA SUEGRA»
-           * ocupando más ancho que la dirección real que acompañaba: el dato
-           * secundario gritaba más fuerte que el principal, y la fila crecía a
-           * 125 px, más que la tarjeta que esto vino a reemplazar.
-           */
           <span className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
             <span className="text-[13px] text-secundario">{fila.direccion}</span>
             {/*
@@ -333,10 +354,12 @@ function Fila({ fila }: { fila: DireccionALlamar }) {
         teléfonos.
       */}
       <Td padding="px-1.5 py-1" className="w-px whitespace-nowrap text-right align-middle">
-        <AsignarDireccion
+        <CorregirLaVenta
           ventaId={fila.ventaId}
-          clienteId={fila.clienteId}
           nombre={fila.nombre}
+          sinDireccion={fila.ventaSinDireccion}
+          productos={productos}
+          stock={stock}
         />
       </Td>
     </tr>

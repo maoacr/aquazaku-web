@@ -131,6 +131,18 @@ export async function registrarVentaAction(
 
   revalidatePath(RUTA)
   revalidatePath('/modulos/stock')
+  /*
+   * Seguimientos lee la fecha de la ÚLTIMA venta de cada dirección, así que
+   * cualquier cosa que toque una venta lo cambia. Sin esta línea la pantalla se
+   * sirve de caché y sigue mandando a llamar a alguien que acaba de comprar.
+   *
+   * Es exactamente el caso que reportó la operación: se le asigna la dirección
+   * a una venta vieja con el lápiz, las dos ventas quedan en la misma puerta —y
+   * la lista debería mostrar UNA fila con los días de la más reciente— pero la
+   * fila de 40 días seguía arriba de todo. La API ya devolvía bien; lo que no
+   * se volvía a pedir era la página.
+   */
+  revalidatePath('/modulos/seguimientos')
 
   return {
     ...exito(
@@ -250,6 +262,7 @@ export async function corregirVentaAction(
   revalidatePath(RUTA)
   revalidatePath('/modulos/stock')
   revalidatePath('/modulos/clientes', 'layout')
+  revalidatePath('/modulos/seguimientos')
 
   const antes = Number(resultado.reemplazada.total)
   const despues = Number(resultado.venta.total)
@@ -331,6 +344,8 @@ export async function anularVentaAction(
    * alguien anule dos veces.
    */
   revalidatePath('/modulos/clientes', 'layout')
+  /* Anular NO reinicia el reloj: la dirección vuelve a contar desde la venta anterior. */
+  revalidatePath('/modulos/seguimientos')
 
   return exito('Venta anulada. El producto volvió a su lote.')
 }

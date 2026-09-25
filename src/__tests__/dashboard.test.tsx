@@ -3,12 +3,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import DashboardPage from '@/app/(app)/page'
 import type {
   CierreDeProduccion,
+  DireccionALlamar,
   InsumoListado,
   Producto,
-  ClienteALlamar,
   Reconciliacion,
   ResumenDeStock,
   SaldoDeAgua,
+  SeguimientosALlamar,
 } from '@/lib/api-types'
 import { ApiError } from '@/lib/errors'
 
@@ -28,6 +29,29 @@ function stock(sobrescribe: Partial<ResumenDeStock> = {}): ResumenDeStock {
     total: 100,
     vendible: 100,
     vencido: 0,
+    ...sobrescribe,
+  }
+}
+
+/**
+ * Una dirección atrasada.
+ *
+ * El tablero solo cuenta filas, así que acá el contenido casi no importa — lo
+ * que importa es que sea UNA fila. Lo que la fila dice se prueba en
+ * `clientes-para-llamar.test.tsx`.
+ */
+function aLlamar(sobrescribe: Partial<DireccionALlamar> = {}): DireccionALlamar {
+  return {
+    clienteId: 'c1',
+    nombre: 'Yeimy Padilla',
+    documento: '79123456',
+    direccionId: 'd1',
+    etiqueta: 'la casa',
+    direccion: 'Calle 5 # 3 - 20',
+    diasSinComprar: 12,
+    urgencia: 'urgente',
+    ventaSinDireccion: false,
+    telefonos: [],
     ...sobrescribe,
   }
 }
@@ -85,10 +109,11 @@ function responde(respuestas: {
   insumos?: InsumoListado[] | null
   reconciliacion?: Reconciliacion | null
   /*
-   * Por defecto `[]` y no `negar()`: los cuatro roles tienen `clientes:ver`,
-   * así que el caso normal de esta ruta es responder, no dar 403.
+   * Por defecto los dos canales vacíos y no `negar()`: los cuatro roles tienen
+   * `clientes:ver`, así que el caso normal de esta ruta es responder, no dar
+   * 403.
    */
-  aLlamar?: ClienteALlamar[] | null
+  aLlamar?: SeguimientosALlamar | null
 }) {
   vi.mocked(apiServerFetch).mockImplementation((async (ruta: string) => {
     const negar = () => {
@@ -105,7 +130,9 @@ function responde(respuestas: {
     if (ruta.startsWith('/tanques')) return respuestas.tanques ?? negar()
     if (ruta.startsWith('/produccion')) return respuestas.produccion ?? negar()
     if (ruta.startsWith('/insumos')) return respuestas.insumos ?? negar()
-    if (ruta.startsWith('/clientes/a-llamar')) return respuestas.aLlamar ?? []
+    if (ruta.startsWith('/clientes/a-llamar')) {
+      return respuestas.aLlamar ?? { botellones: [], otros: [] }
+    }
 
     throw new Error(`ruta sin mockear: ${ruta}`)
   }) as never)
@@ -297,63 +324,49 @@ describe('el tablero compone paneles según lo que el rol puede ver', () => {
    * el pendiente del tablero y deja la sección renderizada en otra parte, este
    * test no falla. Pero si BORRA el pendiente, sí — y eso es lo que protege.
    */
-  it('cuando hay clientes para llamar, avisa con la cantidad y lleva a Seguimientos', async () => {
+  it('cuando hay a quién llamar, avisa con la cantidad y lleva a Seguimientos', async () => {
     responde({
       stock: [stock()],
-      aLlamar: [
-        {
-          clienteId: 'c1',
-          nombre: 'Yeimy Padilla',
-          documento: '79123456',
-          diasSinComprar: 12,
-          urgencia: 'urgente',
-          telefonos: [],
-        },
-      ],
+      aLlamar: { botellones: [aLlamar()], otros: [] },
     })
 
     await pintar()
 
     /*
-     * «1 cliente» — singular — y NO «1 clientes» ni «1 cliente(s)». El «(s)»
-     * no lo dice nadie, y la concuerda la vigila el mismo helper `contar()` que
-     * usan los otros pendientes.
+     * «1 dirección» — singular — y NO «1 direccións» ni «1 dirección(es)». El
+     * «(es)» no lo dice nadie, y la concordancia la vigila el mismo helper
+     * `contar()` que usan los otros pendientes.
+     *
+     * Y cuenta DIRECCIONES, no clientes: la unidad de la lista es la puerta, así
+     * que decir «1 cliente» mandaría a la pantalla esperando una fila cuando un
+     * cliente con casa y local tiene dos.
      */
-    expect(screen.getByText('1 cliente para llamar')).toBeInTheDocument()
+    expect(screen.getByText('1 dirección para llamar')).toBeInTheDocument()
     const aviso = screen.getByRole('link', { name: /seguimientos/i })
     expect(aviso).toHaveAttribute('href', '/modulos/seguimientos')
   })
 
   /**
-   * Con plural: la concuerda. Sin este test, pasar siempre el singular
-   * parecería correcto.
+   * Con plural: la concordancia. Sin este test, pasar siempre el singular
+   * parecería correcto — y «direccións» pasaría también.
    */
-  it('cuenta en plural cuando hay más de un cliente para llamar', async () => {
+  it('cuenta en plural, y «dirección» no pluraliza con una s', async () => {
     responde({
       stock: [stock()],
-      aLlamar: [
-        {
-          clienteId: 'c1',
-          nombre: 'Yeimy Padilla',
-          documento: '79123456',
-          diasSinComprar: 12,
-          urgencia: 'urgente',
-          telefonos: [],
-        },
-        {
-          clienteId: 'c2',
-          nombre: 'Tienda La Esquina',
-          documento: '900123456',
-          diasSinComprar: 6,
-          urgencia: 'aviso',
-          telefonos: [],
-        },
-      ],
+      aLlamar: {
+        botellones: [aLlamar({ direccionId: 'd1' })],
+        otros: [aLlamar({ clienteId: 'c2', direccionId: 'd2' })],
+      },
     })
 
     await pintar()
 
-    expect(screen.getByText('2 clientes para llamar')).toBeInTheDocument()
+    /*
+     * Los DOS canales se suman. Son dos llamadas que alguien tiene que hacer, y
+     * el tablero avisa del trabajo total: el corte entre botellones y otros
+     * productos es una decisión de la pantalla de Seguimientos.
+     */
+    expect(screen.getByText('2 direcciones para llamar')).toBeInTheDocument()
   })
 
   /**
@@ -361,12 +374,12 @@ describe('el tablero compone paneles según lo que el rol puede ver', () => {
    * noticia se dice con el saludo («No hay nada esperando»), no con una
    * sección que aparece y desaparece.
    */
-  it('sin clientes para llamar, no suma el pendiente', async () => {
-    responde({ stock: [stock()], aLlamar: [] })
+  it('sin nadie para llamar, no suma el pendiente', async () => {
+    responde({ stock: [stock()], aLlamar: { botellones: [], otros: [] } })
 
     await pintar()
 
-    expect(screen.queryByText(/clientes? para llamar/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/direcci(ón|ones) para llamar/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /seguimientos/i })).toBeNull()
     expect(screen.getByText(/no hay nada esperando/i)).toBeInTheDocument()
   })

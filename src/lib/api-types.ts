@@ -787,16 +787,56 @@ export interface TelefonoParaLlamar {
 }
 
 /**
- * Un cliente que hace días que no compra — M15.
+ * Una DIRECCIÓN que hace días que no recibe agua — M15.
+ *
+ * ── Por qué la fila es la dirección y no el cliente ─────────────────────────
+ *
+ * El agua no se entrega a un cliente: se entrega a una puerta. Un cliente con
+ * casa y local tiene dos relojes, y la cuenta por cliente mostraba el más
+ * reciente — así que el local podía llevar veinte días seco detrás de una casa
+ * que pidió ayer. Un cliente con dos direcciones aparece dos veces.
  *
  * `urgencia` la decide `api` comparando contra los parámetros, no la pantalla.
  * Si el umbral viviera acá, cambiarlo desde administración no movería nada.
+ *
+ * `direccion` viene ya legible desde `api` — es el mismo criterio que
+ * `whatsapp`: la regla de formato vive de un solo lado.
  */
-export interface ClienteALlamar {
+export interface DireccionALlamar {
   clienteId: string
   nombre: string
-  documento: string
+  /** `null` cuando el cliente se registró sin documento — RN-CLI-20. */
+  documento: string | null
+  /** `null` cuando el cliente no tiene ninguna dirección activa cargada. */
+  direccionId: string | null
+  /** Cómo la llama la operación: «la casa», «el local». */
+  etiqueta: string | null
+  direccion: string | null
   diasSinComprar: number
   urgencia: 'aviso' | 'urgente'
+  /**
+   * La venta que fijó este reloj no registró a qué dirección se entregó.
+   *
+   * Pasa con todo lo anterior a la migración 0022. Esas ventas cuentan para
+   * todas las direcciones del cliente y la marca viaja para poder encontrarlas
+   * y corregirlas a mano. Se apaga sola: cada venta nueva registra su
+   * dirección.
+   */
+  ventaSinDireccion: boolean
   telefonos: TelefonoParaLlamar[]
+}
+
+/**
+ * Los dos canales de seguimiento — M15.
+ *
+ * Un botellón de 20 L se acaba en una semana; una paca de 80 bolsas no se
+ * consume con el mismo reloj. Un contador solo los mezclaba y no servía para
+ * ninguno: el botellón de hace tres días tapaba la paca de hace veinte.
+ *
+ * `otros` es «todo lo que no es una recarga de botellón», no «pacas». El día
+ * que entre una presentación nueva cae ahí sin que nadie toque este archivo.
+ */
+export interface SeguimientosALlamar {
+  botellones: DireccionALlamar[]
+  otros: DireccionALlamar[]
 }

@@ -1,7 +1,11 @@
 import { ClientesParaLlamar } from '@/components/clientes/para-llamar'
+import {
+  PestanasDeSeguimientos,
+  canalDesde,
+} from '@/components/clientes/pestanas-de-seguimientos'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch } from '@/lib/api-server'
-import type { ClienteALlamar } from '@/lib/api-types'
+import type { SeguimientosALlamar } from '@/lib/api-types'
 
 /**
  * Seguimientos — M15.
@@ -14,40 +18,68 @@ import type { ClienteALlamar } from '@/lib/api-types'
  * arriba de los gráficos le ganaba al resto y el tablero dejaba de leerse
  * como «qué hacer / cómo venimos»: se leía como «llamar a Yeimy».
  *
- * La mudanza arregla las dos cosas: el tablero vuelve a tener una
- * cabecera liviana, y esta pantalla es la que se recorre cuando alguien
- * se sienta a marcar.
+ * La mudanza arregló las dos cosas: el tablero volvió a tener una cabecera
+ * liviana, y esta pantalla es la que se recorre cuando alguien se sienta a
+ * marcar.
  *
- * ── Toda la lógica es la de antes ──────────────────────────────────────────
+ * ── Qué se replanteó después ────────────────────────────────────────────────
  *
- * El componente `ClientesParaLlamar`, el endpoint `/clientes/a-llamar`, la
- * separación entre «aviso» y «urgente» — nada cambió. Solo cambió el
- * lugar donde se monta. Si un día se agrega, por ejemplo, un canal de
- * seguimiento para clientes con deuda vieja, esta misma pantalla es su
- * casa natural, y el tablero suma otro pendiente más a la lista de
- * arriba.
+ * Dos cosas, las dos por la misma razón: la lista mentía por omisión.
  *
- * ── Server Component, sin estado ────────────────────────────────────────────
+ *   1. **La fila es la dirección, no el cliente.** El agua se entrega a una
+ *      puerta. Un cliente con casa y local tenía un solo contador —el más
+ *      reciente de los dos— así que el local podía llevar veinte días seco
+ *      detrás de una casa que pidió ayer.
+ *   2. **Dos canales.** Un botellón se acaba en una semana; una paca de
+ *      ochenta bolsas no. Un contador mezclado no servía para ninguno.
  *
- * No hay `'use client'`. El fetch sale por el BFF (`apiServerFetch`) y la
- * lista se pinta en el servidor. Los enlaces son `<a href>` y los
- * números vienen armados desde `api`: no hay nada que calcular en el
- * navegador.
+ * El detalle de las dos reglas vive en `api/src/modules/clientes/a-llamar.ts`,
+ * que es donde está la cuenta. Acá solo se elige la pestaña y se pinta.
+ *
+ * ── La pestaña vive en la URL ───────────────────────────────────────────────
+ *
+ * `?canal=otros`, no un `useState`. Eso deja la pantalla como Server Component
+ * —cero JavaScript para algo que es navegación— y permite refrescar o compartir
+ * el link sin perder el lugar. Es el mismo criterio que `?tab=` en Ventas, y
+ * ahora comparten el componente.
+ *
+ * ── Una sola petición para las dos pestañas ─────────────────────────────────
+ *
+ * `api` contesta los dos canales juntos. La cabecera muestra el conteo de las
+ * dos antes de que nadie toque ninguna, así que pedirlas por separado sería un
+ * viaje para pintar un número que ya venía en el primero.
  */
-export default async function SeguimientosPage() {
-  const aLlamar = await apiServerFetch<ClienteALlamar[]>('/clientes/a-llamar')
+export default async function SeguimientosPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ canal?: string }>
+}) {
+  const sp = searchParams ? await searchParams : undefined
+  const canal = canalDesde(sp?.canal)
+
+  const seguimientos = await apiServerFetch<SeguimientosALlamar>('/clientes/a-llamar')
   const leidoEn = new Date()
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <header>
         <h1 className="aq-titulo-pantalla text-principal">Seguimientos</h1>
         <p className="aq-bajada mt-1.5 text-secundario">
-          Quién lleva varios días sin comprar. Una llamada a tiempo evita que se cambie de planta.
+          Qué dirección lleva varios días sin recibir. Una llamada a tiempo evita que se cambie de
+          planta.
         </p>
       </header>
 
-      <ClientesParaLlamar clientes={aLlamar} />
+      <PestanasDeSeguimientos
+        canal={canal}
+        conteos={{
+          botellones: seguimientos.botellones.length,
+          otros: seguimientos.otros.length,
+        }}
+        basePath="/modulos/seguimientos"
+      />
+
+      <ClientesParaLlamar filas={seguimientos[canal]} canal={canal} />
       <SelloDeHora leidoEn={leidoEn} />
     </div>
   )

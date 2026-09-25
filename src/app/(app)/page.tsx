@@ -7,12 +7,12 @@ import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch, getServerUser } from '@/lib/api-server'
 import type {
   CierreDeProduccion,
-  ClienteALlamar,
   InsumoListado,
   Producto,
   Reconciliacion,
   ResumenDeStock,
   SaldoDeAgua,
+  SeguimientosALlamar,
 } from '@/lib/api-types'
 import { siPuedeVerlo } from '@/lib/permiso-opcional'
 
@@ -48,7 +48,7 @@ export default async function TableroPage() {
     siPuedeVerlo(apiServerFetch<CierreDeProduccion[]>('/produccion')),
     siPuedeVerlo(apiServerFetch<SaldoDeAgua[]>('/tanques')),
     siPuedeVerlo(apiServerFetch<InsumoListado[]>('/insumos')),
-    siPuedeVerlo(apiServerFetch<ClienteALlamar[]>('/clientes/a-llamar')),
+    siPuedeVerlo(apiServerFetch<SeguimientosALlamar>('/clientes/a-llamar')),
   ])
   const leidoEn = new Date()
 
@@ -145,17 +145,28 @@ export default async function TableroPage() {
      * completa — para que el tablero siga cumpliendo su rol de «vistazo
      * general del negocio».
      *
+     * ── El aviso suma los DOS canales ────────────────────────────────────
+     *
+     * Y cuenta DIRECCIONES, no clientes: la unidad de la lista es la puerta,
+     * así que un cliente con casa y local atrasados son dos llamadas. Decir
+     * «1 cliente» mandaría a la pantalla esperando una fila y habría dos.
+     *
+     * Los dos canales se suman en vez de mostrarse aparte porque el tablero
+     * avisa, no detalla: el corte entre botellones y otros productos es una
+     * decisión de la pantalla de Seguimientos, y acá sería una pestaña de más
+     * en un lugar donde no se trabaja.
+     *
      * El `null` de `aLlamar` ya está descartado por la condición: si el
      * 403 lo negara, no habría con qué contar.
      */
-    ...(aLlamar && aLlamar.length > 0
+    ...(aLlamar && aLlamar.botellones.length + aLlamar.otros.length > 0
       ? [
           {
             id: 'a-llamar',
             Icono: PhoneCall,
-            titulo: `${contar(aLlamar.length, 'cliente')} para llamar`,
+            titulo: `${contar(aLlamar.botellones.length + aLlamar.otros.length, 'dirección', 'direcciones')} para llamar`,
             detalle:
-              'Llevan una semana o más sin comprar. Una llamada a tiempo evita que se pasen a otra planta.',
+              'Llevan una semana o más sin recibir. Una llamada a tiempo evita que se pasen a otra planta.',
             href: '/modulos/seguimientos',
             accion: 'Ir a Seguimientos',
           },
@@ -318,8 +329,19 @@ export default async function TableroPage() {
 }
 
 /** «3 productos» / «1 producto» — sin el «(s)» que nadie escribe hablando. */
-function contar(cantidad: number, sustantivo: string): string {
-  return `${cantidad} ${sustantivo}${cantidad === 1 ? '' : 's'}`
+/**
+ * «1 producto» / «3 productos».
+ *
+ * `plural` es opcional porque el 90 % de los sustantivos del tablero pluralizan
+ * con una `s`. Pero no todos: «dirección» → «direcciones» mueve el acento, y
+ * pegarle una `s` daba «direccións». Por eso el parámetro existe — no por
+ * flexibilidad de más, sino porque el default es incorrecto en castellano para
+ * todo lo que termina en consonante.
+ */
+function contar(cantidad: number, sustantivo: string, plural?: string): string {
+  if (cantidad === 1) return `${cantidad} ${sustantivo}`
+
+  return `${cantidad} ${plural ?? `${sustantivo}s`}`
 }
 
 /** «el último cierre» → «El último cierre». Para arrancar una oración. */

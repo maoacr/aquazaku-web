@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Pestanas } from '@/components/ui/pestanas'
 
 /**
  * Los dos tabs de la lista de últimas ventas — Vigentes y Anuladas.
@@ -12,6 +12,13 @@ import Link from 'next/link'
  * monta en dos pantallas distintas (la general y la ficha del cliente) y
  * las dos necesitan poder controlar la ruta del link — no es lo mismo
  * `/modulos/ventas?tab=…` que `/modulos/clientes/cli-1?tab=…`.
+ *
+ * ── Qué quedó acá y qué se fue a `ui/pestanas.tsx` ──────────────────────────
+ *
+ * El markup de la barra se fue: lo comparte con Seguimientos y dos copias se
+ * separan solas. Lo que queda es lo que este módulo SÍ sabe — que las ventas se
+ * miran por «vigentes» o «anuladas», que vigentes es el default, y cómo se lee
+ * un `?tab=` que llegó escrito a mano.
  */
 
 export type TabDeVentas = 'vigentes' | 'anuladas'
@@ -37,67 +44,16 @@ export function PestanasDeVentas({
   basePath: string
 }) {
   return (
-    <nav
-      role="tablist"
-      aria-label="Filtrar últimas ventas por estado"
-      className="flex flex-wrap gap-1 border-b border-sutil"
-    >
-      <PestanaDeVentas
-        tab="vigentes"
-        activa={tab === 'vigentes'}
-        conteo={conteos.vigentes}
-        basePath={basePath}
-      />
-      <PestanaDeVentas
-        tab="anuladas"
-        activa={tab === 'anuladas'}
-        conteo={conteos.anuladas}
-        basePath={basePath}
-      />
-    </nav>
-  )
-}
-
-/**
- * Una tab — un link con el conteo al lado.
- *
- * El conteo llega como prop, no se pide en el cliente: ya viene del
- * servidor junto con la lista, y un round-trip extra para saber
- * cuántas hay hoy sería solo para mostrar un número que ya se conoce.
- *
- * Cuando es el tab por defecto, el link va a la URL sin `?tab=…`:
- * deja la URL limpia para el caso común y evita que la búsqueda y el
- * compartir el link arrastren un parámetro que no aporta.
- */
-function PestanaDeVentas({
-  tab,
-  activa,
-  conteo,
-  basePath,
-}: {
-  tab: TabDeVentas
-  activa: boolean
-  conteo: number
-  basePath: string
-}) {
-  const etiqueta = tab === 'anuladas' ? 'Anuladas' : 'Vigentes'
-  const href = tab === TAB_POR_DEFECTO ? basePath : `${basePath}?tab=${tab}`
-
-  return (
-    <Link
-      href={href}
-      role="tab"
-      aria-selected={activa}
-      className={`-mb-px border-b-2 px-3 py-2 text-[14px] ${
-        activa
-          ? 'border-principal text-principal'
-          : 'border-transparent text-tenue hover:text-principal'
-      }`}
-    >
-      {etiqueta}{' '}
-      <span className="ml-1 rounded-full bg-elevada px-2 py-0.5 text-[12px] text-tenue">
-        {conteo}
-      </span>
-    </Link>
+    <Pestanas
+      etiquetaDelGrupo="Filtrar últimas ventas por estado"
+      param="tab"
+      porDefecto={TAB_POR_DEFECTO}
+      activa={tab}
+      basePath={basePath}
+      pestanas={[
+        { valor: 'vigentes', etiqueta: 'Vigentes', conteo: conteos.vigentes },
+        { valor: 'anuladas', etiqueta: 'Anuladas', conteo: conteos.anuladas },
+      ]}
+    />
   )
 }

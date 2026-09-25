@@ -1557,7 +1557,29 @@ input:not([type='checkbox'], [type='radio'], [type='hidden']) {
   position: sticky;
   top: 0;
   z-index: 1;
+}
+
+/*
+ * ── El fondo va en la CELDA, no en el `<thead>` ─────────────────────────────
+ *
+ * Estaba en `.aq-tabla-encabezado`, o sea en el `<thead>`. Con
+ * `border-collapse: collapse`, el fondo de un grupo de filas no se pinta de
+ * forma confiable: el navegador lo deja detrás de las celdas y las celdas son
+ * transparentes.
+ *
+ * No se notaba porque ninguna tabla acotaba su alto, así que el encabezado
+ * nunca llegaba a pegarse de verdad — `sticky` estaba puesto y no se activaba
+ * nunca. Cuando Seguimientos le puso `max-h`, las filas empezaron a pasar POR
+ * DENTRO del encabezado: se leía «Mario Alejandro Crespo» encima de «CLIENTE».
+ *
+ * El `backdrop-filter` es el mismo recurso que usa `.aq-tabla-columna-fija`, y
+ * por la misma razón: el token del fondo es 55 % opaco —es vidrio, no pintura—
+ * así que sin desenfocar lo de atrás, lo de atrás se sigue leyendo.
+ */
+.aq-tabla-encabezado th {
   background: var(--aq-tabla-encabezado-fondo);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   box-shadow: inset 0 -1px 0 0 var(--aq-tabla-linea);
 }
 
@@ -1630,6 +1652,103 @@ input:not([type='checkbox'], [type='radio'], [type='hidden']) {
 
   .aq-tabla-fila.aq-tabla-columna-fija {
     box-shadow: inset 0 1px 0 0 var(--aq-tabla-linea);
+  }
+}
+
+/*
+ * ── La tabla que en el teléfono deja de ser tabla ───────────────────────────
+ *
+ * `.aq-tabla-columna-fija` resuelve el caso de la auditoría: una tabla de doce
+ * columnas que NO se puede apilar, porque cada fila es un registro que se lee
+ * comparando con el de arriba. Ahí el scroll horizontal con un ancla es lo
+ * correcto.
+ *
+ * Seguimientos es el caso opuesto. Son cuatro columnas y la fila se lee SOLA:
+ * cuántos días, quién, dónde, a qué número. Meterla en un scroll horizontal de
+ * 375 px obliga a barrer de lado cuarenta veces para hacer cuarenta llamadas, y
+ * el número de días —que es la columna que se recorre— queda tapado por su
+ * propio ancla.
+ *
+ * Así que abajo de 768 px la tabla se apila: los días a la izquierda, ocupando
+ * el alto de las tres filas que describen la entrega, y el resto en una columna
+ * que respira. Cero scroll horizontal.
+ *
+ * ── Por qué en CSS y no con `max-md:` de Tailwind ───────────────────────────
+ *
+ * Porque hay que APAGAR cosas que ya están puestas por clase: el `box-shadow`
+ * de `.aq-tabla-fila`, el `padding` de la celda, la `position: sticky` de la
+ * columna fija. Una utilidad de Tailwind y una clase del sistema tienen la
+ * misma especificidad, así que el ganador lo decide el orden en que se emitió
+ * el CSS y no el orden en que se escribió el `class`. Es la misma trampa que
+ * `.aq-campo` con los `w-*`: el descendiente (`.aq-tabla-apilada td`) gana sin
+ * ambigüedad y sin `!important`.
+ *
+ * El encabezado se esconde y no se reemplaza: en la versión apilada cada dato
+ * está al lado de lo que nombra, así que un título por celda sería repetir
+ * «Teléfonos» cuarenta veces.
+ */
+@media (max-width: 767px) {
+  .aq-tabla-apilada,
+  .aq-tabla-apilada tbody {
+    display: block;
+  }
+
+  .aq-tabla-apilada thead {
+    display: none;
+  }
+
+  .aq-tabla-apilada tbody tr {
+    display: grid;
+    /*
+     * La columna mide lo que mide la píldora del número, y nada más.
+     *
+     * Pasó por 2.75 rem y por 4. El 4 existía porque debajo del número iba la
+     * palabra «urgente», que medida en el navegador a 375 px ocupaba unos
+     * 110 px con `aq-micro` y se desbordaba sobre la dirección. Cuando la
+     * urgencia se mudó a la FORMA de la píldora —rellena contra hueca— la
+     * palabra salió de la pantalla y la columna pudo volver a lo que debe ser:
+     * el ancho de tres dígitos.
+     *
+     * Los tres números salen de medir en el navegador, no de estimar. El
+     * primero se estimó y estuvo mal por 66 px.
+     */
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    column-gap: 0.75rem;
+    row-gap: 0.125rem;
+    padding: 0.625rem 0.75rem;
+    box-shadow: inset 0 1px 0 0 var(--aq-tabla-linea);
+  }
+
+  .aq-tabla-apilada tbody td {
+    display: block;
+    width: auto;
+    padding: 0;
+    /* La línea ahora la dibuja la fila entera, no cada celda. */
+    box-shadow: none;
+    /* Sin scroll horizontal no hay nada que anclar. */
+    position: static;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  /*
+   * La primera celda —la cifra— ocupa el alto de las otras tres. Es lo que
+   * mantiene la columna de números recorrible hacia abajo, que es la razón de
+   * ser de esta pantalla.
+   */
+  .aq-tabla-apilada tbody td:first-child {
+    grid-row: span 3;
+  }
+
+  /*
+   * La fila de «no hay nada» es una sola celda con `colspan`: tiene que cruzar
+   * las dos columnas o queda estrujada en 2.75 rem. Sin esto, la lista vacía
+   * —el estado que MÁS se mira, porque significa que el trabajo está al día— se
+   * ve roto.
+   */
+  .aq-tabla-apilada tbody td[colspan] {
+    grid-column: 1 / -1;
   }
 }
 

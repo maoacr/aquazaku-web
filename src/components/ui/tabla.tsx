@@ -16,7 +16,24 @@ import type { ReactNode } from 'react'
  * a más.
  */
 
-export function Tabla({ children }: { children: ReactNode }) {
+export function Tabla({
+  children,
+  alto,
+  apilada = false,
+}: {
+  children: ReactNode
+  alto?: string
+  /**
+   * Abajo de 768 px la tabla se APILA en vez de scrollear en horizontal.
+   *
+   * Sirve para tablas de pocas columnas cuya fila se lee sola —Seguimientos:
+   * días, quién, dónde, a qué número—. No sirve para la auditoría, donde la
+   * fila se lee comparándola con la de arriba y el scroll horizontal con
+   * `Th fija` es lo correcto. La regla completa está en `globals.css`, junto a
+   * `.aq-tabla-apilada`.
+   */
+  apilada?: boolean
+}) {
   return (
     /*
       La tabla es una LÁMINA del sistema, no un recuadro con borde.
@@ -31,10 +48,29 @@ export function Tabla({ children }: { children: ReactNode }) {
       desplaza. Separarlos deja que cada uno haga una sola cosa.
     */
     <div className="aq-tarjeta overflow-hidden">
-      {/* `overflow-x-auto` para que en un teléfono la tabla scrollee sola en vez
-          de estirar la página entera (mobile-first). */}
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">{children}</table>
+      {/*
+        `overflow-x-auto` para que en un teléfono la tabla scrollee sola en vez
+        de estirar la página entera (mobile-first).
+
+        ── Y por qué `alto` es opcional ──────────────────────────────────────
+
+        `.aq-tabla-encabezado` ya es `position: sticky; top: 0`, pero sticky se
+        ancla al CONTENEDOR DE SCROLL más cercano. Sin una altura, este div
+        nunca scrollea en vertical: el ancla existe y no se activa nunca, así
+        que el encabezado se va con la página y parece que sticky «no
+        funciona».
+
+        Las tablas cortas no lo quieren —recortar ocho filas dentro de un marco
+        propio agrega un scroll que nadie pidió—, así que se pasa solo cuando la
+        lista es larga y se recorre con el ojo en la columna, que es el caso de
+        Seguimientos.
+      */}
+      <div className={`overflow-x-auto ${alto ?? ''}`}>
+        <table
+          className={`w-full border-collapse text-sm ${apilada ? 'aq-tabla-apilada' : ''}`}
+        >
+          {children}
+        </table>
       </div>
     </div>
   )
@@ -70,14 +106,24 @@ export function Td({
   children,
   className = '',
   fija = false,
+  padding = 'px-3 py-2.5',
 }: {
   children: ReactNode
   className?: string
   fija?: boolean
+  /**
+   * El relleno de la celda, REEMPLAZANDO el default — no sumándose.
+   *
+   * Existe porque pasar `py-1.5` por `className` no funciona: quedan las dos
+   * clases en el elemento y gana la que el CSS de Tailwind declaró última, no
+   * la que se escribió después. Es la misma trampa que `.aq-campo` con los
+   * `w-*`. Un parámetro que sustituye no tiene esa ambigüedad.
+   */
+  padding?: string
 }) {
   return (
     <td
-      className={`aq-tabla-fila px-3 py-2.5 align-top ${fija ? 'aq-tabla-columna-fija' : ''} ${className}`}
+      className={`aq-tabla-fila ${padding} align-top ${fija ? 'aq-tabla-columna-fija' : ''} ${className}`}
     >
       {children}
     </td>

@@ -39,6 +39,7 @@ const fila = (parcial: Partial<DireccionALlamar> = {}): DireccionALlamar => ({
   urgencia: 'urgente',
   ventaSinDireccion: false,
   ventaId: 'v1',
+  cuantasVentas: 1,
   telefonos: [],
   ...parcial,
 })
@@ -190,6 +191,86 @@ describe('la fila cuya venta no registró dirección', () => {
     expect(
       screen.getByRole('button', { name: /Asignarle la dirección a la venta de Yeimy Padilla/ }),
     ).toBeInTheDocument()
+  })
+})
+
+/**
+ * ── El número de la fila sin dirección BAJA ─────────────────────────────────
+ *
+ * Es el error que la operación reportó tres veces. Esa fila agrupa todas las
+ * ventas viejas del cliente y mostraba los días de la más reciente: al corregir
+ * una, la fila pasaba a la siguiente —más vieja— y el número SUBÍA. 40, 47, 54.
+ *
+ * Se veía como si corregir no hubiera servido de nada. Ahora cuenta ventas, y
+ * el número va en la dirección del trabajo hecho.
+ */
+describe('la fila sin dirección cuenta ventas, no días', () => {
+  const sinUbicar = (cuantas: number, dias: number) =>
+    fila({
+      direccionId: null,
+      etiqueta: null,
+      direccion: null,
+      ventaSinDireccion: true,
+      cuantasVentas: cuantas,
+      diasSinComprar: dias,
+    })
+
+  it('muestra cuántas faltan, no los días de la más reciente', () => {
+    render(
+      <ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[sinUbicar(3, 40)]} />,
+    )
+
+    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.queryByText('40')).not.toBeInTheDocument()
+  })
+
+  it('el detalle dice cuántas son y de cuándo es la más reciente', () => {
+    render(
+      <ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[sinUbicar(3, 40)]} />,
+    )
+
+    expect(screen.getByText(/3 ventas sin ubicar · la más reciente, hace 40 días/)).toBeInTheDocument()
+  })
+
+  it('en singular no dice «1 ventas»', () => {
+    render(
+      <ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[sinUbicar(1, 12)]} />,
+    )
+
+    expect(screen.getByText('1 venta sin ubicar, de hace 12 días')).toBeInTheDocument()
+  })
+
+  it('no lleva píldora de urgencia: no es una llamada', () => {
+    render(
+      <ClientesParaLlamar
+        productos={[]}
+        stock={[]}
+        canal="botellones"
+        filas={[sinUbicar(2, 60)]}
+      />,
+    )
+
+    /*
+     * Con 60 días sería «urgente» en el eje de las llamadas. Pero acá los días
+     * no miden una puerta esperando agua: miden la más reciente de dos ventas
+     * que no sabemos dónde se entregaron. Pintarla de rojo sería comparar dos
+     * cosas distintas en el mismo eje.
+     */
+    expect(screen.queryByTitle('Urgente')).not.toBeInTheDocument()
+  })
+
+  it('las filas con dirección siguen mostrando días', () => {
+    render(
+      <ClientesParaLlamar
+        productos={[]}
+        stock={[]}
+        canal="botellones"
+        filas={[fila({ diasSinComprar: 30, cuantasVentas: 4 })]}
+      />,
+    )
+
+    expect(screen.getByText('30')).toBeInTheDocument()
+    expect(screen.queryByText('4')).not.toBeInTheDocument()
   })
 })
 

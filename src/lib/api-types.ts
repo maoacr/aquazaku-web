@@ -839,6 +839,15 @@ export interface DireccionALlamar {
    * algo que arreglar y no cuál.
    */
   ventaId: string
+  /**
+   * Cuántas ventas hay detrás de esta fila.
+   *
+   * Solo importa cuando `ventaSinDireccion` es `true`: ahí la fila no es una
+   * puerta esperando agua, sino un montón de ventas que no dicen dónde se
+   * entregaron. Lo que hay que ver es cuántas faltan — un número que BAJA
+   * mientras se trabaja, en vez de los días de la más reciente, que subían.
+   */
+  cuantasVentas: number
   telefonos: TelefonoParaLlamar[]
 }
 

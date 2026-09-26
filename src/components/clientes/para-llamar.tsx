@@ -155,7 +155,18 @@ export function ClientesParaLlamar({
           ) : (
             filas.map((fila) => (
               <Fila
-                key={`${fila.clienteId}-${fila.direccionId ?? 'sin-direccion'}`}
+                /*
+                 * El `ventaId` va en el key, y no es decorativo.
+                 *
+                 * La fila «sin dirección» conserva su clienteId y su
+                 * direccionId (null) aunque apunte a otra venta: al corregir
+                 * una, la fila pasa a la siguiente del grupo. Sin el id, React
+                 * reusa la instancia del lápiz y con ella su estado — y el
+                 * botón termina abriendo una venta ya corregida.
+                 *
+                 * Otra venta es otra cosa. El key lo dice.
+                 */
+                key={`${fila.clienteId}-${fila.direccionId ?? 'sin-direccion'}-${fila.ventaId}`}
                 fila={fila}
                 productos={productos}
                 stock={stock}

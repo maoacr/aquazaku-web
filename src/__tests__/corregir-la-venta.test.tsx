@@ -152,7 +152,24 @@ describe('al abrirlo', () => {
     expect(screen.queryByText(/no de una puerta/)).not.toBeInTheDocument()
   })
 
-  it('la segunda apertura no vuelve a pedir la venta', async () => {
+  /**
+   * ── Este test dice lo CONTRARIO de lo que decía antes ────────────────────
+   *
+   * Había una versión que cacheaba la venta y un test que lo celebraba: «la
+   * segunda apertura no vuelve a pedir la venta». Ese test le puso una red a un
+   * bug.
+   *
+   * La fila «sin dirección» agrupa todas las ventas viejas del cliente y
+   * muestra la más reciente. Al corregir una, la fila pasa a apuntar a OTRA
+   * venta — cambia `ventaId` — y con la caché puesta el lápiz volvía a abrir la
+   * que se acababa de corregir. La API contestaba «esa venta ya fue corregida»
+   * y la dirección no se podía asignar.
+   *
+   * Un viaje de más cuando alguien decidió actuar no cuesta nada. Abrir la
+   * venta equivocada cuesta una corrección imposible y la sospecha de que la
+   * pantalla miente.
+   */
+  it('vuelve a pedir la venta en CADA apertura: la fila puede apuntar a otra', async () => {
     pintar()
     const boton = screen.getByRole('button', { name: /Asignarle la dirección/ })
 
@@ -162,6 +179,32 @@ describe('al abrirlo', () => {
     await userEvent.click(screen.getByRole('button', { name: /Cerrar|Cancelar/i }))
     await userEvent.click(boton)
 
-    expect(ventaParaCorregirAction).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(ventaParaCorregirAction).toHaveBeenCalledTimes(2))
+  })
+
+  it('pide SIEMPRE el id que tiene ahora, no el de la primera vez', async () => {
+    const { rerender } = pintar()
+
+    await userEvent.click(screen.getByRole('button', { name: /Asignarle la dirección/ }))
+    await waitFor(() => expect(ventaParaCorregirAction).toHaveBeenCalledWith('v1'))
+
+    /*
+     * La fila sobrevive a la corrección y pasa a la siguiente venta del grupo.
+     * Con el componente reusado, pedir 'v1' otra vez sería abrir una venta que
+     * ya no está vigente.
+     */
+    rerender(
+      <CorregirLaVenta
+        ventaId="v2"
+        nombre="Yeimy Padilla"
+        sinDireccion
+        productos={productos}
+        stock={stock}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /Asignarle la dirección/ }))
+
+    await waitFor(() => expect(ventaParaCorregirAction).toHaveBeenLastCalledWith('v2'))
   })
 })

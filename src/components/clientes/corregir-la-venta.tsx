@@ -63,15 +63,30 @@ export function CorregirLaVenta({
   const [cargando, empezarACargar] = useTransition()
 
   /*
-   * Cargar la venta es un EVENTO —alguien tocó el lápiz—, no una
-   * sincronización, así que vive en el handler y no en un `useEffect`. Es lo
-   * que pide `react-hooks/set-state-in-effect`, y tiene razón: el dato ya
-   * estaba disponible cuando ocurrió la causa.
+   * ── La venta se pide CADA vez que se abre ────────────────────────────────
+   *
+   * Hubo una versión que la cacheaba —`if (venta !== null) return`— para no
+   * pedirla dos veces. Esa optimización produjo el peor bug de esta pantalla.
+   *
+   * La fila «sin dirección» agrupa TODAS las ventas viejas del cliente y
+   * muestra la más reciente. Al corregir una, esa sale del grupo y la fila pasa
+   * a apuntar a OTRA venta: cambia `ventaId`, pero la fila conserva su `key`,
+   * así que React reusa esta misma instancia… con la venta anterior todavía
+   * guardada en estado.
+   *
+   * El lápiz volvía a abrir la venta que se acababa de corregir, y la API
+   * contestaba, con toda la razón: «esa venta ya fue corregida: lo que está
+   * vigente es la venta que la reemplazó».
+   *
+   * Un viaje más cuando alguien decidió actuar no cuesta nada. Abrir la venta
+   * equivocada cuesta una corrección que no se puede hacer y la sospecha de que
+   * la pantalla miente. La caché se fue.
+   *
+   * Cargar la venta es además un EVENTO —alguien tocó el lápiz—, no una
+   * sincronización: vive en el handler y no en un `useEffect`.
    */
   const abrir = () => {
     setAbierto(true)
-
-    if (venta !== null) return
 
     empezarACargar(async () => {
       setVenta(await ventaParaCorregirAction(ventaId))

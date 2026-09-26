@@ -279,25 +279,44 @@ function Fila({
           La palabra sigue existiendo, en `sr-only`: salir de la VISTA no es
           salir del documento.
         */}
-        <span
-          title={TONO[fila.urgencia].palabra}
-          className={`aq-cifra inline-flex min-w-[2.5rem] items-center justify-center rounded px-1.5 py-1 text-[17px] leading-none font-semibold tabular-nums ${TONO[fila.urgencia].clases}`}
-        >
-          {fila.diasSinComprar}
-          {/*
-            El asterisco cuelga del NÚMERO, que es lo que está en duda — no de
-            la dirección, que es real. La dirección de la fila existe y es del
-            cliente; lo que no se registró es a cuál de sus puertas fue LA
-            VENTA. La leyenda de arriba lo explica una vez, como en una planilla.
-          */}
-          {fila.ventaSinDireccion ? (
-            <span aria-hidden className="ml-px align-super text-[11px] opacity-70">
-              *
-            </span>
-          ) : null}
-        </span>
+        {fila.ventaSinDireccion ? (
+          /*
+           * ── Acá el número son VENTAS, no días ───────────────────────────
+           *
+           * Esta fila agrupa todas las ventas viejas del cliente que no dicen a
+           * qué puerta fueron, y mostraba los días de la más reciente. Al
+           * corregir una, esa salía del grupo y la fila pasaba a la siguiente
+           * —más vieja—, así que el número SUBÍA: 40, 47, 54.
+           *
+           * La operación lo reportó tres veces, y con razón: se veía como si
+           * corregir no hubiera servido de nada, o peor, como si hubiera
+           * empeorado algo.
+           *
+           * Contando ventas el número baja —3, 2, 1— y la fila se va sola. El
+           * trabajo hecho se ve.
+           *
+           * Sin píldora de urgencia: esto no es una llamada, así que no compite
+           * en el mismo eje. Los días siguen en el `title` y en el `sr-only`,
+           * porque el dato no molesta — lo que molestaba era que encabezara.
+           */
+          <span
+            title={`${fila.cuantasVentas} ${fila.cuantasVentas === 1 ? 'venta no dice' : 'ventas no dicen'} a qué dirección se entregó. La más reciente, hace ${fila.diasSinComprar} días`}
+            className="aq-cifra inline-flex min-w-[2.5rem] items-center justify-center rounded px-1.5 py-1 text-[17px] leading-none font-semibold tabular-nums text-tenue"
+          >
+            {fila.cuantasVentas}
+          </span>
+        ) : (
+          <span
+            title={TONO[fila.urgencia].palabra}
+            className={`aq-cifra inline-flex min-w-[2.5rem] items-center justify-center rounded px-1.5 py-1 text-[17px] leading-none font-semibold tabular-nums ${TONO[fila.urgencia].clases}`}
+          >
+            {fila.diasSinComprar}
+          </span>
+        )}
         <span className="sr-only">
-          {` días sin recibir, ${TONO[fila.urgencia].palabra.toLowerCase()}`}
+          {fila.ventaSinDireccion
+            ? `${fila.cuantasVentas} ${fila.cuantasVentas === 1 ? 'venta no dice' : 'ventas no dicen'} a qué dirección se entregó`
+            : ` días sin recibir, ${TONO[fila.urgencia].palabra.toLowerCase()}`}
           {fila.ventaSinDireccion
             ? '. El conteo viene de una venta que no registró a qué dirección se entregó'
             : ''}
@@ -338,8 +357,17 @@ function Fila({
            * corresponde no es una etiqueta sino una ACCIÓN: el lápiz de la
            * fila abre la corrección para asignársela.
            */
-          <span className="text-[13px] font-medium text-alerta-texto">
-            Asignar una dirección
+          <span className="grid gap-0.5">
+            <span className="text-[13px] font-medium text-alerta-texto">Asignar una dirección</span>
+            {/*
+              Explica el número de al lado y avisa que el trabajo no termina con
+              la venta que el lápiz abre ahora.
+            */}
+            <span className="text-[12px] text-tenue">
+              {fila.cuantasVentas === 1
+                ? `1 venta sin ubicar, de hace ${fila.diasSinComprar} días`
+                : `${fila.cuantasVentas} ventas sin ubicar · la más reciente, hace ${fila.diasSinComprar} días`}
+            </span>
           </span>
         ) : (
           <span className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">

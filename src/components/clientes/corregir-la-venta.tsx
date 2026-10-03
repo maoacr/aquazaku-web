@@ -104,7 +104,16 @@ export function CorregirLaVenta({
             : `Corregir la venta de ${nombre}`
         }
         title={sinDireccion ? 'Asignarle la dirección a esta venta' : 'Corregir esta venta'}
-        className="rounded p-2.5 text-tenue transition-colors hover:bg-elevada hover:text-principal"
+        /*
+         * `size-11` y no `p-2.5`: son los 44 px en las DOS direcciones.
+         *
+         * La regla global de `globals.css` le daba el alto —cubre `button`—
+         * pero no el ancho, así que medido en el navegador este botón salía en
+         * 36×44. Angosto para el pulgar, y 8 px más flaco que el enlace de
+         * WhatsApp que ahora comparte celda con él: dos iconos de la misma
+         * columna con cajas distintas se ven desparejos.
+         */
+        className="inline-flex size-11 items-center justify-center rounded text-tenue transition-colors hover:bg-elevada hover:text-principal"
       >
         <Pencil aria-hidden className="size-4" />
       </button>

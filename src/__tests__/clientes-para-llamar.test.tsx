@@ -314,6 +314,162 @@ describe('a qué número se escribe', () => {
     expect(screen.queryByRole('link', { name: /WhatsApp/ })).not.toBeInTheDocument()
   })
 
+  /**
+   * ── Dónde queda el icono, que es lo que se estaba ajustando ───────────────
+   *
+   * Un botón al final de la fila no puede nombrar a cuál de dos números
+   * escribe. Así que el icono vive donde su destino es inequívoco: con un solo
+   * destino es una acción de la FILA y va con el lápiz; con dos o más es una
+   * acción de CADA número y va pegada al suyo.
+   *
+   * Se afirma sobre la CELDA y no sobre píxeles: jsdom no hace layout, así que
+   * acá todo mide cero. La celda en la que cae un icono es lo que determina en
+   * qué columna lo ve una persona, y eso sí se puede fijar.
+   */
+  it('con un solo destino, el icono va en la columna de acciones, con el lápiz', () => {
+    render(
+      <ClientesParaLlamar productos={[]} stock={[]}
+        canal="botellones"
+        filas={[
+          fila({
+            telefonos: [
+              { numero: '300 111 1111', etiqueta: 'el dueño', whatsapp: '573001111111' },
+              { numero: '605 878 1234', etiqueta: 'el fijo', whatsapp: null },
+            ],
+          }),
+        ]}
+      />,
+    )
+
+    const enlace = screen.getByRole('link', { name: /WhatsApp/ })
+    const celdas = [...filaCon('300 111 1111').querySelectorAll('td')]
+
+    /*
+     * La última celda es la de acciones. Que el lápiz esté en la MISMA es el
+     * punto de todo el ajuste: los iconos de la fila van juntos.
+     */
+    expect(enlace.closest('td')).toBe(celdas.at(-1))
+    expect(celdas.at(-1)).toContainElement(screen.getByRole('button', { name: /Yeimy Padilla/ }))
+  })
+
+  it('con dos destinos, cada icono va pegado a SU número y no al final de la fila', () => {
+    render(
+      <ClientesParaLlamar productos={[]} stock={[]}
+        canal="botellones"
+        filas={[
+          fila({
+            telefonos: [
+              { numero: '300 111 1111', etiqueta: 'el dueño', whatsapp: '573001111111' },
+              { numero: '301 222 2222', etiqueta: 'la señora', whatsapp: '573012222222' },
+            ],
+          }),
+        ]}
+      />,
+    )
+
+    const celdas = [...filaCon('300 111 1111').querySelectorAll('td')]
+    const enlaces = screen.getAllByRole('link', { name: /WhatsApp/ })
+
+    expect(enlaces).toHaveLength(2)
+
+    /*
+     * Los dos en la MISMA celda que los números, y ninguno en la de acciones.
+     * Si uno se escapara al final, volvería la ambigüedad que esto resuelve.
+     */
+    for (const enlace of enlaces) {
+      expect(enlace.closest('td')).not.toBe(celdas.at(-1))
+      expect(enlace.closest('td')).toContainElement(screen.getByText('300 111 1111'))
+    }
+  })
+
+  /**
+   * El hueco que sostiene la alineación.
+   *
+   * Con dos números y uno solo con WhatsApp, la grilla tiene tres columnas. Si
+   * el número sin icono no aportara su celda vacía, su etiqueta correría hacia
+   * la columna del icono y las dos filas dejarían de alinearse.
+   *
+   * No se puede medir el corrimiento —jsdom no hace layout—, pero sí que la
+   * celda exista: es la condición de la que depende.
+   */
+  it('un número sin WhatsApp aporta su celda vacía para no desalinear la grilla', () => {
+    render(
+      <ClientesParaLlamar productos={[]} stock={[]}
+        canal="botellones"
+        filas={[
+          fila({
+            telefonos: [
+              { numero: '300 111 1111', etiqueta: 'el dueño', whatsapp: '573001111111' },
+              { numero: '301 222 2222', etiqueta: 'la señora', whatsapp: '573012222222' },
+              { numero: '605 878 1234', etiqueta: 'el fijo', whatsapp: null },
+            ],
+          }),
+        ]}
+      />,
+    )
+
+    const grilla = screen.getByText('300 111 1111').parentElement!
+
+    /* Tres teléfonos × tres celdas: número, etiqueta y el lugar del icono. */
+    expect(grilla.children).toHaveLength(9)
+    expect(grilla.className).toContain('grid-cols-[auto_1fr_auto]')
+
+    /*
+     * ── `items-center`, y por qué se afirma la clase y no los píxeles ────────
+     *
+     * Con `items-baseline` el icono queda 13,3 px arriba del centro de su
+     * número: un `<a>` que solo contiene un SVG no tiene texto, así que su
+     * baseline es el borde inferior de la caja y el navegador la cuelga por
+     * encima del renglón. Medido en el navegador, que es donde se vio y donde
+     * se verificó el arreglo.
+     *
+     * Acá no se puede medir —jsdom no hace layout— así que se fija la CLASE,
+     * que es la condición de la que depende. No prueba la alineación; impide
+     * que alguien vuelva a `baseline` sin enterarse de lo que cuesta.
+     */
+    expect(grilla.className).toContain('items-center')
+  })
+
+  /**
+   * Dos teléfonos y UN solo destino: la grilla es de dos columnas.
+   *
+   * ── Lo encontró un screenshot, no un test ─────────────────────────────────
+   *
+   * La primera versión aportaba la tercera celda siempre, también cuando no
+   * había columna para ella. Los sobrantes empujaban al teléfono siguiente, que
+   * arrancaba en la columna de la etiqueta y dejaba su propia etiqueta colgando
+   * un renglón más abajo.
+   *
+   * En jsdom se veía idéntico a una grilla bien armada —no hace layout— y los
+   * tests pasaban. Por eso ahora se cuentan las CELDAS: es la condición de la
+   * que depende la alineación, y sí se puede fijar acá.
+   */
+  it('con dos teléfonos y un solo destino, la grilla no lleva celdas de más', () => {
+    render(
+      <ClientesParaLlamar productos={[]} stock={[]}
+        canal="botellones"
+        filas={[
+          fila({
+            telefonos: [
+              { numero: '601 234 5678', etiqueta: 'el fijo del local', whatsapp: null },
+              { numero: '305 150 0015', etiqueta: 'el celular', whatsapp: '573051500015' },
+            ],
+          }),
+        ]}
+      />,
+    )
+
+    const grilla = screen.getByText('601 234 5678').parentElement!
+
+    /* Dos teléfonos × dos celdas. Una tercera por teléfono descuadra la grilla. */
+    expect(grilla.children).toHaveLength(4)
+    expect(grilla.className).toContain('grid-cols-[auto_1fr]')
+    expect(grilla.className).not.toContain('grid-cols-[auto_1fr_auto]')
+
+    /* Y el único destino se fue a la columna de acciones, no quedó en la grilla. */
+    expect(grilla).not.toContainElement(screen.getByRole('link', { name: /WhatsApp/ }))
+  })
+
   it('sin teléfono cargado la fila aparece igual: hay que saber que falta el dato', () => {
     render(<ClientesParaLlamar productos={[]} stock={[]} canal="botellones" filas={[fila({ telefonos: [] })]} />)
 

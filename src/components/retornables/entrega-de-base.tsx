@@ -8,6 +8,7 @@ import {
   buscarBaseParaPrestarAction,
 } from '@/app/(app)/modulos/retornables/actions'
 import type { ClienteElegido, Direccion } from '@/lib/api-types'
+import { useSelectResistenteAlReset } from '@/lib/formulario-cliente'
 
 /**
  * Llevarse una base con la venta — RN-BAS-03.
@@ -94,13 +95,58 @@ export function SelectorDeDireccion({
   /**
    * Cuál viene elegida de antes — la corrección de una venta la necesita.
    *
-   * Va como `defaultValue` y no como `value`: el campo lo lee el `FormData`
-   * del formulario, no hay estado que sincronizar, y con `value` sin `onChange`
-   * el desplegable quedaría congelado en la original.
+   * Es el valor INICIAL de la selección, no el valor permanente: una vez que
+   * alguien elige otra, manda la suya.
    */
   elegida?: string
 }) {
   const { direcciones, cargando } = useDireccionesDe(cliente)
+
+  /*
+   * ── Controlado, y eso arregla una venta que se perdía ─────────────────────
+   *
+   * Esto era `defaultValue` sin estado, con un argumento que era cierto hasta
+   * que se midió: «el campo lo lee el `FormData`, no hay nada que sincronizar».
+   *
+   * Lo que faltaba es que React 19 RESETEA el formulario cuando una acción
+   * termina, y no distingue el éxito del error. Con `defaultValue` —que React
+   * solo aplica al montar— una venta rechazada por `api/` dejaba el desplegable
+   * EN BLANCO: medido en `form-reset-al-fallar.test.tsx`, no volvía a la
+   * primera opción, se vaciaba. Quien corregía el error y reintentaba sin
+   * mirar mandaba la venta sin dirección, o con otra.
+   *
+   * Y no es cosmético: RN-VEN-02 prohíbe editar una venta confirmada. Un
+   * botellón despachado a la dirección equivocada solo se arregla anulando.
+   *
+   * Controlado alcanza para un `<input>` —medido: un texto controlado conserva
+   * su valor y uno no controlado se vacía— pero NO para un `<select>`: React
+   * restaura los inputs después del reset y el desplegable no entra en esa
+   * restauración, así que queda en blanco aunque el estado siga diciendo
+   * «dir-2».
+   */
+  const [seleccion, setSeleccion] = useState(elegida ?? '')
+
+  /*
+   * ── El valor se DERIVA, no se sincroniza ──────────────────────────────────
+   *
+   * `seleccion` es lo que la persona eligió; `valor` es lo que corresponde
+   * mostrar hoy. Con una sola dirección es ESA —preguntar entre una opción es
+   * una pregunta que no existe, y sin opción vacía es también lo que viaja en
+   * el `FormData`—; con varias, lo elegido, y «Elija una» mientras no haya nada.
+   *
+   * Derivarlo resuelve el cambio de cliente sin un `useEffect` que limpie: si
+   * lo elegido no está entre las direcciones del cliente actual, no coincide y
+   * deja de valer. Nunca viaja la dirección de otra persona, que es la peor
+   * equivocación posible acá.
+   */
+  const valor = direcciones.some((d) => d.id === seleccion)
+    ? seleccion
+    : direcciones.length === 1
+      ? direcciones[0]!.id
+      : ''
+
+  /* El reset de React al terminar la acción borraría esto. Ver el hook. */
+  const refSelect = useSelectResistenteAlReset(valor)
 
   if (!cliente) return null
 
@@ -117,34 +163,19 @@ export function SelectorDeDireccion({
     <label className="aq-etiqueta-campo">
       <span>A qué dirección</span>
       {/*
-        Sin `value`, sin `defaultValue` y sin estado, y eso es deliberado.
-        
-        Con una sola dirección viene elegida sola: un `<select>` sin opción
-        vacía selecciona la primera, y eso es lo que viaja en el `FormData`.
-        Preguntar entre una sola opción es una pregunta que no existe.
-        
-        Se probaron tres formas de forzarlo —controlado con valor derivado,
-        `defaultValue`, y un `key` que remonta— y la ablación las tumbó a las
-        tres: ninguna cambiaba el resultado. Era mecanismo para un problema que
-        el navegador ya resuelve.
-      */}
-      {/*
-        El `key` con los ids, y no es decoración.
+        El `key` que remontaba el campo ya no está, y no hacía falta.
 
-        `defaultValue` lo aplica React al MONTAR. Las direcciones llegan DESPUÉS
-        del primer render, así que el `<select>` se monta vacío y el valor
-        pre-cargado no se aplica nunca: la corrección de una venta abría en
-        «Elija una» y le cambiaba el destino sin que nadie lo notara.
-
-        Con el `key` atado a las opciones, el desplegable se remonta cuando
-        llegan y ahí sí toma el default. Se probó antes esperar a que cargaran
-        para dibujarlo, y es peor: `cargando` sigue pendiente mientras esté en
-        vuelo la consulta del cliente ANTERIOR, y el campo se congela.
+        Existía porque `defaultValue` solo se aplica al MONTAR y las direcciones
+        llegan DESPUÉS del primer render — la corrección de una venta abría en
+        «Elija una» y le cambiaba el destino sin que nadie lo notara. Un valor
+        controlado se aplica en cada render, así que la llegada tardía se pinta
+        sola cuando llega.
       */}
       <select
-        key={direcciones.map((d) => d.id).join(',')}
+        ref={refSelect}
         name={name}
-        defaultValue={elegida}
+        value={valor}
+        onChange={(e) => setSeleccion(e.target.value)}
         className="aq-campo"
       >
         {direcciones.length === 1 ? null : <option value="">Elija una</option>}

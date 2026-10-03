@@ -63,3 +63,45 @@ export function useLimpiezaAlRegistrar(token: string | undefined, limpiar: () =>
 export function limpiezaKey(estado: EstadoDeFormulario, campo: string): string {
   return `${campo}-${estado.token ?? 'inicial'}`
 }
+
+/**
+ * Un `<select>` que no pierde lo elegido cuando la acción falla.
+ *
+ * ── El problema, medido ─────────────────────────────────────────────────────
+ *
+ * `startHostTransition` de react-dom llama a `requestFormReset` SIN CONDICIÓN
+ * en todo `<form action>`, y el `form.reset()` corre en la fase de commit. No
+ * distingue el éxito del error, y no hay opt-out: pasar la acción por el
+ * `formAction` del botón entra por el mismo camino.
+ *
+ * A un `<input>` controlado eso no le hace nada —React lo restaura— pero a un
+ * `<select>` sí: queda en blanco aunque el estado siga diciendo qué se eligió.
+ * Y eso es caro. Con el desplegable vacío, quien corrige el error y reintenta
+ * manda la venta sin dirección, o con otra; RN-VEN-02 prohíbe editar una venta
+ * confirmada, así que un botellón a la casa equivocada solo se arregla
+ * anulando.
+ *
+ * ── Por qué un efecto, que normalmente acá se evita ─────────────────────────
+ *
+ * Se intentó remontar el campo con un `key` atado a los envíos terminados, y la
+ * traza de renders mostró por qué no alcanza: el último render YA tiene el valor
+ * correcto y el reset llega después. Cualquier arreglo en tiempo de render
+ * pierde esa carrera.
+ *
+ * Los efectos corren DESPUÉS del commit: es el primer momento en que el DOM ya
+ * fue reseteado y todavía se puede corregir. Sin lista de dependencias a
+ * propósito — tiene que revisar después de cada commit, porque el reset no
+ * avisa.
+ *
+ * El `<select>` sigue siendo controlado: esto no lo reemplaza, lo repara.
+ */
+export function useSelectResistenteAlReset(valor: string) {
+  const ref = useRef<HTMLSelectElement>(null)
+
+  useEffect(() => {
+    const campo = ref.current
+    if (campo && campo.value !== valor) campo.value = valor
+  })
+
+  return ref
+}

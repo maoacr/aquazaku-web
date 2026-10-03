@@ -248,6 +248,19 @@ function Fila({
    */
   const relleno = 'px-3 py-1.5'
 
+  /*
+   * ── Dónde van los iconos de WhatsApp de esta fila ─────────────────────────
+   *
+   * Se decide UNA vez acá y lo leen las dos columnas que dependen de ello. Si
+   * cada una lo calculara por su cuenta, el día que una cambie la condición
+   * aparecen dos botones para el mismo número, o ninguno.
+   *
+   * Con un solo destino el icono es de la fila y va con el lápiz. Con dos o
+   * más es de cada número y va pegado al suyo — un botón al final de la fila
+   * no puede nombrar a cuál de dos escribe. Ver `BotonDeWhatsapp`.
+   */
+  const iconosPorNumero = destinosDeWhatsapp(fila.telefonos).length > 1
+
   return (
     <tr>
       {/*
@@ -400,84 +413,257 @@ function Fila({
             Sin teléfono cargado
           </span>
         ) : (
-          <span className="grid gap-0.5">
+          /*
+            ── Tres columnas cuando hay varios destinos ──────────────────────
+
+            Con un solo destino el botón se fue a la columna de acciones, así
+            que acá no hay iconos y la grilla son dos columnas: número y
+            etiqueta.
+
+            Con dos o más, cada número lleva el suyo y los iconos forman su
+            propia columna a la derecha. Alineados, y no pegados a textos de
+            largo distinto — que es lo que hacía que esto se leyera como texto
+            suelto en vez de como una planilla.
+
+            ── Y la alineación cambia según QUÉ se alinea ────────────────────
+
+            Sin iconos son dos textos de tamaños distintos —número de 13 px,
+            etiqueta de 12— y ahí manda `items-baseline`: se apoyan en el mismo
+            renglón, que es como se lee una columna de datos.
+
+            Con iconos, `baseline` es lo PEOR que se puede pedir. Un `<a>` que
+            solo contiene un SVG no tiene texto, así que su baseline es el borde
+            INFERIOR de la caja: el navegador cuelga la caja del icono por
+            encima del renglón del número. Medido en el navegador antes de
+            tocar — el centro del icono quedaba 13,3 px arriba del centro de su
+            número, con el número en 18,6 px.
+
+            Con iconos manda `items-center`, que es lo que de verdad se quiere
+            cuando lo que se alinea es un glifo contra una cifra.
+          */
+          <span
+            className={`grid gap-x-2 gap-y-0.5 ${
+              iconosPorNumero
+                ? 'grid-cols-[auto_1fr_auto] items-center'
+                : 'grid-cols-[auto_1fr] items-baseline'
+            }`}
+          >
             {fila.telefonos.map((t) => (
-              <Telefono key={t.numero} telefono={t} nombre={fila.nombre} />
+              <Telefono
+                key={t.numero}
+                telefono={t}
+                nombre={fila.nombre}
+                conBoton={iconosPorNumero}
+              />
             ))}
           </span>
         )}
       </Td>
 
       {/*
-        ── El lápiz ─────────────────────────────────────────────────────────
+        ── La columna de acciones ───────────────────────────────────────────
 
-        Abre la corrección que le asigna la dirección a la venta que fijó este
-        reloj. Por qué es una corrección y no una edición, y qué garantiza,
-        está en `asignar-direccion.tsx`.
+        Todos los iconos juntos al final de la fila. Antes el de WhatsApp vivía
+        pegado a su número, en el medio de la columna de teléfonos, y la fila se
+        leía como texto con botones intercalados en vez de como una planilla.
 
-        `text-right` y no centrado: pegado al borde derecho, la columna de
-        lápices se recorre igual que la de números, y no le roba ancho a los
-        teléfonos.
+        `text-right` y no centrado: pegados al borde derecho se recorren igual
+        que la columna de números, y no le roban ancho a los teléfonos.
       */}
       <Td padding="px-1.5 py-1" className="w-px whitespace-nowrap text-right align-middle">
-        <CorregirLaVenta
-          ventaId={fila.ventaId}
-          nombre={fila.nombre}
-          sinDireccion={fila.ventaSinDireccion}
-          productos={productos}
-          stock={stock}
-        />
+        <span className="inline-flex items-center gap-0.5">
+          <BotonDeWhatsapp telefonos={fila.telefonos} nombre={fila.nombre} />
+          <CorregirLaVenta
+            ventaId={fila.ventaId}
+            nombre={fila.nombre}
+            sinDireccion={fila.ventaSinDireccion}
+            productos={productos}
+            stock={stock}
+          />
+        </span>
       </Td>
     </tr>
   )
 }
 
 /**
- * Un teléfono en una línea.
+ * Un teléfono de la fila: el número, su etiqueta y —cuando corresponde— su
+ * propio botón de WhatsApp.
  *
- * ── Por qué el botón es un ícono ────────────────────────────────────────────
+ * ── Por qué es una grilla y no una fila ─────────────────────────────────────
  *
- * En las tarjetas el botón decía «WhatsApp» y estaba bien: había lugar. En una
- * fila de tabla, esa palabra son 90 px por teléfono, y con dos números por
- * cliente se come la columna de la dirección. El ícono con `aria-label` dice lo
- * mismo en 24 px, y el nombre del cliente va DENTRO de la etiqueta para que
- * «escribirle a Yeimy al 300…» se pueda nombrar con un lector de pantalla.
+ * Con dos teléfonos y anchos distintos —«300 123 4567 el dueño» sobre
+ * «605 878 1234 el fijo»— las etiquetas quedaban cada una en un lugar. Se leía
+ * como texto suelto y no como una columna de datos, que es justo lo que esta
+ * pantalla vino a ser.
  *
- * El botón SOLO cuando hay a dónde ir: `wa.me` con un fijo abre WhatsApp y
- * contesta que ese número no existe. Un botón que a veces lleva a una pared
- * obliga a comprobar cada vez, y termina siendo un botón en el que nadie confía.
- * `api` ya decidió — manda `whatsapp: null` cuando no se puede.
+ * Las columnas fijas los alinean: los números arriba del otro en cifra
+ * tabular, las etiquetas empezando todas en el mismo punto, y los iconos —si
+ * hay— formando su propia columna derecha en vez de quedar cada uno pegado a
+ * un texto de largo distinto.
+ *
+ * ── `conBoton` lo decide la FILA, no el teléfono ────────────────────────────
+ *
+ * Un teléfono solo no sabe si es el único destino del cliente, y de eso depende
+ * dónde va su botón. Lo resuelve `Acciones` más abajo, que es quien ve los
+ * teléfonos todos juntos.
+ *
+ * Cuando `conBoton` es `false` igual se dibuja la tercera celda, vacía. Sin
+ * ella, un cliente con dos números y uno solo con WhatsApp desalinearía la
+ * grilla: la fila del número sin icono correría una columna.
  */
-function Telefono({ telefono, nombre }: { telefono: TelefonoParaLlamar; nombre: string }) {
+function Telefono({
+  telefono,
+  nombre,
+  conBoton,
+}: {
+  telefono: TelefonoParaLlamar
+  nombre: string
+  /** Si este número lleva su propio botón. Lo decide la fila. */
+  conBoton: boolean
+}) {
   return (
-    <span className="flex items-center gap-1.5">
+    <>
       <span className="aq-cifra text-[13px] tabular-nums text-secundario">{telefono.numero}</span>
+      {/*
+        La etiqueta acompaña, no compite: más callada y fuera de la cifra
+        tabular. Sirve para elegir a cuál llamar —«el celular del dueño»—, no
+        para leerla primero.
+      */}
+      <span className="truncate text-[12px] text-tenue">{telefono.etiqueta ?? ''}</span>
 
-      {telefono.etiqueta ? (
-        /*
-         * La etiqueta acompaña, no compite: fuera de la cifra tabular y más
-         * callada. Sirve para elegir a cuál llamar —«el celular del dueño»—, no
-         * para leerla primero.
-         *
-         * En minúscula y no con `aq-micro`, por lo mismo que la etiqueta de la
-         * dirección: «EL CELULAR» en mayúsculas con tracking ocupaba más que el
-         * número al que acompaña.
-         */
-        <span className="truncate text-[12px] text-tenue">{telefono.etiqueta}</span>
-      ) : null}
+      {/*
+        ── La tercera celda existe SOLO cuando la grilla tiene tres columnas ──
 
-      {telefono.whatsapp ? (
-        <Link
-          href={`https://wa.me/${telefono.whatsapp}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`Escribir por WhatsApp a ${nombre} al ${telefono.numero}`}
-          title="Escribir por WhatsApp"
-          className="text-exito-texto transition-opacity hover:opacity-70"
-        >
-          <MessageCircle aria-hidden className="size-4" />
-        </Link>
+        Con un solo destino la grilla es de dos columnas, y aportar una tercera
+        celda igual rompe todo: los sobrantes empujan al teléfono siguiente, que
+        arranca en la columna de la etiqueta y deja su propia etiqueta colgando
+        en el renglón de abajo.
+
+        Lo encontró un screenshot, no los tests: jsdom no hace layout, así que
+        una grilla con celdas de más se ve idéntica a una bien armada. El test
+        que lo fija ahora cuenta las celdas.
+
+        El hueco lleva la ALTURA del icono, no es un `<span>` vacío.
+
+        Sin alto, la fila de un número sin WhatsApp mide 18,6 px y la de uno con
+        icono mide 36: los números quedan a distancias distintas entre sí y la
+        columna deja de leerse como una columna. Con el alto puesto todas miden
+        lo mismo, y cada número queda centrado contra su lugar de icono, lo
+        tenga o no.
+
+        `h-11` son los mismos 44 px que ocupa el enlace.
+      */}
+      {conBoton ? (
+        telefono.whatsapp ? (
+          <EnlaceDeWhatsapp telefono={telefono} nombre={nombre} />
+        ) : (
+          <span className="h-11" aria-hidden />
+        )
       ) : null}
-    </span>
+    </>
   )
+}
+
+/**
+ * El enlace a un número concreto. Uno solo, sin ambigüedad posible.
+ *
+ * El `aria-label` nombra a la persona Y el número: quien usa lector de pantalla
+ * oye a quién le va a escribir antes de apretar. Con dos botones en la misma
+ * fila eso deja de ser un detalle y es la única forma de distinguirlos.
+ *
+ * ── Declara sus 44 px, porque a un enlace nadie se los da ──────────────────
+ *
+ * La regla de `globals.css` que pone `min-height: 44px` cubre `button`,
+ * `select`, `input` y `textarea`, y deja los enlaces afuera a propósito: un
+ * enlace dentro de una oración no puede medir 44 px sin romper el renglón, y
+ * WCAG 2.2 los exime por eso. Pero dice la otra mitad: «el enlace que ES una
+ * acción suelta sí lleva el mínimo, y lo declara en su lugar».
+ *
+ * Este es ese caso, y no lo declaraba. Medido en el navegador: el lápiz de
+ * `CorregirLaVenta` salía en 44 px por la regla global y este enlace en 36,
+ * así que el icono nuevo era el objetivo más chico de la tabla — en una
+ * pantalla que se usa desde un celular, al lado de una llenadora.
+ *
+ * `size-11` son los 44 px en las dos direcciones, con el glifo centrado.
+ */
+function EnlaceDeWhatsapp({
+  telefono,
+  nombre,
+}: {
+  telefono: TelefonoParaLlamar
+  nombre: string
+}) {
+  return (
+    <Link
+      href={`https://wa.me/${telefono.whatsapp}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Escribir por WhatsApp a ${nombre} al ${telefono.numero}`}
+      title={`Escribir por WhatsApp al ${telefono.numero}`}
+      className="inline-flex size-11 items-center justify-center rounded text-exito-texto transition-colors hover:bg-elevada"
+    >
+      <MessageCircle aria-hidden className="size-4" />
+    </Link>
+  )
+}
+
+/**
+ * Cuántos de los teléfonos de un cliente tienen WhatsApp.
+ *
+ * Se calcula una vez por fila y lo leen los dos lugares que dependen de ello:
+ * la columna de teléfonos para saber si dibuja iconos, y la de acciones para
+ * saber si dibuja el suyo. Calcularlo dos veces es donde las dos columnas se
+ * desincronizan y aparecen dos botones para el mismo número.
+ */
+const destinosDeWhatsapp = (telefonos: TelefonoParaLlamar[]) =>
+  telefonos.filter((t) => t.whatsapp !== null)
+
+/**
+ * El botón de WhatsApp de la FILA — solo cuando hay un único destino.
+ *
+ * ── La regla: el icono vive donde su destino es inequívoco ──────────────────
+ *
+ * Juntar los iconos al final de la fila es más prolijo: antes el de WhatsApp
+ * vivía en el medio de la columna de teléfonos y la fila se leía como texto con
+ * botones intercalados en vez de como una planilla.
+ *
+ * Pero un botón al final de la fila no puede nombrar a cuál de dos números
+ * escribe. Es el error que este archivo ya cometió una vez y documentó: «con
+ * dos teléfonos, el botón quedaba ENTRE ambos y no se sabía a cuál pertenecía».
+ *
+ * De ahí la regla, que no es un caso especial sino la misma idea aplicada dos
+ * veces:
+ *
+ * - **Un solo destino** → la acción es de la fila, y va con el lápiz.
+ * - **Dos o más** → la acción es de cada número, y va pegada a su número, en
+ *   la tercera columna de la grilla de teléfonos.
+ *
+ * Lo que NO se hace es elegir por quien llama. Con dos destinos, un botón
+ * cualquiera manda el mensaje a la persona equivocada; y hacerlo desaparecer
+ * —como quedó a medio camino— le quita WhatsApp a un cliente que sí lo tiene.
+ *
+ * ── Y el caso de dos NO es hipotético ──────────────────────────────────────
+ *
+ * Cuando se empezó este ajuste el comentario decía «cero clientes con dos»,
+ * medido en su momento, y de ahí salió la idea de que con dos no hacía falta
+ * botón. Vuelto a medir en el navegador al terminarlo: de 19 filas en pantalla,
+ * 7 tienen un destino, 9 no tienen WhatsApp y **3 tienen dos**.
+ *
+ * O sea que hacer desaparecer el botón —como quedó a medio camino— no le
+ * quitaba WhatsApp a un caso raro: se lo quitaba a tres filas de cada
+ * diecinueve.
+ */
+function BotonDeWhatsapp({
+  telefonos,
+  nombre,
+}: {
+  telefonos: TelefonoParaLlamar[]
+  nombre: string
+}) {
+  const destinos = destinosDeWhatsapp(telefonos)
+
+  if (destinos.length !== 1) return null
+
+  return <EnlaceDeWhatsapp telefono={destinos[0]!} nombre={nombre} />
 }

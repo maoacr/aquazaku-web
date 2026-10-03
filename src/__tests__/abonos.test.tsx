@@ -211,9 +211,23 @@ describe('lo que viaja', () => {
     fireEvent.submit(monto().closest('form')!)
 
     expect(await screen.findByText(/El monto no cuadra/)).toBeInTheDocument()
-    expect(
-      (screen.getByRole('combobox', { name: /medio de pago/i }) as HTMLSelectElement).value,
-    ).toBe('transferencia')
+
+    /*
+     * ── Se ESPERA el valor, no se afirma en el acto ───────────────────────
+     *
+     * El reset de React corre en la fase de commit y la re-sincronización es un
+     * efecto, que corre DESPUÉS. Entre las dos cosas hay un instante en que el
+     * campo está vacío, y el `findByText` de arriba puede resolver justo ahí.
+     *
+     * Afirmarlo sincrónicamente pasaba sola y fallaba en la suite completa:
+     * bajo carga, el efecto se flushea después de la aserción. Lo que importa
+     * es el estado en el que queda el formulario, no en qué frame llega.
+     */
+    await waitFor(() =>
+      expect(
+        (screen.getByRole('combobox', { name: /medio de pago/i }) as HTMLSelectElement).value,
+      ).toBe('transferencia'),
+    )
   })
 
   it('muestra el error que devuelve api/', async () => {

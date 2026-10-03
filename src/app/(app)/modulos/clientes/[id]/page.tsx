@@ -12,6 +12,7 @@ import {
 } from '@/components/clientes/acciones-de-cliente'
 import { nivelDeVerificacion } from '@/components/clientes/tarjetas-de-clientes'
 import { Cifra } from '@/components/stock/cifra'
+import { ListaDeAbonos } from '@/components/ventas/abonos'
 import { UltimasVentas } from '@/components/ventas/ultimas-ventas'
 import { Estado } from '@/components/ui/estado'
 import { apiServerFetch } from '@/lib/api-server'
@@ -278,6 +279,31 @@ export default async function FichaDeClientePage({
           />
         </dl>
       </section>
+
+      {/*
+        ── Los abonos, pegados a la deuda ────────────────────────────────────
+
+        Va INMEDIATAMENTE después de las cuatro cuentas: es con lo que se
+        contesta «¿pero no había pagado?», que es la primera pregunta cuando
+        alguien discute el número de arriba.
+
+        La sección entera cuelga de `cartera`: los abonos llegan en la misma
+        respuesta que la deuda, así que sin `cobros:ver` no hay ni una cosa ni
+        la otra. Hasta ahora llegaban y se descartaban sin dibujarse.
+      */}
+      {cartera !== null ? (
+        <section className="aq-tarjeta grid gap-4 p-5">
+          <div>
+            <h2 className="aq-titulo-tarjeta text-principal">Abonos a la deuda</h2>
+            <p className="mt-1 text-[13px] text-tenue">
+              Cada abono es un documento aparte: no se edita ni se borra. Es lo que hace
+              que la deuda de arriba se pueda reconstruir sumando.
+            </p>
+          </div>
+
+          <ListaDeAbonos cobros={cartera.cobros} />
+        </section>
+      ) : null}
 
       {/*
         Los teléfonos van ANTES de las direcciones: la pregunta más frecuente

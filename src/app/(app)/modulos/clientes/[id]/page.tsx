@@ -12,10 +12,10 @@ import {
 } from '@/components/clientes/acciones-de-cliente'
 import { nivelDeVerificacion } from '@/components/clientes/tarjetas-de-clientes'
 import { Cifra } from '@/components/stock/cifra'
-import { ListaDeAbonos } from '@/components/ventas/abonos'
+import { ListaDeAbonos, RegistrarAbono } from '@/components/ventas/abonos'
 import { UltimasVentas } from '@/components/ventas/ultimas-ventas'
 import { Estado } from '@/components/ui/estado'
-import { apiServerFetch } from '@/lib/api-server'
+import { apiServerFetch, getServerUser } from '@/lib/api-server'
 import type {
   Departamento,
   Municipio,
@@ -71,8 +71,17 @@ export default async function FichaDeClientePage({
    * Las dos van en paralelo: son independientes y encadenarlas sumaría una
    * espera sin ganar nada.
    */
-  const [cliente, cartera, botellones, ventas, productos, stock, departamentos, municipios] =
-    await Promise.all([
+  const [
+    cliente,
+    cartera,
+    botellones,
+    ventas,
+    productos,
+    stock,
+    departamentos,
+    municipios,
+    usuario,
+  ] = await Promise.all([
     apiServerFetch<FichaDeCliente>(`/clientes/${id}`),
     siPuedeVerlo(apiServerFetch<CarteraDeCliente>(`/clientes/${id}/deuda`)),
     siPuedeVerlo(apiServerFetch<{ enPoderDelCliente: number }>(`/clientes/${id}/botellones`)),
@@ -109,8 +118,23 @@ export default async function FichaDeClientePage({
     siPuedeVerlo(apiServerFetch<ResumenDeStock[]>('/stock')),
     apiServerFetch<Departamento[]>('/geografia/departamentos'),
     apiServerFetch<Municipio[]>('/geografia/municipios'),
+    getServerUser(),
   ])
   const nivel = nivelDeVerificacion(cliente)
+
+  /*
+   * ── Quién puede abonar, según los permisos que `api/` ya resolvió ─────────
+   *
+   * No es `siPuedeVerlo`: ese probe necesita un GET que devuelva 403, y acá lo
+   * que se pregunta es si alguien puede ESCRIBIR. `permisos` viene listo de
+   * `GET /auth/me` justamente para esto, y no es copiar la matriz: es leer lo
+   * que allá se decidió.
+   *
+   * El `contador` ve la cartera y no la mueve (`readonly` en la matriz). Sin
+   * esto vería un botón que le devuelve 403 — y esconderlo sigue siendo
+   * cosmética: la barrera es `requirePermission('cobros', 'registrar')`.
+   */
+  const puedeAbonar = usuario?.permisos.includes('cobros:registrar') ?? false
 
   /*
    * Las bases cuelgan de la DIRECCIÓN, no del cliente (`RN-BAS-03`), así que hay
@@ -283,13 +307,14 @@ export default async function FichaDeClientePage({
       {/*
         ── Los abonos, pegados a la deuda ────────────────────────────────────
 
-        Va INMEDIATAMENTE después de las cuatro cuentas: es con lo que se
-        contesta «¿pero no había pagado?», que es la primera pregunta cuando
-        alguien discute el número de arriba.
+        Va INMEDIATAMENTE después de las cuatro cuentas y no abajo con el resto
+        de las acciones: el abono es lo único de esta pantalla que cambia el
+        número de arriba. Separarlos obliga a bajar, registrar, y volver a subir
+        para comprobar que la deuda se movió.
 
-        La sección entera cuelga de `cartera`: los abonos llegan en la misma
-        respuesta que la deuda, así que sin `cobros:ver` no hay ni una cosa ni
-        la otra. Hasta ahora llegaban y se descartaban sin dibujarse.
+        La sección entera cuelga de `cartera`: sin `cobros:ver` no llegó ni la
+        deuda ni el libro de abonos, y dibujar un formulario para mover un saldo
+        que la pantalla no puede mostrar sería pedir a ciegas.
       */}
       {cartera !== null ? (
         <section className="aq-tarjeta grid gap-4 p-5">
@@ -300,6 +325,18 @@ export default async function FichaDeClientePage({
               que la deuda de arriba se pueda reconstruir sumando.
             </p>
           </div>
+
+          {puedeAbonar ? (
+            <RegistrarAbono
+              cliente={{ id: cliente.id, nombre: cliente.nombre }}
+              deuda={cartera.deuda}
+            />
+          ) : (
+            <p className="text-[14px] text-secundario">
+              Usted puede consultar la cartera, pero no registrar abonos. Quien cobra los
+              carga desde acá.
+            </p>
+          )}
 
           <ListaDeAbonos cobros={cartera.cobros} />
         </section>

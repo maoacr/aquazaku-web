@@ -494,8 +494,6 @@ export function Mostrador({
         </div>
       )}
 
-      <FormError id={idError}>{estado.error}</FormError>
-
       {/*
         El recorte contra el piso NO es un error: la venta se hizo. Va con otro
         peso para que quien cobró sepa que el código no entró entero, sin que
@@ -894,6 +892,25 @@ export function Mostrador({
           ) : null}
         </section>
       ) : null}
+
+      {/*
+        ── El error va PEGADO AL BOTÓN, no arriba del formulario ─────────────
+
+        Estuvo arriba, debajo del encabezado, y en una página corta eso está
+        bien. Acá no: entre el mensaje y el botón que lo provoca hay más de
+        trescientas líneas de formulario —carrito, dirección, base, fecha,
+        botellones, total—. Quien apretaba «Cobrar» y no pasaba nada se quedaba
+        mirando el botón sin saber por qué, y el motivo estaba fuera de la
+        pantalla.
+
+        Es la misma lección que movió el motivo de la corrección hacia arriba,
+        aplicada en el otro sentido: lo que se lee va donde está el ojo. Después
+        de apretar, el ojo está en el botón.
+
+        `role="alert"` lo trae `FormError`, así que un lector de pantalla lo
+        anuncia apenas aparece, sin depender de dónde esté.
+      */}
+      <FormError id={idError}>{estado.error}</FormError>
 
       <button
         type="submit"

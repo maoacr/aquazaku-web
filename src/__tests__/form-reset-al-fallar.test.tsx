@@ -3,13 +3,36 @@ import userEvent from '@testing-library/user-event'
 import { useActionState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { SelectorDeDireccion } from '@/components/retornables/entrega-de-base'
+import { Mostrador } from '@/components/ventas/mostrador'
 import { direccionesDeClienteAction } from '@/app/(app)/modulos/clientes/actions'
-import type { ClienteElegido, Direccion } from '@/lib/api-types'
+import type { ClienteElegido, Direccion, Producto, ResumenDeStock } from '@/lib/api-types'
 
 vi.mock('@/app/(app)/modulos/clientes/actions', () => ({
   direccionesDeClienteAction: vi.fn(),
 }))
 
+vi.mock('@/app/(app)/modulos/ventas/actions', () => ({
+  registrarVentaAction: vi.fn(),
+  corregirVentaAction: vi.fn(),
+}))
+
+/*
+ * Una PACA y no un botellón: agregar un botellón enciende el despacho de
+ * retornables, que exige cliente y apaga «Cobrar». Acá lo que se mide es dónde
+ * cae el error, no la regla de los botellones.
+ */
+const botellon = {
+  id: 'p-1',
+  codigo: 'PACA_600',
+  nombre: 'Paca de 600 ml',
+  presentacion: 'paca',
+  precioResidencial: '10000.00',
+  precioComercial: '9000.00',
+  precioMinimo: '8000.00',
+  activo: true,
+} as Producto
+
+const stock = [{ productoId: 'p-1', vendible: 100 }] as ResumenDeStock[]
 
 /**
  * Lo que una venta rechazada le hace a los campos NO controlados.
@@ -99,5 +122,48 @@ describe('una venta rechazada no debe borrar lo que ya se eligió', () => {
     expect((screen.getByRole('combobox', { name: /dirección/i }) as HTMLSelectElement).value).toBe(
       'dir-2',
     )
+  })
+})
+
+/**
+ * Dónde aparece el error de una venta rechazada.
+ *
+ * ── La queja ────────────────────────────────────────────────────────────────
+ *
+ * «El mensaje de error no se ve porque aparece en la parte superior del form y
+ * el usuario no ve el error hasta que hace scroll».
+ *
+ * ── Por qué se mide el ORDEN y no la posición ───────────────────────────────
+ *
+ * jsdom no hace layout: acá todo mide cero y no hay scroll que comprobar. Lo
+ * que sí determina dónde cae el mensaje en una pantalla real es su lugar en el
+ * documento, y eso es lo que se fija. La comprobación de que de verdad entra en
+ * el viewport es del navegador, no de este archivo.
+ */
+describe('el error de una venta rechazada aparece donde está el ojo', () => {
+  it('el mensaje es el elemento inmediatamente anterior al botón de cobrar', async () => {
+    const { registrarVentaAction } = await import('@/app/(app)/modulos/ventas/actions')
+    vi.mocked(registrarVentaAction).mockResolvedValue({
+      error: 'No hay suficiente stock vendible.',
+    })
+
+    const usuario = userEvent.setup()
+    render(<Mostrador productos={[botellon]} stock={stock} />)
+
+    /* Sin items el botón está apagado: no hay venta que rechazar. */
+    await usuario.click(screen.getByRole('button', { name: /Agregar uno de Paca/i }))
+
+    const cobrar = screen.getByRole('button', { name: /^Cobrar$/i })
+    await usuario.click(cobrar)
+
+    const aviso = await screen.findByRole('alert')
+    expect(aviso).toHaveTextContent(/No hay suficiente stock vendible/)
+
+    /*
+     * Pegado al botón. Si alguien vuelve a mover el `FormError` al encabezado,
+     * esto falla — que es el punto: el formulario mide más de trescientas
+     * líneas y el mensaje quedaba fuera de la pantalla.
+     */
+    expect(cobrar.previousElementSibling).toBe(aviso)
   })
 })

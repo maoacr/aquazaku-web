@@ -27,6 +27,29 @@
  * el sistema cambia, se vuelve a copiar entera y estas líneas sobrevivirían.
  */
 :root {
+  /* ── Rampa secuencial: para MAGNITUD, no para identidad ──────────────────
+   *
+   * Cuatro pasos de UN SOLO tono. El paso 1 es el más apagado y el 4 el más
+   * prominente, EN LOS DOS TEMAS: el componente dice "paso 4" y el tema
+   * decide si eso se ve como lo más oscuro o como lo más claro.
+   *
+   * En claro la rampa va de claro a oscuro. En oscuro corre AL REVÉS, porque
+   * sobre una lámina ahumada lo prominente es lo claro y el paso oscuro
+   * desaparece: #1B5178 queda a 1,83:1 contra la tarjeta real. No es un
+   * volteo automático — son dos rampas elegidas y validadas por separado.
+   *
+   * Validadas contra la superficie EFECTIVA, que no es blanco ni #101719: la
+   * tarjeta es translúcida, así que el fondo real es la mezcla con el
+   * degradado — #eff5f7 en claro y #0d2831 en oscuro.
+   *
+   * Para IDENTIDAD no sirve. Ahí la marca solo da dos cupos (azul y acento
+   * están a ΔE 7,8 con visión plena) y la salida es posición y rótulo.
+   */
+  --aq-escala-1: #4EA9DA;
+  --aq-escala-2: #1D78B3;
+  --aq-escala-3: #1B5178;
+  --aq-escala-4: #12384F;
+
   /*
    * ── La jerarquía de texto: separada por TONO, no solo por luminosidad ─────
    *
@@ -443,6 +466,12 @@
 }
 
 [data-tema='oscuro'] {
+  /* La rampa secuencial, al revés. Ver el bloque :root. */
+  --aq-escala-1: #1D78B3;
+  --aq-escala-2: #4EA9DA;
+  --aq-escala-3: #86C6EA;
+  --aq-escala-4: #B8DEF4;
+
   /* La misma escala tintada, invertida. Ver el bloque `:root`. */
   --aq-texto-principal:  #EFF6F9;
   --aq-texto-secundario: #AEC6D4;
@@ -573,6 +602,12 @@
 
   /* Agua, botellones y bases. Nunca se mezcla con dinero. */
   --color-agua: var(--aq-agua-activo);
+
+  /* Magnitud, no identidad. El paso 4 es el prominente en los dos temas. */
+  --color-escala-1: var(--aq-escala-1);
+  --color-escala-2: var(--aq-escala-2);
+  --color-escala-3: var(--aq-escala-3);
+  --color-escala-4: var(--aq-escala-4);
 
   /* El verde es RESERVADO: solo significa "cuadra" o "todo en orden". */
   --color-exito: var(--aq-estado-exito-base);
@@ -2211,6 +2246,12 @@ select.aq-campo:not([size]):not([multiple]) {
  */
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema]) {
+  /* La rampa secuencial, al revés. Ver el bloque :root. */
+  --aq-escala-1: #1D78B3;
+  --aq-escala-2: #4EA9DA;
+  --aq-escala-3: #86C6EA;
+  --aq-escala-4: #B8DEF4;
+
   --aq-superficie-fondo:   var(--aq-neutro-950);
   --aq-superficie-tarjeta: var(--aq-neutro-900);
   --aq-superficie-elevada: var(--aq-neutro-800);

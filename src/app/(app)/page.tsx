@@ -3,9 +3,14 @@ import Link from 'next/link'
 import { BarrasConUmbral } from '@/components/graficos/barras-con-umbral'
 import { BarrasDiarias, DIAS_VISIBLES, cuantosCierres } from '@/components/graficos/barras-diarias'
 import { Tanque } from '@/components/graficos/tanque'
+import { Negocio } from '@/components/tablero/negocio'
+import { RangoDeFechas } from '@/components/ui/rango-de-fechas'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
+import { hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
+import { pesos } from '@/lib/plata'
 import { apiServerFetch, getServerUser } from '@/lib/api-server'
 import type {
+  CarteraDeCliente,
   CierreDeProduccion,
   InsumoListado,
   Producto,
@@ -40,8 +45,28 @@ import { siPuedeVerlo } from '@/lib/permiso-opcional'
  * Los tres gráficos son SVG plano, sin estado ni efectos: se pintan en el
  * servidor y llegan como HTML. No hay `'use client'` en esta pantalla.
  */
-export default async function TableroPage() {
-  const [usuario, stock, productos, cierres, saldos, insumos, aLlamar] = await Promise.all([
+export default async function TableroPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ desde?: string; hasta?: string; granularidad?: string }>
+}) {
+  const { desde, hasta } = await searchParams
+
+  /*
+   * ── El rango por defecto: los últimos 30 días ─────────────────────────────
+   *
+   * Es el que se pide nueve de cada diez veces, y arrancar en blanco obliga a
+   * tipear dos fechas antes de ver nada.
+   *
+   * Sale de `hoyEnLaPlanta()` y NO de `new Date().toISOString()`: Colombia es
+   * UTC−5, así que después de las 19:00 el proceso en UTC ya pasó de
+   * medianoche y el rango pediría un día que todavía no empezó.
+   */
+  const hoy = hoyEnLaPlanta()
+  const rango = { desde: desde ?? restarDias(hoy, 29), hasta: hasta ?? hoy }
+
+  const [usuario, stock, productos, cierres, saldos, insumos, aLlamar, cartera] =
+    await Promise.all([
     getServerUser(),
     apiServerFetch<ResumenDeStock[]>('/stock'),
     apiServerFetch<Producto[]>('/productos?estado=todos'),
@@ -49,6 +74,13 @@ export default async function TableroPage() {
     siPuedeVerlo(apiServerFetch<SaldoDeAgua[]>('/tanques')),
     siPuedeVerlo(apiServerFetch<InsumoListado[]>('/insumos')),
     siPuedeVerlo(apiServerFetch<SeguimientosALlamar>('/clientes/a-llamar')),
+    /*
+     * La cartera se pide UNA vez, aquí, y baja a `Negocio` por prop. La necesitan
+     * los dos: el pendiente de la deuda vieja que va arriba de todo, y los dos
+     * paneles de abajo. Pedirla en cada lugar serían dos viajes por el mismo
+     * dato, y podrían contestar distinto si alguien cobra en el medio.
+     */
+    siPuedeVerlo(apiServerFetch<CarteraDeCliente[]>('/reportes/cartera')),
   ])
   const leidoEn = new Date()
 
@@ -76,6 +108,21 @@ export default async function TableroPage() {
    */
   const atrasadas = aLlamar
     ? [...aLlamar.botellones, ...aLlamar.otros].filter((f) => f.urgencia !== 'al-dia').length
+    : 0
+
+  /*
+   * El tramo sin techo —el más viejo— es el ÚLTIMO que manda `api/`. Se lee de
+   * las llaves en vez de escribirlo: `TRAMOS` vive en una sola constante allá.
+   */
+  const llavesDeTramos = cartera?.[0] ? Object.keys(cartera[0].tramos) : []
+  const tramoMasViejo = llavesDeTramos.at(-1) ?? ''
+  /*
+   * La llave del último tramo viene como `90+`, así que escribirla tal cual
+   * daba «lleva más de 90+ sin cobrarse». El `+` ya lo dice el «más de».
+   */
+  const diasDelTramoViejo = tramoMasViejo.replace('+', '')
+  const deudaVieja = tramoMasViejo
+    ? (cartera ?? []).reduce((a, c) => a + Number(c.tramos[tramoMasViejo] ?? 0), 0)
     : 0
 
   const pendientes = [
@@ -149,7 +196,7 @@ export default async function TableroPage() {
 
     /*
      * La lista completa de "para llamar" vive en `/modulos/seguimientos`.
-     * Acá solo se avisa — con la cantidad exacta y el link a la lista
+     * Aquí solo se avisa — con la cantidad exacta y el link a la lista
      * completa — para que el tablero siga cumpliendo su rol de «vistazo
      * general del negocio».
      *
@@ -160,7 +207,7 @@ export default async function TableroPage() {
      * a todas: «182 direcciones para llamar» sería falso y, peor, dejaría de
      * significar nada el día que de verdad haya doscientas atrasadas.
      *
-     * Acá se cuentan las amarillas y las rojas — las que tienen algo que hacer.
+     * Aquí se cuentan las amarillas y las rojas — las que tienen algo que hacer.
      *
      * ── El aviso suma los DOS canales ────────────────────────────────────
      *
@@ -176,6 +223,31 @@ export default async function TableroPage() {
      * El `null` de `aLlamar` ya está descartado por la condición: si el
      * 403 lo negara, no habría con qué contar.
      */
+    /*
+     * ── La plata vieja es un pendiente, no una estadística ──────────────────
+     *
+     * Los tramos los decide `api/` en una sola constante (`TRAMOS` en
+     * `cartera.ts`), así que aquí se busca el ÚLTIMO —el que no tiene techo— en
+     * vez de escribir «90+» a mano. El día que el contador pida otros tramos,
+     * este aviso los sigue sin tocarse.
+     *
+     * Cuanto más vieja, menos probable que entre: por eso espera una decisión
+     * y no solo una mirada.
+     */
+    ...(deudaVieja > 0
+      ? [
+          {
+            id: 'deuda-vieja',
+            Icono: TriangleAlert,
+            titulo: `${pesos(deudaVieja)} lleva más de ${diasDelTramoViejo} días sin cobrarse`,
+            detalle:
+              'Cuanto más vieja, menos probable que entre. Conviene llamar antes de que se enfríe.',
+            href: '/modulos/reportes',
+            accion: 'Ver la cartera',
+          },
+        ]
+      : []),
+
     ...(atrasadas > 0
       ? [
           {
@@ -197,7 +269,7 @@ export default async function TableroPage() {
         <h1 className="aq-titulo-pantalla text-principal">Hola, {primerNombre(usuario?.name)}</h1>
         <p className="aq-bajada mt-1.5 text-secundario">
           {pendientes.length === 0
-            ? 'No hay nada esperando. Acá abajo, cómo viene la planta.'
+            ? 'No hay nada esperando. Aquí abajo, cómo viene la planta.'
             : 'Esto es lo que está esperando que alguien haga algo.'}
         </p>
       </header>
@@ -232,6 +304,23 @@ export default async function TableroPage() {
         `aLlamar` puede ser `null` si el rol no puede verla — el 403 decide, no
         una copia de la matriz de permisos.
       */}
+
+      {/*
+        ── Cómo viene el negocio ───────────────────────────────────────────────
+
+        Va DESPUÉS de los pendientes y ANTES de la operación. El orden no es
+        casual: primero lo que espera una decisión, después la plata, y al final
+        el agua y la producción, que ya funcionaban y no cambian.
+
+        El rango manda sobre todo lo de `Negocio` y vive en la URL, así que un
+        tablero de un rango se comparte y se vuelve a abrir igual.
+
+        `Negocio` devuelve `null` si el rol no puede ver `/reportes/*` — el
+        `pos` no tiene `reportes:financieros`—, y entonces esta pantalla queda
+        exactamente como estaba antes.
+      */}
+      <RangoDeFechas desde={rango.desde} hasta={rango.hasta} />
+      <Negocio desde={rango.desde} hasta={rango.hasta} cartera={cartera} />
 
       {saldos ? (
         <section className="aq-tarjeta grid gap-4 p-5">
@@ -368,4 +457,17 @@ function mayuscula(texto: string): string {
 
 function primerNombre(nombre: string | undefined): string {
   return nombre?.trim().split(' ')[0] ?? 'de nuevo'
+}
+
+/**
+ * Resta días a un `AAAA-MM-DD`, en calendario puro.
+ *
+ * `Date.UTC` para construir y `toISOString` para leer: los dos en UTC, así que
+ * la zona del proceso no entra en la cuenta. La fecha ya viene cortada en la
+ * zona de la planta por `hoyEnLaPlanta()`; a partir de ahí es calendario.
+ */
+function restarDias(iso: string, dias: number): string {
+  const [anio, mes, dia] = iso.split('-').map(Number) as [number, number, number]
+
+  return new Date(Date.UTC(anio, mes - 1, dia - dias)).toISOString().slice(0, 10)
 }

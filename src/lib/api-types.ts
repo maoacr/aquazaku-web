@@ -725,6 +725,31 @@ export interface Mes {
 }
 
 /**
+ * Una fila de `GET /reportes/ventas-por-producto?desde&hasta`.
+ *
+ * Lo que el extracto no puede contestar: cuántas UNIDADES salieron. El extracto
+ * dice cuánta plata entró, y un mes que creció 14 % creció por volumen o por
+ * precio — con el monto solo, las dos conclusiones se ven idénticas.
+ *
+ * `monto` es `precioFinal × cantidad` sumado, no la columna pelada: `precioFinal`
+ * es el precio UNITARIO. Lo calcula `api/`, que es donde vive la regla.
+ *
+ * Viene ordenado por `unidades` descendente, con desempate por `codigo`. El
+ * orden es parte del contrato: la pantalla no tiene que volver a ordenar, y si
+ * lo hiciera con su propio criterio habría dos respuestas para «qué vendo más».
+ *
+ * Un producto sin ventas en el rango NO viene — al revés que `Mes`, que trae los
+ * meses vacíos en cero.
+ */
+export interface ProductoVendido {
+  productoId: string
+  codigo: string
+  nombre: string
+  unidades: number
+  monto: string
+}
+
+/**
  * Los lotes de un producto, con el umbral que decide cuál «vence pronto».
  *
  * El umbral viaja con el dato porque configurarlo es de `admin` pero mirarlo es

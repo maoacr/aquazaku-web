@@ -1,3 +1,4 @@
+import { pesos } from '@/lib/plata'
 import { Encabezados, Etiqueta, SinResultados, Tabla, Td, Th } from '@/components/ui/tabla'
 import type { Producto } from '@/lib/api-types'
 
@@ -55,22 +56,13 @@ export function TablaDeProductos({ productos }: { productos: Producto[] }) {
   )
 }
 
-/**
- * Formatea un monto que viene como string.
- *
- * `Intl` necesita un número, así que la conversión ocurre acá y **solo para
- * mostrar**. El valor que se reenvía a `api/` sigue siendo el string original:
- * un float redondeado que vuelve a la base es un peso que no cuadra.
- */
-export function pesos(monto: string): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-  }).format(Number(monto))
-}
 
 /** `12.000` es ruido; `12` es el dato. */
 function litros(valor: string): string {
   return String(Number(valor))
 }
+
+/* `pesos` se mudó a `lib/plata.ts`: importarlo desde un componente de tabla
+   invertía las capas. Se re-exporta porque esta pantalla lo usa y porque el
+   nombre ya estaba acá. */
+export { pesos }

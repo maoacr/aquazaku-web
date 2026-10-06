@@ -18,6 +18,45 @@ vi.mock('@/lib/api-server', () => ({
   apiServerFetch: vi.fn(),
 }))
 
+/*
+ * ── Por qué hace falta desde que el tablero tiene rango ─────────────────────
+ *
+ * `RangoDeFechas` es la primera pieza cliente de esta pantalla y llama a
+ * `useRouter()`. Este archivo renderiza la página como función, sin el árbol de
+ * Next alrededor, así que el router no está montado y Next tira
+ * «invariant expected app router to be mounted».
+ *
+ * El control tiene sus propios nueve casos en `rango-de-fechas.test.tsx`. Acá
+ * solo tiene que no reventar: lo que este archivo prueba son los pendientes, el
+ * agua y el inventario.
+ */
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => '/',
+}))
+
+/*
+ * ── `Negocio` es un Server Component ASYNC, y eso acá no se puede renderizar ─
+ *
+ * En Next funciona: el renderer de RSC resuelve componentes async anidados sin
+ * problema. Pero este archivo llama a la página como una función y pasa el JSX
+ * a `render()` de testing-library, que es el renderer de CLIENTE: ahí un hijo
+ * que devuelve una promesa no se resuelve, React abandona el árbol entero y el
+ * `<body>` queda con un `<div />` vacío.
+ *
+ * El síntoma engaña: no falla la sección nueva, fallan los dieciocho casos
+ * viejos con «no hay roles accesibles», como si la página entera hubiera
+ * desaparecido. Y había desaparecido.
+ *
+ * La sección tiene su propia cobertura —la agregación en
+ * `tablero-agregacion.test.ts`, cada pieza en su archivo—. Acá se reemplaza por
+ * una marca para que el resto de la pantalla se pueda seguir probando.
+ */
+vi.mock('@/components/tablero/negocio', () => ({
+  Negocio: () => <section data-testid="negocio" />,
+}))
+
 const { apiServerFetch } = await import('@/lib/api-server')
 
 function stock(sobrescribe: Partial<ResumenDeStock> = {}): ResumenDeStock {
@@ -136,12 +175,36 @@ function responde(respuestas: {
       return respuestas.aLlamar ?? { botellones: [], otros: [] }
     }
 
+    /*
+     * ── La sección de negocio se niega por defecto ──────────────────────────
+     *
+     * Estos archivos prueban los PENDIENTES, el agua y el inventario. La
+     * sección «cómo viene el negocio» tiene sus propias pruebas —la agregación
+     * en `tablero-agregacion.test.ts`, cada pieza en su archivo— y dejarla
+     * responder acá metería cuatro paneles de ruido en cada aserción.
+     *
+     * Un 403 es exactamente lo que ve un `pos`, así que no es un caso
+     * inventado: es el rol que no tiene `reportes:financieros`.
+     */
+    if (
+      ruta.startsWith('/reportes/') ||
+      ruta.startsWith('/botellones') ||
+      ruta.startsWith('/bases')
+    ) {
+      return negar()
+    }
+
     throw new Error(`ruta sin mockear: ${ruta}`)
   }) as never)
 }
 
-async function pintar() {
-  render(await DashboardPage())
+/**
+ * El tablero lee el rango de la URL. Acá se le pasa vacío: sin `desde` ni
+ * `hasta` cae en su default —los últimos 30 días—, que es lo que ve alguien
+ * que entra por primera vez.
+ */
+async function pintar(busqueda: { desde?: string; hasta?: string } = {}) {
+  render(await DashboardPage({ searchParams: Promise.resolve(busqueda) }))
 }
 
 afterEach(() => {

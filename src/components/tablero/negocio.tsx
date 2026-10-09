@@ -5,7 +5,7 @@ import { FilaDeIndicadores, Indicador } from '@/components/ui/indicador'
 import { apiServerFetch } from '@/lib/api-server'
 import type {
   Base,
-  CarteraDeCliente,
+  FilaDeCartera,
   Extracto,
   ParqueDeBotellones,
   ProductoVendido,
@@ -46,7 +46,7 @@ export async function Negocio({
 }: {
   desde: string
   hasta: string
-  cartera: CarteraDeCliente[] | null
+  cartera: FilaDeCartera[] | null
 }) {
   const previo = periodoAnterior({ desde, hasta })
 
@@ -331,7 +331,7 @@ export async function Negocio({
  * el servidor —`TRAMOS` vive en una sola constante allá— así que el día que el
  * contador pida otros tramos, esta pantalla los sigue sin tocarse.
  */
-function tramosDeCartera(cartera: CarteraDeCliente[]) {
+function tramosDeCartera(cartera: FilaDeCartera[]) {
   const suma = new Map<string, number>()
 
   for (const cliente of cartera) {

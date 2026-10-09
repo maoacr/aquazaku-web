@@ -20,7 +20,7 @@ import type {
   Departamento,
   Municipio,
   Base,
-  CarteraDeCliente,
+  DeudaDeCliente,
   FichaDeCliente,
   MetodoDeVerificacion,
   Producto,
@@ -83,7 +83,7 @@ export default async function FichaDeClientePage({
     usuario,
   ] = await Promise.all([
     apiServerFetch<FichaDeCliente>(`/clientes/${id}`),
-    siPuedeVerlo(apiServerFetch<CarteraDeCliente>(`/clientes/${id}/deuda`)),
+    siPuedeVerlo(apiServerFetch<DeudaDeCliente>(`/clientes/${id}/deuda`)),
     siPuedeVerlo(apiServerFetch<{ enPoderDelCliente: number }>(`/clientes/${id}/botellones`)),
     /*
      * Las ventas las recorta `api/` con `?clienteId`, no esta página.

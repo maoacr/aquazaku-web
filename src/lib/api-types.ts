@@ -624,8 +624,21 @@ export interface MovimientoDeBase {
  *
  * `deuda` nace de haber comprado; `cargosPendientes` nace de haber roto algo
  * prestado. Se reclaman distinto, así que se cuentan distinto.
+ *
+ * ── Se llamaba `CarteraDeCliente`, y había OTRA con el mismo nombre ────────
+ *
+ * Más abajo vive la fila de `GET /reportes/cartera`, con cinco campos
+ * completamente distintos. TypeScript no se quejaba: cuando dos interfaces
+ * comparten nombre las FUSIONA, y como ningún campo chocaba, el resultado era
+ * una sola interfaz de ocho campos obligatorios que no corresponde a ninguna
+ * de las dos respuestas reales.
+ *
+ * No explotaba porque `apiServerFetch<T>` es un cast en el borde del fetch —
+ * una afirmación, no una comprobación— y cada pantalla leía solo sus propios
+ * campos. Pero el compilador dejaba escribir `fila.deuda` sobre una fila del
+ * reporte y en ejecución era `undefined`.
  */
-export interface CarteraDeCliente {
+export interface DeudaDeCliente {
   deuda: string
   cargosPendientes: string
   cobros: Cobro[]
@@ -708,10 +721,31 @@ export interface Extracto {
   }
 }
 
-export interface CarteraDeCliente {
+/**
+ * Una fila de `GET /reportes/cartera` — la deuda de un cliente repartida por
+ * antigüedad.
+ *
+ * Viene ordenada por monto, de mayor a menor: la cartera existe para saber a
+ * quién llamar, y esa pregunta se responde por plata, no por orden alfabético.
+ * El orden es contrato del servidor — la pantalla no lo recalcula.
+ *
+ * Las llaves de `tramos` las decide `api/` en una sola constante (`TRAMOS` en
+ * `contador/cartera.ts`), así que el día que el contador pida otros cortes,
+ * las pantallas los siguen sin tocarse.
+ */
+export interface FilaDeCartera {
   clienteId: string
   cliente: string
-  documento: string
+  /**
+   * `null` cuando el cliente se registró sin documento — RN-CLI-20.
+   *
+   * Decía `string` a secas y era falso: `api/` lo tipa anulable y
+   * `components/reportes/cartera.tsx` ya escribía `?? 'Sin documento'`. O sea
+   * que quien escribió la pantalla sabía que podía faltar, y el tipo lo
+   * negaba — el `??` parecía defensa muerta y era lo único que evitaba un
+   * hueco en la tabla.
+   */
+  documento: string | null
   total: string
   tramos: Record<string, string>
 }

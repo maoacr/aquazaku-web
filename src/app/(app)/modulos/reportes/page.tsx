@@ -3,7 +3,7 @@ import { TablaDeExtracto, Totales } from '@/components/reportes/extracto'
 import { TablaMensual } from '@/components/reportes/mensual'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch } from '@/lib/api-server'
-import type { CarteraDeCliente, Extracto, Mes } from '@/lib/api-types'
+import type { FilaDeCartera, Extracto, Mes } from '@/lib/api-types'
 import { Filtros } from './filtros'
 
 /**
@@ -65,7 +65,7 @@ export default async function ReportesPage({
 
   const [extracto, cartera, meses] = await Promise.all([
     apiServerFetch<Extracto>(`/reportes/extracto?${consulta}`),
-    apiServerFetch<CarteraDeCliente[]>('/reportes/cartera'),
+    apiServerFetch<FilaDeCartera[]>('/reportes/cartera'),
     apiServerFetch<Mes[]>(`/reportes/mensual?${rangoMensual}`),
   ])
 

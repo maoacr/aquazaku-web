@@ -10,7 +10,7 @@ import { hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
 import { pesos } from '@/lib/plata'
 import { apiServerFetch, getServerUser } from '@/lib/api-server'
 import type {
-  CarteraDeCliente,
+  FilaDeCartera,
   CierreDeProduccion,
   InsumoListado,
   Producto,
@@ -80,7 +80,7 @@ export default async function TableroPage({
      * paneles de abajo. Pedirla en cada lugar serían dos viajes por el mismo
      * dato, y podrían contestar distinto si alguien cobra en el medio.
      */
-    siPuedeVerlo(apiServerFetch<CarteraDeCliente[]>('/reportes/cartera')),
+    siPuedeVerlo(apiServerFetch<FilaDeCartera[]>('/reportes/cartera')),
   ])
   const leidoEn = new Date()
 

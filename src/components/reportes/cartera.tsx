@@ -1,6 +1,6 @@
 import { HandCoins } from 'lucide-react'
 import { Vacio } from '@/components/ui/vacio'
-import type { CarteraDeCliente } from '@/lib/api-types'
+import type { FilaDeCartera } from '@/lib/api-types'
 
 /**
  * Cartera por edad — RN-CON-05.
@@ -12,7 +12,7 @@ import type { CarteraDeCliente } from '@/lib/api-types'
  * pida otros, la pantalla siguiera mostrando los viejos con datos nuevos
  * adentro: el peor descuadre posible, porque parece correcto.
  */
-export function TablaDeCartera({ cartera }: { cartera: CarteraDeCliente[] }) {
+export function TablaDeCartera({ cartera }: { cartera: FilaDeCartera[] }) {
   if (cartera.length === 0) {
     return (
       <Vacio variante="terminado" icono={HandCoins} titulo="Nadie debe nada">

@@ -399,7 +399,21 @@ export default async function TableroPage({
       <section className="grid gap-3">
         <h2 className="aq-micro text-tenue">Inventario</h2>
 
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {/*
+            ── Cuatro columnas en pantalla ancha ────────────────────────────
+
+            Cortaba en tres y el cuarto producto quedaba solo en su fila con
+            medio ancho vacío al lado — visto en el navegador a 1633 px.
+
+            El salto a cuatro arranca en `xl` (1280 px) y no antes: por debajo
+            de eso la tarjeta se angosta y el nombre más largo del catálogo
+            —«Recarga de botellón de 20 L»— empieza a partirse en dos renglones.
+
+            Las otras listas de tarjetas del sistema —clientes, bases,
+            proveedores, insumos, usuarios— siguen en tres a propósito: sus
+            tarjetas son más altas y densas, y no es el mismo problema.
+          */}
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {stock.map((p) => (
             <li key={p.productoId}>
               <Link href={`/modulos/stock/${p.productoId}`} className="aq-tarjeta block p-4">

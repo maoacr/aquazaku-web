@@ -1,9 +1,11 @@
 import { AlertTriangle, Boxes, PackageX, PhoneCall, TriangleAlert } from 'lucide-react'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { BarrasConUmbral } from '@/components/graficos/barras-con-umbral'
 import { BarrasDiarias, DIAS_VISIBLES, cuantosCierres } from '@/components/graficos/barras-diarias'
 import { Tanque } from '@/components/graficos/tanque'
 import { Negocio } from '@/components/tablero/negocio'
+import { Esqueleto } from '@/components/ui/esqueleto'
 import { RangoDeFechas } from '@/components/ui/rango-de-fechas'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
@@ -320,7 +322,22 @@ export default async function TableroPage({
         exactamente como estaba antes.
       */}
       <RangoDeFechas desde={rango.desde} hasta={rango.hasta} />
-      <Negocio desde={rango.desde} hasta={rango.hasta} cartera={cartera} />
+      {/*
+        ── Solo «Negocio» se suspende —el resto no depende del rango────────────
+
+        Antes, cambiar el rango re-renderizaba toda la Server Component y la
+        página entera se reemplazaba de golpe cuando todas las promesas
+        resolvían. El usuario lo leía como una recarga.
+
+        Envolviendo solo la parte que depende del rango en <Suspense>, los
+        pendientes, el agua, la producción, los insumos y el inventario se
+        QUEDAN en pantalla mientras el extracto y sus acompañantes recalculan.
+        El «salto» que se sentía como recarga pasa a ser un esqueleto que
+        aparece y se rellena.
+      */}
+      <Suspense fallback={<CargandoNegocio />}>
+        <Negocio desde={rango.desde} hasta={rango.hasta} cartera={cartera} />
+      </Suspense>
 
       {saldos ? (
         <section className="aq-tarjeta grid gap-4 p-5">
@@ -484,4 +501,55 @@ function restarDias(iso: string, dias: number): string {
   const [anio, mes, dia] = iso.split('-').map(Number) as [number, number, number]
 
   return new Date(Date.UTC(anio, mes - 1, dia - dias)).toISOString().slice(0, 10)
+}
+
+/**
+ * R49 · Esqueleto de la sección «Negocio» — la que cambia con el rango.
+ *
+ * Cuatro indicadores arriba, una tarjeta de gráfico grande, dos tarjetas
+ * medianas abajo. Misma grilla que `Negocio` para que, cuando llegue el
+ * contenido, no haya salto.
+ *
+ * Sin texto de carga: lo que cambia es el rango, y el usuario ya lo cambió él.
+ * Decírselo otra vez es ruido. El `aria-busy` del contenedor le avisa al
+ * lector de pantalla.
+ */
+function CargandoNegocio() {
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      aria-label="Actualizando con el nuevo rango"
+      className="grid gap-5"
+    >
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <li key={i} className="aq-tarjeta grid gap-2 p-4">
+            <Esqueleto className="h-3 w-24" />
+            <Esqueleto className="h-7 w-32" />
+            <Esqueleto className="h-3 w-20" />
+          </li>
+        ))}
+      </ul>
+
+      <section className="aq-tarjeta grid gap-3 p-5">
+        <Esqueleto className="h-4 w-44" />
+        <Esqueleto className="h-3 w-72 max-w-full" />
+        <Esqueleto className="h-40 w-full" />
+      </section>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <section className="aq-tarjeta grid gap-3 p-5">
+          <Esqueleto className="h-4 w-36" />
+          <Esqueleto className="h-3 w-64 max-w-full" />
+          <Esqueleto className="h-24 w-full" />
+        </section>
+        <section className="aq-tarjeta grid gap-3 p-5">
+          <Esqueleto className="h-4 w-40" />
+          <Esqueleto className="h-3 w-56 max-w-full" />
+          <Esqueleto className="h-24 w-full" />
+        </section>
+      </div>
+    </div>
+  )
 }

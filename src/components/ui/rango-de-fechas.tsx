@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
 
 /**
@@ -45,6 +45,21 @@ export function RangoDeFechas({ desde, hasta }: { desde: string; hasta: string }
   const [d, setD] = useState(desde)
   const [h, setH] = useState(hasta)
 
+  /*
+   * ── La navegación corre como transición no-urgente ─────────────────────────
+   *
+   * `router.push` ya es una soft navigation (no recarga el browser), pero
+   * mientras el Server Component recalcula el extracto, los inputs del rango
+   * podían quedar bloqueados. Marcándolo con `startTransition`, React los
+   * mantiene responsivos: el usuario puede seguir tipeando y corrigiendo el
+   * rango mientras la consulta anterior está en vuelo.
+   *
+   * `isPending` se usa para DOS cosas: bajar la opacidad del control mientras
+   * se actualiza (feedback visual de que el click se registró) y deshabilitar
+   * los botones para que un doble click no mande dos navegaciones.
+   */
+  const [isPending, startTransition] = useTransition()
+
   const invertido = d > h
   const hoy = hoyEnLaPlanta()
 
@@ -58,11 +73,23 @@ export function RangoDeFechas({ desde, hasta }: { desde: string; hasta: string }
     const q = new URLSearchParams(params)
     q.set('desde', nuevoDesde)
     q.set('hasta', nuevoHasta)
-    router.push(`?${q}`)
+    startTransition(() => {
+      router.push(`?${q}`)
+    })
   }
 
   return (
-    <div className="aq-tarjeta flex flex-wrap items-center gap-2.5 p-4">
+    <div
+      className={`aq-tarjeta flex flex-wrap items-center gap-2.5 p-4 transition-opacity ${
+        isPending ? 'opacity-60' : ''
+      }`}
+      /*
+       * `data-pending` lo lee el estilo global y permite atenuar el control
+       * entero mientras la navegación está en vuelo. Es la misma idea que en
+       * `interactive-apps.md`: ancestros reaccionan por CSS sin coordinación.
+       */
+      data-pending={isPending ? '' : undefined}
+    >
       <div className="flex flex-wrap gap-1.5">
         {ATAJOS.map((atajo) => {
           const [ad, ah] = atajo.rango(hoy)
@@ -75,6 +102,7 @@ export function RangoDeFechas({ desde, hasta }: { desde: string; hasta: string }
               // `aria-pressed` y no una clase: el estado tiene que llegarle a
               // quien no ve el color del botón.
               aria-pressed={activo}
+              disabled={isPending}
               onClick={() => {
                 setD(ad)
                 setH(ah)
@@ -107,6 +135,7 @@ export function RangoDeFechas({ desde, hasta }: { desde: string; hasta: string }
             type="date"
             value={d}
             max={h}
+            disabled={isPending}
             onChange={(e) => setD(e.target.value)}
             className="aq-campo"
           />
@@ -122,6 +151,7 @@ export function RangoDeFechas({ desde, hasta }: { desde: string; hasta: string }
             type="date"
             value={h}
             min={d}
+            disabled={isPending}
             onChange={(e) => setH(e.target.value)}
             className="aq-campo"
           />
@@ -130,10 +160,10 @@ export function RangoDeFechas({ desde, hasta }: { desde: string; hasta: string }
         <button
           type="button"
           onClick={() => navegar(d, h)}
-          disabled={invertido}
+          disabled={invertido || isPending}
           className="aq-boton aq-boton-primario w-full sm:w-auto sm:shrink-0"
         >
-          Consultar
+          {isPending ? 'Actualizando…' : 'Consultar'}
         </button>
       </div>
 

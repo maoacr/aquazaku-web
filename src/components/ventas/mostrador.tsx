@@ -14,22 +14,25 @@ import { Cifra } from '@/components/stock/cifra'
 import type { ClienteElegido, Producto, ResumenDeStock, VentaDelListado } from '@/lib/api-types'
 import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
 import { aaaaMmDdEnLaPlanta, hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
+import { LARGO_MINIMO_MOTIVO } from '@/lib/motivos'
 
 /** Hoy en la planta. Se calcula una vez por carga: nadie deja el mostrador abierto de un día para otro. */
 const HOY = hoyEnLaPlanta()
 
-/** El piso de RN-VEN-14. Espeja `DIAS_MAXIMOS_HACIA_ATRAS` de `api/`, que es quien manda. */
-const HACE_90_DIAS = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(
-  new Date(Date.now() - 90 * 86_400_000),
-)
-
 /**
- * El piso del motivo. Espeja `LARGO_MINIMO_MOTIVO` de `api/`, que es quien manda.
+ * El tope de RN-VEN-14, en días. Espeja `DIAS_MAXIMOS_HACIA_ATRAS` de `api/`,
+ * que es quien manda: esto solo pone el `min` del calendario para no dejar
+ * elegir una fecha que el servidor va a rechazar.
  *
- * Se declara acá por lo mismo que `HACE_90_DIAS`: para poder decir qué falta
- * ANTES del viaje, no para decidir. Quien rechaza sigue siendo el servidor.
+ * Se exporta con nombre para que `constantes-espejo.test.ts` lo pueda fijar: el
+ * problema de una copia no es tenerla, es que nadie se entere cuando el otro
+ * lado cambia.
  */
-const LARGO_MINIMO_MOTIVO = 10
+export const DIAS_MAXIMOS_HACIA_ATRAS = 90
+
+const HACE_90_DIAS = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(
+  new Date(Date.now() - DIAS_MAXIMOS_HACIA_ATRAS * 86_400_000),
+)
 
 const INICIAL: EstadoDeVenta = {}
 

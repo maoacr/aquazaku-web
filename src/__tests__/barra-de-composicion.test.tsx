@@ -39,6 +39,14 @@ describe('las partes suman el todo', () => {
   it('las cuatro partes llenan la barra', () => {
     const { container } = render(<BarraDeComposicion partes={tramos} />)
 
+    /*
+     * El título promete CUATRO, así que el cuerpo las cuenta. Sin esta línea
+     * el test solo afirmaba que los segmentos suman 100%, y eso lo cumple una
+     * barra de tres: el día que alguien recorte un tramo, el test sigue verde
+     * y el nombre queda mintiendo.
+     */
+    expect(segmentos(container)).toHaveLength(4)
+
     const suma = segmentos(container).reduce((a, s) => a + Number.parseFloat(s.style.width), 0)
 
     expect(suma).toBeCloseTo(100, 0)

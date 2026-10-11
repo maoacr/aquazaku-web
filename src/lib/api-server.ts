@@ -52,9 +52,15 @@ export interface ServerUser {
    * Primer login: hay que mandar al usuario a cambiar la contraseña antes de
    * dejarlo entrar (spec §7.2).
    *
-   * TODO(Task 11): el guard de `(app)/layout.tsx` todavía no lo mira, así que
-   * hoy un usuario de primer login entra derecho al dashboard. El redirect
-   * necesita que exista `/change-password`, que la crea Task 11.
+   * Lo mira el guard de `(app)/layout.tsx`, que redirige a `/change-password`
+   * antes de pintar nada. Acá viaja en la sesión para que esa decisión no
+   * necesite un segundo viaje a api/.
+   *
+   * Hasta hoy este comentario decía lo contrario —«el guard todavía no lo
+   * mira, un usuario de primer login entra derecho al dashboard»— y era de
+   * cuando `/change-password` no existía. Una nota que niega un control que SÍ
+   * está es peor que no tener nota: manda a buscar un agujero que no hay, o a
+   * tapar dos veces el mismo.
    */
   mustChangePassword: boolean
 }

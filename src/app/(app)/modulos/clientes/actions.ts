@@ -6,6 +6,7 @@ import type { AvisoDeCruce, Cliente, Departamento, Direccion, Municipio } from '
 import { cuerpoDeError } from '@/lib/form-errors'
 import { type EstadoDeFormulario, exito } from '@/lib/formulario'
 import { type Nombre, nombreParaGuardar } from '@/lib/nombre-de-cliente'
+import { botellon } from '@/lib/palabras'
 
 /**
  * Mutaciones de clientes — M5.
@@ -377,13 +378,10 @@ export async function desactivarClienteAction(
     partes.push(`${basesDevueltas} base${basesDevueltas === 1 ? '' : 's'} devuelta${basesDevueltas === 1 ? '' : 's'} al parque.`)
   }
   if (botellonesDevueltos > 0) {
-    /*
-     * El plural de «botellón» es «botellones»: el acento se pierde, no se
-     * agrega una «es» al singular. Por eso la palabra cambia entera cuando
-     * no es uno, en lugar de sumar un sufijo.
-     */
-    const palabra = botellonesDevueltos === 1 ? 'botellón' : 'botellones'
-    partes.push(`${botellonesDevueltos} ${palabra} devuelto${botellonesDevueltos === 1 ? '' : 's'} a la bodega.`)
+    /* La regla del plural vive en `lib/palabras`: ver por qué, ahí. */
+    partes.push(
+      `${botellonesDevueltos} ${botellon(botellonesDevueltos)} devuelto${botellonesDevueltos === 1 ? '' : 's'} a la bodega.`,
+    )
   }
 
   return exito(partes.join(' '))

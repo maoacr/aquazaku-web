@@ -40,15 +40,21 @@ const METODO: Record<MetodoDeVerificacion, string> = {
 /**
  * La ficha de un cliente.
  *
- * ── Los cuatro saldos NO muestran cero ──────────────────────────────────────
+ * ── Las cuatro cuentas, y de dónde sale cada una ────────────────────────────
  *
  * RN-CLI-06 dice que un cliente tiene cuatro cuentas que no se mezclan: deuda,
- * botellones, bases y cargos pendientes. Las cuatro dependen de módulos que
- * todavía no existen — deuda y cargos son M6, botellones y bases son M7.
+ * botellones, bases y cargos pendientes.
  *
- * Un cero diría «este cliente no debe nada». La verdad es «todavía no existe el
- * módulo que registra deudas», que es otra cosa. Es el mismo criterio que dejó
- * el caudal sin medir en `null` y no en cero.
+ * Las de ACTIVOS —bases y botellones— viajan con la ficha, contadas. Las de
+ * PLATA —deuda y cargos— se piden aparte a `/clientes/:id/deuda`, que exige
+ * `cobros:ver`: la ficha exige `clientes:ver`, y mezclarlas serviría plata bajo
+ * un permiso que no la autoriza (RN-ACC-02). Por eso `cartera` se trae con su
+ * propio `siPuedeVerlo` más abajo y puede venir en `null` por permisos — que es
+ * distinto de «no hay dato».
+ *
+ * Hasta el 10-oct-2026 las cuatro llegaban en `null` con una nota que decía que
+ * M6 y M7 no existían. Ya existían, y ese `null` llegaba hasta el modal de
+ * desactivar, que afirmaba «no tiene bases ni botellones» siempre.
  */
 export default async function FichaDeClientePage({
   params,

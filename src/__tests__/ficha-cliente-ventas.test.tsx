@@ -50,7 +50,7 @@ function cliente(sobrescribe: Partial<FichaDeCliente> = {}): FichaDeCliente {
     updatedAt: '',
     direcciones: [],
     telefonos: [],
-    saldos: { deuda: null, botellones: null, bases: null, cargosPendientes: null },
+    saldos: { bases: 0, botellones: 0 },
     ...sobrescribe,
   }
 }

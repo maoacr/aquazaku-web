@@ -14,6 +14,7 @@ import {
 } from '@/app/(app)/modulos/clientes/actions'
 import { FormError } from '@/components/auth/form-error'
 import { Modal } from '@/components/ui/modal'
+import { botellon } from '@/lib/palabras'
 import { CamposDeDireccion } from './campos-de-direccion'
 import type { Departamento, FichaDeCliente, Municipio, Telefono } from '@/lib/api-types'
 import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
@@ -309,21 +310,24 @@ function FormularioDeDesactivacion({
   /*
    * Los conteos vienen en la ficha — RN-CLI-06.
    *
-   * No se piden al abrir el modal: `FichaDeCliente.saldos.bases` y
-   * `saldos.botellones` ya viajan con la página (se piden en
-   * `clientes/[id]/page.tsx`), y traerlos de nuevo sería un viaje extra
-   * solo para mostrar dos números.
+   * No se piden al abrir el modal: `saldos.bases` y `saldos.botellones` ya
+   * viajan con la página, y traerlos de nuevo sería un viaje extra para
+   * mostrar dos números.
    *
-   * Cuando los módulos que los calculan no están conectados, llegan en
-   * `null`. Mostrar `null` con un guion al lado sería mentir — «0
-   * bases» dice «este cliente no tiene nada», «sin registrar todavía»
-   * dice «todavía no sabemos». La distinción importa porque la
-   * consecuencia es distinta.
+   * ── Son los MISMOS números que la desactivación va a mover ───────────────
+   *
+   * `api/` los calcula con `basesPrestadasA` y `botellonesDe`, que son las
+   * mismas funciones que usa `desactivarCliente` para devolverlos al parque.
+   * Eso es lo que hace que esta pantalla no pueda mentir: lo que se lee y lo
+   * que se ejecuta salen de la misma cuenta.
+   *
+   * Antes llegaban en `null` —el endpoint los mandaba fijos— y el `null` caía
+   * en la rama de «no tiene nada». Decía que no había nada que devolver justo
+   * antes de devolverlo.
    */
   const bases = cliente.saldos.bases
   const botellones = cliente.saldos.botellones
-  const hayAlgoQueVolver =
-    (bases !== null && bases > 0) || (botellones !== null && botellones > 0)
+  const hayAlgoQueVolver = bases > 0 || botellones > 0
 
   return (
     <form action={accion} className="grid gap-4">
@@ -337,16 +341,18 @@ function FormularioDeDesactivacion({
 
       {hayAlgoQueVolver ? (
         <ul className="grid gap-1 rounded-lg border border-sutil p-3 text-[14px] text-secundario">
-          {bases !== null && bases > 0 ? (
+          {bases > 0 ? (
             <li>
               <strong className="text-principal">{bases}</strong> base{bases === 1 ? '' : 's'}
-              {' '}prestad{bases === 1 ? 'a' : 'as'} vuelven al parque y quedan disponibles.
+              {' '}prestad{bases === 1 ? 'a' : 'as'} vuelve{bases === 1 ? '' : 'n'} al parque y
+              quedan disponibles.
             </li>
           ) : null}
-          {botellones !== null && botellones > 0 ? (
+          {botellones > 0 ? (
             <li>
-              <strong className="text-principal">{botellones}</strong> botellón
-              {botellones === 1 ? '' : 'es'} en poder del cliente vuelven a la bodega.
+              <strong className="text-principal">{botellones}</strong>{' '}
+              {botellon(botellones)} en poder del cliente vuelve
+              {botellones === 1 ? '' : 'n'} a la bodega.
             </li>
           ) : null}
         </ul>

@@ -386,19 +386,27 @@ export interface Direccion {
 /**
  * La ficha — `GET /clientes/:id`.
  *
- * Los cuatro saldos de RN-CLI-06 llegan en `null` porque dependen de M6 y M7.
- * `null` y no cero: un cero diría «este cliente no debe nada», y la verdad es
- * «todavía no existe el módulo que registra deudas».
+ * ── Dos saldos acá, dos en otra ruta, y es por permisos ─────────────────────
+ *
+ * RN-CLI-06 nombra cuatro cuentas que no se mezclan. Las de ACTIVOS —bases y
+ * botellones— viajan con la ficha y son números: se cuentan. Las de PLATA
+ * —deuda y cargos pendientes— se piden aparte en `GET /clientes/:id/deuda`,
+ * que exige `cobros:ver` mientras la ficha exige `clientes:ver`.
+ *
+ * Hasta el 10-oct-2026 los cuatro llegaban en `null`, con una nota que decía
+ * que los módulos no existían. Existían. Y el `null` no era inofensivo: el
+ * modal de desactivar lee estos dos y afirmaba «este cliente no tiene bases ni
+ * botellones a su nombre» SIEMPRE, justo antes de devolverlas al parque.
  */
 export interface FichaDeCliente extends Cliente {
   direcciones: Direccion[]
   /** M14: viajan con la ficha — quien abre un cliente para llamarlo ya tiene el número. */
   telefonos: Telefono[]
   saldos: {
-    deuda: number | null
-    botellones: number | null
-    bases: number | null
-    cargosPendientes: number | null
+    /** Prestadas a cualquiera de sus direcciones — RN-BAS-04. */
+    bases: number
+    /** En su poder, fungibles — RN-ENV-04. */
+    botellones: number
   }
 }
 

@@ -2,9 +2,10 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { AvisoDeBases } from '@/components/retornables/aviso-de-bases'
+import { RegistrarCompra } from '@/components/proveedores/proveedores'
 import { DarDeAltaBase, ListaDeBases, PrestarBase } from '@/components/retornables/bases'
 import { darDeAltaBaseAction } from '@/app/(app)/modulos/retornables/actions'
-import type { Base, DisponibilidadDeBases } from '@/lib/api-types'
+import type { Base, DisponibilidadDeBases, Proveedor } from '@/lib/api-types'
 
 vi.mock('@/app/(app)/modulos/retornables/actions', () => ({
   darDeAltaBaseAction: vi.fn(),
@@ -17,6 +18,10 @@ vi.mock('@/app/(app)/modulos/retornables/actions', () => ({
 
 vi.mock('@/app/(app)/modulos/clientes/actions', () => ({
   direccionesDeClienteAction: vi.fn(),
+}))
+
+vi.mock('@/app/(app)/modulos/proveedores/actions', () => ({
+  registrarCompraAction: vi.fn(),
 }))
 
 /**
@@ -183,5 +188,76 @@ describe('el aviso de compra separa los dos parques', () => {
     )
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * La compra a proveedor — el tercer camino de nacimiento de una base.
+ *
+ * Es el que se olvida, y se olvidó: el PR original de `web/` arregló los dos
+ * formularios de Retornables y dejó este afuera. Lo encontró Mao abriendo la
+ * pantalla, no la suite. La línea habría viajado sin tipo y `api` la habría
+ * rechazado con un 422 que nadie entiende.
+ */
+describe('la compra a proveedor pide el tipo cuando la línea trae bases', () => {
+  const proveedores = [{ id: 'prov-1', nombre: 'Plásticos del Caribe', activo: true }] as Proveedor[]
+
+  it('el selector aparece solo al elegir bases', async () => {
+    const usuario = userEvent.setup()
+    render(<RegistrarCompra proveedores={proveedores} insumos={[]} />)
+
+    expect(screen.queryByRole('combobox', { name: /tipo de base/i })).not.toBeInTheDocument()
+
+    await usuario.selectOptions(screen.getByRole('combobox', { name: /qué llegó/i }), 'bases')
+
+    expect(screen.getByRole('combobox', { name: /tipo de base/i })).toBeInTheDocument()
+  })
+
+  /*
+   * Lo que de verdad importa: la línea que viaja. El `input` oculto es
+   * exactamente lo que la acción lee y manda a `api`.
+   */
+  it('el tipo elegido entra en la línea que viaja', async () => {
+    const usuario = userEvent.setup()
+    const { container } = render(<RegistrarCompra proveedores={proveedores} insumos={[]} />)
+
+    await usuario.selectOptions(screen.getByRole('combobox', { name: /proveedor/i }), 'prov-1')
+    await usuario.selectOptions(screen.getByRole('combobox', { name: /qué llegó/i }), 'bases')
+    await usuario.selectOptions(
+      screen.getByRole('combobox', { name: /tipo de base/i }),
+      'dispensador',
+    )
+    await usuario.type(screen.getByRole('spinbutton', { name: /cuántos/i }), '5')
+    await usuario.type(screen.getByLabelText(/costo por unidad/i), '950000')
+
+    const lineas = container.querySelector('input[name="lineas"]') as HTMLInputElement
+
+    expect(JSON.parse(lineas.value)).toEqual([
+      { bases: 5, cantidad: 5, tipoDeBase: 'dispensador', costoUnitario: '950000' },
+    ])
+  })
+
+  /*
+   * Sin el tipo la línea no viaja: `completa` es false y el `input` queda en
+   * `[]`. Mejor que mandar una línea a medias y que `api` la rechace.
+   */
+  it('sin tipo elegido la línea no sale, y la pantalla dice qué falta', async () => {
+    const usuario = userEvent.setup()
+    const { container } = render(<RegistrarCompra proveedores={proveedores} insumos={[]} />)
+
+    await usuario.selectOptions(screen.getByRole('combobox', { name: /proveedor/i }), 'prov-1')
+    await usuario.selectOptions(screen.getByRole('combobox', { name: /qué llegó/i }), 'bases')
+    await usuario.type(screen.getByRole('spinbutton', { name: /cuántos/i }), '5')
+    await usuario.type(screen.getByLabelText(/costo por unidad/i), '950000')
+
+    const lineas = container.querySelector('input[name="lineas"]') as HTMLInputElement
+
+    expect(JSON.parse(lineas.value)).toEqual([])
+    /*
+     * Y lo dice. El botón se deshabilitaba con cuatro condiciones invisibles y
+     * el tipo habría sido la quinta.
+     */
+    expect(screen.getByText(/Falta decir si son estructuras o dispensadores/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /registrar la compra/i })).toBeDisabled()
   })
 })

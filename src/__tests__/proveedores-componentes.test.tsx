@@ -382,12 +382,22 @@ describe('RegistrarCompra — lo que viaja en el campo oculto', () => {
 
     await usuario.selectOptions(screen.getByRole('combobox', { name: /Proveedor/ }), 'prv-1')
     await usuario.selectOptions(screen.getByRole('combobox', { name: /Qué llegó/ }), 'bases')
+    /* Desde RN-BAS-14 la línea de bases no viaja sin el tipo. */
+    await usuario.selectOptions(
+      screen.getByRole('combobox', { name: /Qué tipo de base/ }),
+      'estructura',
+    )
     await usuario.type(screen.getByRole('spinbutton', { name: /Cuántos/ }), '20')
     await usuario.type(screen.getByRole('textbox', { name: /Costo por unidad/ }), '35000')
 
     const [linea] = lineasQueViajan(container) as Record<string, unknown>[]
     expect(linea).not.toHaveProperty('insumoId')
-    expect(linea).toMatchObject({ bases: 20, cantidad: 20, costoUnitario: '35000' })
+    expect(linea).toMatchObject({
+      bases: 20,
+      cantidad: 20,
+      tipoDeBase: 'estructura',
+      costoUnitario: '35000',
+    })
   })
 
   it('el medio de pago también viaja en su campo oculto', async () => {

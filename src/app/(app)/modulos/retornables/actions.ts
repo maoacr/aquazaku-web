@@ -131,7 +131,15 @@ export async function darDeAltaBaseAction(
 ): Promise<EstadoDeFormulario> {
   return enviar(
     '/bases',
-    { idSticker: String(formData.get('idSticker') ?? '').trim() },
+    {
+      idSticker: String(formData.get('idSticker') ?? '').trim(),
+      /*
+       * Va crudo: si el campo viene vacío, `api` responde 422 con el mensaje
+       * del dominio. Poner 'estructura' acá sería el cuarto lugar donde alguien
+       * puede inventar un tipo, y el peor, porque nadie lo vería — RN-BAS-14.
+       */
+      tipo: String(formData.get('tipo') ?? ''),
+    },
     'No pudimos dar de alta la base.',
     (r) => `Base ${r.idSticker} dada de alta.`,
   )
@@ -237,7 +245,7 @@ export async function comprarBasesAction(
   const res = await apiServerFetchRaw('/bases/compra', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cantidad }),
+    body: JSON.stringify({ cantidad, tipo: String(formData.get('tipo') ?? '') }),
   })
 
   if (!res.ok) return { error: await mensajeDeError(res, 'No se pudo registrar la compra de bases.') }

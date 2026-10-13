@@ -594,6 +594,15 @@ export interface UbicacionDeBase {
   clienteNombre: string
 }
 
+/**
+ * De qué tipo es una base — RN-BAS-14.
+ *
+ * Copiado de `api/src/db/schema.ts` (enum `tipo_de_base`), como todo este
+ * archivo. Lo ata el test espejo: si `api/` agrega un tercer tipo y acá no, el
+ * desplegable no lo ofrece y nadie se entera.
+ */
+export type TipoDeBase = 'estructura' | 'dispensador'
+
 export interface Base {
   /**
    * Dónde está, resuelto por `api` con un JOIN.
@@ -606,6 +615,8 @@ export interface Base {
   id: string
   /** El ID impreso en el sticker físico — RN-BAS-10. */
   idSticker: string
+  /** Estructura metálica o dispensador — RN-BAS-14. No cambia nunca. */
+  tipo: TipoDeBase
   estado: EstadoDeBase
   direccionId: string | null
   danadaPor: string | null
@@ -652,8 +663,15 @@ export interface DeudaDeCliente {
   cobros: Cobro[]
 }
 
-/** ¿Alcanzan las bases hasta el próximo pedido? — RN-BAS-13. */
+/**
+ * ¿Alcanzan las bases hasta el próximo pedido? — RN-BAS-13.
+ *
+ * Desde RN-BAS-14 viene UNA POR TIPO: `GET /bases/disponibilidad` devuelve una
+ * lista. Sumar los dos parques haría que veinte estructuras libres tapen que no
+ * queda ningún dispensador.
+ */
 export interface DisponibilidadDeBases {
+  tipo: TipoDeBase
   libres: number
   prestadasEnLaVentana: number
   diasDeEntrega: number

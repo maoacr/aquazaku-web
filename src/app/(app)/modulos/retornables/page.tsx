@@ -44,7 +44,7 @@ export default async function RetornablesPage() {
      * arme igual sin copiar acá la matriz de permisos — RN-ACC-02.
      */
     siPuedeVerlo(apiServerFetch<{ proximo: string }>('/bases/proximo-codigo')),
-    apiServerFetch<DisponibilidadDeBases>('/bases/disponibilidad'),
+    apiServerFetch<DisponibilidadDeBases[]>('/bases/disponibilidad'),
   ])
   const leidoEn = new Date()
 

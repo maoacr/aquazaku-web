@@ -16,10 +16,62 @@ import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
 import { SelectorDeDireccion } from '@/components/retornables/entrega-de-base'
 import { Estado } from '@/components/ui/estado'
 import { Vacio } from '@/components/ui/vacio'
-import type { Base, ClienteElegido } from '@/lib/api-types'
-import { useAvisoDeExito, useLimpiezaAlRegistrar } from '@/lib/formulario-cliente'
+import type { Base, ClienteElegido, TipoDeBase } from '@/lib/api-types'
+import {
+  useAvisoDeExito,
+  useLimpiezaAlRegistrar,
+  useSelectResistenteAlReset,
+} from '@/lib/formulario-cliente'
 
 const INICIAL: EstadoDeFormulario = {}
+
+/** Cómo se lee cada tipo en pantalla — RN-BAS-14. */
+const NOMBRE_DEL_TIPO: Record<TipoDeBase, string> = {
+  estructura: 'Estructura',
+  dispensador: 'Dispensador',
+}
+
+/**
+ * El desplegable del tipo — RN-BAS-14.
+ *
+ * ── Sin opción preseleccionada, y resistente al reset ───────────────────────
+ *
+ * Arranca vacío porque el tipo **no tiene valor por omisión** en ninguna capa:
+ * ni en la base, ni en el servicio, ni acá. Quien registra la base lo sabe —lo
+ * dice la factura— y tiene que decirlo.
+ *
+ * Y va con `useSelectResistenteAlReset` porque todo `<form action>` llama a
+ * `form.reset()` incluso cuando la acción devuelve error. Sin eso, un operario
+ * que eligió «dispensador» y recibió un error de sticker duplicado volvería a
+ * ver el campo vacío —o peor, con el primer valor— y podría reenviar una
+ * estructura metálica sin notarlo. El tipo acompaña a la base hasta su
+ * descarte: ese error no se arregla después.
+ */
+function SelectorDeTipo({ token }: { token?: string }) {
+  const [tipo, setTipo] = useState('')
+  const ref = useSelectResistenteAlReset(tipo)
+
+  /* En éxito sí se limpia: cada registro declara su tipo de nuevo. */
+  useLimpiezaAlRegistrar(token, () => setTipo(''))
+
+  return (
+    <label className="aq-etiqueta-campo">
+      <span>Qué tipo de base</span>
+      <select
+        ref={ref}
+        name="tipo"
+        required
+        defaultValue=""
+        onChange={(e) => setTipo(e.target.value)}
+        className="aq-campo"
+      >
+        <option value="">Elija el tipo</option>
+        <option value="estructura">Estructura metálica</option>
+        <option value="dispensador">Dispensador (agua fría y caliente)</option>
+      </select>
+    </label>
+  )
+}
 
 /**
  * Las bases — el activo que SÍ tiene identidad.
@@ -46,9 +98,17 @@ export function ListaDeBases({ bases }: { bases: Base[] }) {
           <li key={base.id}>
             <article className="aq-tarjeta grid h-full gap-3 p-4">
               <div className="flex items-start justify-between gap-3">
-                <p className="aq-cifra text-[17px] font-semibold text-principal">
-                  {base.idSticker}
-                </p>
+                <div className="grid gap-0.5">
+                  <p className="aq-cifra text-[17px] font-semibold text-principal">
+                    {base.idSticker}
+                  </p>
+                  {/*
+                    El tipo va junto al número y no como insignia aparte: son el
+                    mismo dato de identidad —qué es y cuál es— y quien busca un
+                    dispensador en la lista lo busca de un solo golpe de vista.
+                  */}
+                  <p className="text-[13px] text-tenue">{NOMBRE_DEL_TIPO[base.tipo]}</p>
+                </div>
                 {base.estado === 'danada' ? (
                   <Estado tono="expuesto">Dañada</Estado>
                 ) : direccion ? (
@@ -280,7 +340,14 @@ export function ComprarBases({ proximo }: { proximo: string | null }) {
 
       <FormError id={idError}>{estado.error}</FormError>
 
+      {/*
+        El tipo va ARRIBA de la cantidad, y no es estético: una compra es de un
+        solo tipo (RN-BAS-14), así que es la primera decisión. Una factura con
+        los dos son dos compras.
+      */}
       <div className="flex flex-wrap items-end gap-4">
+        <SelectorDeTipo token={estado.token} />
+
         <label className="aq-etiqueta-campo">
           <span>Cuántas</span>
           <input
@@ -337,6 +404,8 @@ export function DarDeAltaBase({ proximo }: { proximo: string | null }) {
       <FormError id={idError}>{estado.error}</FormError>
 
       <div className="flex flex-wrap items-end gap-4">
+        <SelectorDeTipo token={estado.token} />
+
         <label className="aq-etiqueta-campo">
           <span>ID del sticker</span>
           <input
@@ -404,9 +473,15 @@ export function PrestarBase({ bases }: { bases: Base[] }) {
           <span>Base</span>
           <select name="baseId" required defaultValue="" className="aq-campo">
             <option value="">Elija una</option>
+            {/*
+              El tipo va en la etiqueta de cada opción porque es lo que el
+              cliente pidió: «un dispensador», no «la 0913». Elegir por número
+              a ciegas haría que la base correcta dependa de acordarse de cuál
+              era cuál.
+            */}
             {enBodega.map((b) => (
               <option key={b.id} value={b.id}>
-                {b.idSticker}
+                {b.idSticker} — {NOMBRE_DEL_TIPO[b.tipo]}
               </option>
             ))}
           </select>

@@ -261,10 +261,11 @@ describe('las bases, una por una', () => {
   it('darDeAltaBaseAction() manda el sticker recortado', async () => {
     respondeSiempre(201, { idSticker: '0042' })
 
-    await darDeAltaBaseAction({}, form({ idSticker: '  0042  ' }))
+    await darDeAltaBaseAction({}, form({ idSticker: '  0042  ', tipo: 'estructura' }))
 
     expect(ultimoPedido().url).toBe('/bases')
-    expect(ultimoPedido().body).toEqual({ idSticker: '0042' })
+    /* El tipo viaja desde RN-BAS-14, y sin valor por omisión. */
+    expect(ultimoPedido().body).toEqual({ idSticker: '0042', tipo: 'estructura' })
   })
 
   it('darDeAltaBaseAction() confirma con el sticker que devolvió api/', async () => {
@@ -401,10 +402,11 @@ describe('comprarBasesAction()', () => {
   it('va por POST a la compra de bases', async () => {
     respondeSiempre(201, [{ idSticker: '0041' }, { idSticker: '0042' }])
 
-    await comprarBasesAction({}, form({ cantidad: '2' }))
+    await comprarBasesAction({}, form({ cantidad: '2', tipo: 'dispensador' }))
 
     expect(ultimoPedido().url).toBe('/bases/compra')
-    expect(ultimoPedido().body).toEqual({ cantidad: 2 })
+    /* Una compra es de UN tipo — RN-BAS-14. */
+    expect(ultimoPedido().body).toEqual({ cantidad: 2, tipo: 'dispensador' })
   })
 
   it('con varias dice el rango: de la primera a la última', async () => {

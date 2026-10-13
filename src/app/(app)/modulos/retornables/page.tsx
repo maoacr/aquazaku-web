@@ -107,11 +107,27 @@ export default async function RetornablesPage() {
 
         <PrestarBase bases={bases} />
 
-        <ListaDeBases bases={bases} />
-        <SelloDeHora leidoEn={leidoEn} />
+        {/*
+          ── Los formularios van ANTES de la lista ─────────────────────────────
 
+          El orden de la sección sigue siendo «estado → lo diario → lo
+          ocasional», y comprar y dar de alta siguen siendo lo ocasional. Lo que
+          cambió de lugar es la LISTA, que no es una acción: es una referencia.
+
+          Estaba parada en medio de la pila de acciones, y con cuarenta bases
+          son catorce filas de tarjetas entre «prestar» y «dar de alta». Un
+          formulario al que hay que llegar scrolleando un muro no existe en la
+          práctica: Aquazaku abrió esta pantalla a registrar un dispensador y no
+          encontró dónde.
+
+          Y con dos tipos de base (RN-BAS-14) registrar dejó de ser algo de una
+          sola vez: entra un dispensador cada vez que se compra uno.
+        */}
         <ComprarBases proximo={proximo?.proximo ?? null} />
         <DarDeAltaBase proximo={proximo?.proximo ?? null} />
+
+        <ListaDeBases bases={bases} />
+        <SelloDeHora leidoEn={leidoEn} />
       </section>
     </div>
   )

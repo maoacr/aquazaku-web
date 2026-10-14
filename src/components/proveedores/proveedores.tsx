@@ -12,7 +12,7 @@ import {
 import { FormError } from '@/components/auth/form-error'
 import { Estado } from '@/components/ui/estado'
 import { Vacio } from '@/components/ui/vacio'
-import type { InsumoListado, Proveedor } from '@/lib/api-types'
+import type { InsumoListado, Proveedor, TipoDeBase } from '@/lib/api-types'
 import { useAvisoDeExito } from '@/lib/formulario-cliente'
 
 const INICIAL: EstadoDeFormulario = {}
@@ -139,7 +139,7 @@ export function CrearProveedor() {
 type Renglon =
   | { que: 'insumo'; insumoId: string; cantidad: number; kilos?: number; costoUnitario: string }
   | { que: 'botellones'; cantidad: number; costoUnitario: string }
-  | { que: 'bases'; cantidad: number; costoUnitario: string }
+  | { que: 'bases'; cantidad: number; tipoDeBase: TipoDeBase; costoUnitario: string }
 
 /**
  * Registrar una compra — RN-PRO-05.
@@ -167,6 +167,7 @@ export function RegistrarCompra({
   const [insumoId, setInsumoId] = useState('')
   const [cantidad, setCantidad] = useState(0)
   const [porKilo, setPorKilo] = useState(false)
+  const [tipoDeBase, setTipoDeBase] = useState('')
   const [costoUnitario, setCostoUnitario] = useState('')
 
   useAvisoDeExito(estado)
@@ -182,13 +183,38 @@ export function RegistrarCompra({
           ...(porKilo && { kilos: cantidad }),
           costoUnitario,
         }
-      : { [que]: cantidad, cantidad, costoUnitario }
+      : {
+          [que]: cantidad,
+          cantidad,
+          /*
+           * Una línea que compra bases tiene que decir de qué tipo son
+           * —RN-BAS-14— y una que no, no lo lleva: el esquema de `api` exige
+           * las dos mitades. Un `tipoDeBase` sobre una línea de insumos es un
+           * campo que se acepta y se ignora.
+           */
+          ...(que === 'bases' && { tipoDeBase }),
+          costoUnitario,
+        }
 
-  const completa =
-    proveedorId !== '' &&
-    cantidad > 0 &&
-    costoUnitario !== '' &&
-    (que !== 'insumo' || insumoId !== '')
+  /*
+   * ── Lo que falta se NOMBRA, no solo apaga el botón ─────────────────────────
+   *
+   * El botón ya se deshabilitaba con cuatro condiciones invisibles, y el tipo
+   * de base habría sido la quinta: alguien elige «Bases», llena cantidad y
+   * costo, y el botón sigue apagado sin decir qué le falta.
+   *
+   * El orden es el de la pantalla, así que lo primero que se nombra es lo
+   * primero que se encuentra mirando hacia abajo.
+   */
+  const falta = [
+    proveedorId === '' && 'elegir el proveedor',
+    que === 'insumo' && insumoId === '' && 'elegir cuál insumo',
+    que === 'bases' && tipoDeBase === '' && 'decir si son estructuras o dispensadores',
+    !(cantidad > 0) && 'poner cuántos llegaron',
+    costoUnitario === '' && 'poner el costo unitario',
+  ].filter((x): x is string => typeof x === 'string')
+
+  const completa = falta.length === 0
 
   return (
     <form key={estado.token ?? 'inicial'} action={accion} className="aq-tarjeta grid gap-5 p-5">
@@ -253,6 +279,27 @@ export function RegistrarCompra({
                   {i.nombre}
                 </option>
               ))}
+            </select>
+          </label>
+        ) : null}
+
+        {/*
+          El tipo de base aparece SOLO cuando la línea compra bases, igual que
+          «Cuál» aparece solo para insumos. Arranca vacío porque el tipo no
+          tiene valor por omisión en ninguna capa (RN-BAS-14): el dato lo dice
+          la factura que la persona tiene delante.
+        */}
+        {que === 'bases' ? (
+          <label className="aq-etiqueta-campo min-w-[12rem] flex-1">
+            <span>Qué tipo de base</span>
+            <select
+              value={tipoDeBase}
+              onChange={(e) => setTipoDeBase(e.target.value)}
+              className="aq-campo"
+            >
+              <option value="">Elija el tipo</option>
+              <option value="estructura">Estructura metálica</option>
+              <option value="dispensador">Dispensador (agua fría y caliente)</option>
             </select>
           </label>
         ) : null}
@@ -332,6 +379,10 @@ export function RegistrarCompra({
           Hoy Aquazaku paga todo de contado o por transferencia. Si un proveedor fía, esta compra
           va a aparecer en el aviso de vencidas el día que pase la fecha.
         </p>
+      ) : null}
+
+      {falta.length > 0 ? (
+        <p className="text-[13px] text-tenue">Falta {falta[0]}.</p>
       ) : null}
 
       <button

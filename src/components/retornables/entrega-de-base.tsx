@@ -1,13 +1,10 @@
 'use client'
 
 import { PackagePlus } from 'lucide-react'
-import { useEffect, useId, useRef, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { direccionesDeClienteAction } from '@/app/(app)/modulos/clientes/actions'
-import {
-  type BaseParaPrestar,
-  buscarBaseParaPrestarAction,
-} from '@/app/(app)/modulos/retornables/actions'
-import type { ClienteElegido, Direccion } from '@/lib/api-types'
+import { basesParaEntregarAction } from '@/app/(app)/modulos/retornables/actions'
+import type { Base, ClienteElegido, Direccion, TipoDeBase } from '@/lib/api-types'
 import { useSelectResistenteAlReset } from '@/lib/formulario-cliente'
 
 /**
@@ -194,124 +191,207 @@ export function SelectorDeDireccion({
   )
 }
 
-/**
- * Lo que se sabe del sticker tecleado, consultado al salir del campo.
- *
- * ── Por qué al salir y no al teclear ────────────────────────────────────────
- *
- * Un código de cuatro dígitos pasa por tres estados inválidos antes de estar
- * completo. Consultar en cada tecla pintaría «no figura» tres veces mientras
- * alguien escribe bien — y un aviso que aparece cuando no hay problema es un
- * aviso que se aprende a ignorar.
- *
- * ── La guarda de carrera ────────────────────────────────────────────────────
- *
- * Misma forma que `useDireccionesDe`: la respuesta se guarda CON el código que
- * se consultó, y el aviso se deriva comparándolo con lo que hay escrito ahora.
- * Eso resuelve dos cosas con un solo mecanismo: la respuesta que llega tarde no
- * coincide y no se pinta, y el aviso se borra solo al corregir el número, sin
- * que nadie tenga que limpiarlo.
+/** Cómo se lee cada tipo en pantalla — RN-BAS-14. */
+export const NOMBRE_DEL_TIPO: Record<TipoDeBase, string> = {
+  estructura: 'Estructura',
+  dispensador: 'Dispensador',
+}
+
+/*
+ * El orden en que se ofrecen los tipos es el de declaración del enum, que es
+ * el orden en que aparecieron en el negocio — el mismo criterio que usa
+ * `disponibilidadPorTipo` en `api/`. Se deriva del mapa en vez de repetirse en
+ * un array aparte: una segunda lista de tipos es un segundo lugar donde se
+ * olvida el tercero.
  */
-function useBaseParaPrestar() {
-  const [codigo, setCodigo] = useState('')
-  const [respuesta, setRespuesta] = useState<{ sticker: string; resultado: BaseParaPrestar } | null>(
-    null,
-  )
+const TIPOS_EN_ORDEN = Object.keys(NOMBRE_DEL_TIPO) as TipoDeBase[]
 
-  /*
-   * Sin `useTransition`, a diferencia de `useDireccionesDe`.
-   *
-   * Allá marca un desplegable como cargando; acá no se dibuja ningún estado
-   * pendiente, así que lo único que aportaba era el defecto: React encola las
-   * transiciones, y una consulta lenta dejaba esperando al veredicto del código
-   * siguiente. Con dos stickers en vuelo el aviso del segundo no aparecía hasta
-   * que contestara el primero.
-   */
-  /*
-   * Qué código está esperando respuesta AHORA. No es estado: nadie lo dibuja, y
-   * si lo fuera cada consulta provocaría un render de más.
-   */
-  const pedidoVigente = useRef('')
-
-  const verificar = async () => {
-    const sticker = codigo.trim()
-
-    // Sin código no hay nada que preguntar, y preguntarlo igual gasta un viaje
-    // por cada vez que alguien pasa de largo por el campo.
-    if (!sticker) return
-    if (respuesta?.sticker === sticker) return
-
-    pedidoVigente.current = sticker
-    const resultado = await buscarBaseParaPrestarAction(sticker)
-
-    /*
-     * La respuesta vieja se descarta AL LLEGAR, no al renderizar.
-     *
-     * Derivar el aviso comparando códigos (abajo) parece que alcanzara, y no
-     * alcanza: es el mismo defecto que ya tuvo el desplegable de direcciones.
-     * Si la consulta de un código lento contesta después de la del código
-     * bueno, pisa a la buena en el estado — y entonces el filtro del render
-     * descarta a las DOS, dejando el campo sin ningún aviso. El que cobra
-     * tecleó un código válido y no ve nada.
-     *
-     * Las dos guardas hacen trabajos distintos: esta impide que una respuesta
-     * muerta borre a la viva; la de abajo hace que el aviso pertenezca al
-     * código que está escrito ahora.
-     */
-    if (pedidoVigente.current !== sticker) return
-
-    setRespuesta({ sticker, resultado })
-  }
-
-  const aviso = respuesta?.sticker === codigo.trim() ? respuesta.resultado : null
-
-  return { codigo, setCodigo, verificar, aviso }
+/**
+ * Las bases que se pueden entregar: en la bodega y sanas.
+ *
+ * Vive acá y no en cada formulario porque los dos lugares que prestan una base
+ * —el mostrador y Retornables— tienen que ofrecer exactamente lo mismo. Dos
+ * copias de este filtro se separan el día que `api/` agregue un estado, y la
+ * que quede vieja ofrecería algo que el servidor rechaza.
+ */
+export function basesParaEntregar(bases: Base[]): Base[] {
+  return bases.filter((b) => b.direccionId === null && b.estado === 'sana')
 }
 
 /**
- * El aviso bajo el campo.
+ * Elegir la base: primero QUÉ, después CUÁL — RN-BAS-14.
  *
- * `alert` para lo que va a frenar la venta —un lector de pantalla lo anuncia
- * apenas aparece— y `status` para lo que no. `indeterminado` va en `status` a
- * propósito: no es un rechazo, es que no se pudo averiguar.
+ * ── Por qué el tipo va primero ──────────────────────────────────────────────
+ *
+ * Es la pregunta que hace el negocio. El cliente pide «un dispensador», no «la
+ * 0913», y hasta que eso no se responde el número no significa nada. Con los
+ * dos parques en una sola lista ordenada por número, dar un dispensador obliga
+ * a recorrer cuarenta estructuras leyendo la etiqueta de cada una — y el que
+ * cobra lo hace con el cliente parado enfrente.
+ *
+ * ── Un tipo sin stock no se ofrece ──────────────────────────────────────────
+ *
+ * Mismo criterio que `disponibilidadPorTipo` en `api/`: ofrecer «dispensador»
+ * cuando no queda ninguno libre promete algo que la pantalla siguiente no
+ * puede cumplir. Y si queda UN solo tipo con stock, no se pregunta nada:
+ * preguntar entre una opción es una pregunta que no existe, igual que hace
+ * `SelectorDeDireccion` con la única dirección de un cliente.
+ *
+ * ── Lo elegido se DERIVA, no se sincroniza ──────────────────────────────────
+ *
+ * Al cambiar de tipo, el número elegido antes deja de estar entre las opciones
+ * y por eso deja de valer, sin ningún `useEffect` que lo limpie. Es la guarda
+ * que importa: mandar «0001» habiendo elegido «dispensador» entregaría el
+ * activo equivocado con el papel correcto, y una entrega mal registrada solo
+ * se arregla con el retorno y un segundo préstamo.
  */
-function AvisoDeBase({ aviso }: { aviso: BaseParaPrestar | null }) {
-  if (aviso === null || aviso.estado === 'vacio') return null
+export function SelectorDeBase({
+  bases,
+  name,
+  identificarPor,
+}: {
+  bases: Base[]
+  name: string
+  /**
+   * Qué viaja en el `FormData`, y lo decide `api/`.
+   *
+   * La venta busca la base por el STICKER —«en el mostrador nadie conoce el
+   * uuid»— y el préstamo de Retornables por el id. El desplegable es el mismo;
+   * lo que manda, no.
+   */
+  identificarPor: 'id' | 'idSticker'
+}) {
+  const disponibles = basesParaEntregar(bases)
+  const tiposConStock = TIPOS_EN_ORDEN.filter((t) => disponibles.some((b) => b.tipo === t))
 
-  if (aviso.estado === 'disponible') {
-    return (
-      <p role="status" className="text-[13px] text-exito-texto">
-        Base {aviso.idSticker}: en bodega, lista para salir.
-      </p>
-    )
-  }
+  const [tipoElegido, setTipoElegido] = useState('')
+  const [baseElegida, setBaseElegida] = useState('')
 
-  if (aviso.estado === 'indeterminado') {
-    return (
-      <p role="status" className="text-[13px] text-tenue">
-        No pudimos verificar el código ahora. Puede cobrar igual: se valida al registrar la
-        venta.
-      </p>
-    )
-  }
+  /* Con un solo tipo en bodega, ES ese: no hay nada que preguntar. */
+  const tipo = tiposConStock.length === 1 ? tiposConStock[0]! : tipoElegido
+
+  const delTipo = disponibles.filter((b) => b.tipo === tipo)
+
+  /*
+   * Misma derivación que `SelectorDeDireccion`: con una sola opción es esa —y
+   * sin opción vacía, así que es también lo que viaja en el `FormData`—; con
+   * varias, lo elegido; y vacío mientras no haya nada.
+   */
+  const valor = delTipo.some((b) => b[identificarPor] === baseElegida)
+    ? baseElegida
+    : delTipo.length === 1
+      ? delTipo[0]![identificarPor]
+      : ''
+
+  /* El reset de React al terminar la acción borraría los dos. Ver el hook. */
+  const refTipo = useSelectResistenteAlReset(tipo)
+  const refBase = useSelectResistenteAlReset(valor)
+
+  /*
+   * Sin ninguna base libre no se dibuja nada. Quien decide qué decir en ese
+   * caso es el formulario: en Retornables la tarjeta entera desaparece, y en
+   * el mostrador hay un texto que explica dónde mirar.
+   */
+  if (disponibles.length === 0) return null
 
   return (
-    <p role="alert" className="text-[13px] text-error-texto">
-      {aviso.estado === 'prestada' &&
-        `La base ${aviso.idSticker} figura prestada a ${aviso.clienteNombre} (${aviso.etiqueta}). Registre el retorno primero: una base está en un solo lugar.`}
-      {aviso.estado === 'danada' &&
-        `La base ${aviso.idSticker} está marcada como dañada. Prestarla haría que el próximo cliente responda por un daño que ya se cobró.`}
-      {aviso.estado === 'desconocida' &&
-        `Ninguna base disponible tiene el código ${aviso.sticker}. Puede no existir, o estar dada de baja.`}
-    </p>
+    <>
+      {tiposConStock.length > 1 ? (
+        <label className="aq-etiqueta-campo">
+          <span>Qué tipo de base</span>
+          <select
+            ref={refTipo}
+            value={tipoElegido}
+            onChange={(e) => setTipoElegido(e.target.value)}
+            className="aq-campo"
+          >
+            <option value="">Elija el tipo</option>
+            {tiposConStock.map((t) => (
+              <option key={t} value={t}>
+                {NOMBRE_DEL_TIPO[t]}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
+      {/*
+        El número no se pregunta antes que el tipo. Mostrar el desplegable
+        vacío o deshabilitado sería pedir que se adivine el orden; no estando,
+        el orden es el único que hay.
+      */}
+      {tipo ? (
+        <label className="aq-etiqueta-campo">
+          <span>Cuál base</span>
+          <select
+            ref={refBase}
+            name={name}
+            required
+            value={valor}
+            onChange={(e) => setBaseElegida(e.target.value)}
+            className="aq-campo aq-cifra"
+          >
+            {delTipo.length === 1 ? null : <option value="">Elija una</option>}
+            {/*
+              Solo el número: el tipo ya se respondió arriba, y repetirlo en
+              cada una de las cuarenta opciones es ruido que se aprende a
+              saltear.
+            */}
+            {delTipo.map((b) => (
+              <option key={b.id} value={b[identificarPor]}>
+                {b.idSticker}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+    </>
   )
+}
+
+/**
+ * El parque, pedido al ABRIR el panel.
+ *
+ * ── Por qué no se trae con la pantalla ──────────────────────────────────────
+ *
+ * Mismo criterio que `useDireccionesDe`: la mayoría de las ventas no se llevan
+ * ninguna base, y pedir el parque en cada carga del mostrador es pagar en
+ * todas por lo que pasa en pocas. A diferencia de las direcciones, esto no
+ * depende de quién sea el cliente, así que se pide una vez por apertura.
+ *
+ * ── Tres estados, no dos ────────────────────────────────────────────────────
+ *
+ * `null` mientras no se sabe —pidiendo, o falló— y la lista cuando se sabe.
+ * Confundir «no pude averiguar» con «no hay» dejaría ir al cliente sin una
+ * base que sí está en la bodega, así que quien dibuja los distingue.
+ */
+function useBasesParaEntregar(abierto: boolean) {
+  const [parque, setParque] = useState<Base[] | null>(null)
+  const [cargando, empezarCarga] = useTransition()
+
+  useEffect(() => {
+    if (!abierto) return
+
+    /* Misma guarda que en `useDireccionesDe`: la tardía no pisa a la buena. */
+    let vigente = true
+
+    empezarCarga(async () => {
+      const bases = await basesParaEntregarAction()
+      if (vigente) setParque(bases)
+    })
+
+    return () => {
+      vigente = false
+    }
+  }, [abierto])
+
+  return { parque, cargando }
 }
 
 export function EntregaDeBase({ cliente }: { cliente: ClienteElegido | null }) {
-  const idSticker = useId()
   const [abierto, setAbierto] = useState(false)
   const { direcciones, cargando } = useDireccionesDe(cliente)
-  const { codigo, setCodigo, verificar, aviso } = useBaseParaPrestar()
+  const { parque, cargando: cargandoParque } = useBasesParaEntregar(abierto)
 
   // Sin cliente no hay a quién prestarle: RN-BAS-03 no tiene dónde apuntar.
   if (!cliente) return null
@@ -359,36 +439,32 @@ export function EntregaDeBase({ cliente }: { cliente: ClienteElegido | null }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="aq-etiqueta-campo">
-          <span>Código de la base</span>
-          {/*
-            Se escribe el STICKER, no se elige de una lista.
+        {/*
+          Primero el tipo, después el número — RN-BAS-14.
 
-            El número está pegado en la base que la persona tiene en la mano, y
-            teclear cuatro dígitos es más rápido que buscar en un desplegable de
-            cuarenta. Si el código no existe, `api/` lo dice con el número que
-            se buscó — el error más probable es un dedazo.
-          */}
-          <input
-            id={idSticker}
-            name="baseSticker"
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="0042"
-            className="aq-campo aq-cifra"
-            value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
-            /*
-              Al salir del campo se consulta qué se sabe de ese sticker. Es una
-              PISTA: la validación de verdad vive en `api/`, que rechaza la base
-              inexistente, la dada de baja, la dañada y la prestada dentro de la
-              transacción de la venta. Acá solo se adelanta el veredicto para que
-              un dedazo no tumbe una venta ya cargada.
-            */
-            onBlur={verificar}
-          />
-          <AvisoDeBase aviso={aviso} />
-        </label>
+          Acá se TECLEABA el sticker, con un argumento que era cierto con un
+          solo tipo de base: el número está pegado en la que la persona tiene
+          en la mano. Con dos parques dejó de alcanzar — el cliente pide «un
+          dispensador» y quien cobra no sabe cuál de las cuarenta lo es.
+
+          Es el MISMO componente que Retornables: los dos lugares que prestan
+          una base ofrecen exactamente lo mismo, y el filtro de qué se puede
+          entregar vive una sola vez.
+        */}
+        {parque === null ? (
+          cargandoParque ? null : (
+            <p role="status" className="text-[13px] text-tenue">
+              No pudimos traer las bases ahora. Puede cobrar la venta sin base y registrar
+              la entrega desde Retornables.
+            </p>
+          )
+        ) : basesParaEntregar(parque).length === 0 ? (
+          <p role="status" className="text-[13px] text-alerta-texto">
+            No hay ninguna base en la bodega: están todas prestadas o dañadas.
+          </p>
+        ) : (
+          <SelectorDeBase bases={parque} name="baseSticker" identificarPor="idSticker" />
+        )}
 
         <SelectorDeDireccion cliente={cliente} name="baseDireccionId" />
       </div>

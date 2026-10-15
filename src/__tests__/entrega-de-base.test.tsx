@@ -1,20 +1,19 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { UserEvent } from '@testing-library/user-event'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EntregaDeBase, SelectorDeDireccion } from '@/components/retornables/entrega-de-base'
-import type { Cliente, Direccion } from '@/lib/api-types'
+import type { Base, Cliente, Direccion } from '@/lib/api-types'
 
 const direccionesDeClienteAction = vi.fn()
-const buscarBaseParaPrestarAction = vi.fn()
+const basesParaEntregarAction = vi.fn()
 
 vi.mock('@/app/(app)/modulos/clientes/actions', () => ({
   direccionesDeClienteAction: (id: string) => direccionesDeClienteAction(id),
 }))
 
 vi.mock('@/app/(app)/modulos/retornables/actions', () => ({
-  buscarBaseParaPrestarAction: (sticker: string) => buscarBaseParaPrestarAction(sticker),
+  basesParaEntregarAction: () => basesParaEntregarAction(),
 }))
 
 /**
@@ -36,11 +35,24 @@ const cliente = (id: string, nombre: string): Cliente => ({ id, nombre }) as Cli
 const direccion = (id: string, etiqueta: string): Direccion =>
   ({ id, etiqueta, legible: 'CL 30 # 12 - 45' }) as Direccion
 
+const base = (id: string, idSticker: string, tipo: Base['tipo']): Base =>
+  ({
+    id,
+    idSticker,
+    tipo,
+    estado: 'sana',
+    direccionId: null,
+    ubicacion: null,
+    activa: true,
+  }) as Base
+
+const UNA_DE_CADA = [base('b-1', '0001', 'estructura'), base('b-3', '0051', 'dispensador')]
+
 beforeEach(() => {
   direccionesDeClienteAction.mockReset()
   direccionesDeClienteAction.mockResolvedValue([])
-  buscarBaseParaPrestarAction.mockReset()
-  buscarBaseParaPrestarAction.mockResolvedValue({ estado: 'vacio' })
+  basesParaEntregarAction.mockReset()
+  basesParaEntregarAction.mockResolvedValue([])
 })
 
 describe('sin cliente no hay base', () => {
@@ -58,16 +70,22 @@ describe('sin cliente no hay base', () => {
 })
 
 describe('con cliente', () => {
-  it('se abre y pide el código del sticker, no una lista', async () => {
+  /*
+   * Acá se TECLEABA el sticker, y el argumento era bueno con un solo tipo de
+   * base: el número está pegado en la que la persona tiene en la mano. Con dos
+   * parques dejó de alcanzar — el cliente pide «un dispensador» y quien cobra
+   * no sabe cuál de las cuarenta lo es.
+   */
+  it('se abre y pregunta el TIPO antes que el número', async () => {
     const usuario = userEvent.setup()
     direccionesDeClienteAction.mockResolvedValue([direccion('d1', 'La casa')])
+    basesParaEntregarAction.mockResolvedValue(UNA_DE_CADA)
 
     render(<EntregaDeBase cliente={cliente('c1', 'Rosa Padilla')} />)
     await usuario.click(screen.getByRole('button', { name: /Se lleva una base/ }))
 
-    const sticker = await screen.findByRole('textbox', { name: /Código de la base/ })
-    expect(sticker).toHaveAttribute('name', 'baseSticker')
-    expect(screen.queryByRole('combobox', { name: /Código de la base/ })).toBeNull()
+    expect(await screen.findByLabelText('Qué tipo de base')).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: /Código de la base/ })).toBeNull()
   })
 
   /**
@@ -190,172 +208,56 @@ describe('respuestas que llegan tarde', () => {
 })
 
 /**
- * ── El aviso del código, antes de cobrar — RN-BAS-03 ────────────────────────
+ * ── Qué se ofrece, y qué se dice cuando no hay nada que ofrecer ─────────────
  *
- * `api/` ya rechaza la base inexistente, la dada de baja, la dañada y la que
- * figura en otra dirección. El problema no era que se colara ninguna: es que el
- * rechazo llegaba al COBRAR, y tumbaba la venta entera —productos, medio de
- * pago, descuento— por un dedazo en un campo opcional de cuatro dígitos.
- *
- * Lo que se vigila acá es que el aviso aparezca al salir del campo, que nombre
- * el problema concreto, y —lo más importante— que un fallo de la consulta no se
- * disfrace ni de verde ni de rojo.
+ * El desplegable reemplazó al campo de teclear, así que el parque hay que
+ * PEDIRLO. Eso trae dos estados que antes no existían, y confundirlos cuesta
+ * plata: «no pude averiguar» no es «no hay». Si un fallo de red se dibujara
+ * como bodega vacía, quien cobra dejaría ir al cliente sin la base que está
+ * ahí — y la venta ya no se corrige, se anula.
  */
-describe('el aviso del código de base', () => {
-  /** Abre el bloque y devuelve el campo junto al `userEvent` que lo maneja. */
-  async function abrir(): Promise<{ usuario: UserEvent; campo: HTMLElement }> {
+describe('el parque que alimenta el desplegable', () => {
+  it('no se pide hasta abrir el panel: la mayoría de las ventas no llevan base', () => {
+    render(<EntregaDeBase cliente={cliente('c1', 'Rosa Padilla')} />)
+
+    expect(basesParaEntregarAction).not.toHaveBeenCalled()
+  })
+
+  it('lo que viaja es el sticker, que es lo que api espera', async () => {
     const usuario = userEvent.setup()
     direccionesDeClienteAction.mockResolvedValue([direccion('d1', 'La casa')])
+    basesParaEntregarAction.mockResolvedValue(UNA_DE_CADA)
 
     render(<EntregaDeBase cliente={cliente('c1', 'Rosa Padilla')} />)
     await usuario.click(screen.getByRole('button', { name: /Se lleva una base/ }))
 
-    return { usuario, campo: await screen.findByRole('textbox', { name: /Código de la base/ }) }
-  }
+    await usuario.selectOptions(await screen.findByLabelText('Qué tipo de base'), 'dispensador')
+    const select = screen.getByLabelText('Cuál base') as HTMLSelectElement
 
-  async function escribirYSalir(valor: string): Promise<void> {
-    const { usuario, campo } = await abrir()
-
-    await usuario.type(campo, valor)
-    await usuario.tab()
-  }
-
-  it('consulta al salir del campo, no en cada tecla', async () => {
-    buscarBaseParaPrestarAction.mockResolvedValue({ estado: 'disponible', idSticker: '0042' })
-
-    await escribirYSalir('0042')
-
-    expect(buscarBaseParaPrestarAction).toHaveBeenCalledTimes(1)
-    expect(buscarBaseParaPrestarAction).toHaveBeenCalledWith('0042')
+    expect(select.name).toBe('baseSticker')
+    expect(select.value).toBe('0051')
   })
 
-  it('confirma la que está en bodega, con su número', async () => {
-    buscarBaseParaPrestarAction.mockResolvedValue({ estado: 'disponible', idSticker: '0042' })
+  it('si la consulta falla lo dice, y NO afirma que la bodega está vacía', async () => {
+    const usuario = userEvent.setup()
+    direccionesDeClienteAction.mockResolvedValue([direccion('d1', 'La casa')])
+    basesParaEntregarAction.mockResolvedValue(null)
 
-    await escribirYSalir('0042')
+    render(<EntregaDeBase cliente={cliente('c1', 'Rosa Padilla')} />)
+    await usuario.click(screen.getByRole('button', { name: /Se lleva una base/ }))
 
-    expect(await screen.findByText(/0042/)).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent(/bodega/i)
+    expect(await screen.findByText(/No pudimos traer las bases/)).toBeInTheDocument()
+    expect(screen.queryByText(/están todas prestadas/)).toBeNull()
   })
 
-  /**
-   * «Está prestada» no sirve: lo que hace falta es a QUIÉN, porque una base se
-   * reclama yendo al lugar donde el sistema dice que está.
-   */
-  it('con una prestada, nombra a quién la tiene y dónde', async () => {
-    buscarBaseParaPrestarAction.mockResolvedValue({
-      estado: 'prestada',
-      idSticker: '0042',
-      clienteNombre: 'Juan Pérez',
-      etiqueta: 'La casa',
-    })
+  it('con la bodega vacía de verdad, lo dice con todas las letras', async () => {
+    const usuario = userEvent.setup()
+    direccionesDeClienteAction.mockResolvedValue([direccion('d1', 'La casa')])
+    basesParaEntregarAction.mockResolvedValue([])
 
-    await escribirYSalir('0042')
+    render(<EntregaDeBase cliente={cliente('c1', 'Rosa Padilla')} />)
+    await usuario.click(screen.getByRole('button', { name: /Se lleva una base/ }))
 
-    const aviso = await screen.findByRole('alert')
-    expect(aviso).toHaveTextContent(/Juan Pérez/)
-    expect(aviso).toHaveTextContent(/La casa/)
-  })
-
-  it('con una dañada, lo dice', async () => {
-    buscarBaseParaPrestarAction.mockResolvedValue({ estado: 'danada', idSticker: '0042' })
-
-    await escribirYSalir('0042')
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(/dañada/i)
-  })
-
-  /**
-   * El código inventado y el dado de baja son el mismo caso desde la pantalla:
-   * `GET /bases` solo devuelve activas. El mensaje no puede afirmar cuál es.
-   */
-  it('con un código que no figura, lo dice sin inventar el motivo', async () => {
-    buscarBaseParaPrestarAction.mockResolvedValue({ estado: 'desconocida', sticker: '9999' })
-
-    await escribirYSalir('9999')
-
-    const aviso = await screen.findByRole('alert')
-    expect(aviso).toHaveTextContent(/9999/)
-    expect(aviso).toHaveTextContent(/baja/i)
-  })
-
-  /**
-   * El test que justifica el estado `indeterminado`.
-   *
-   * Un rojo acusaría a un código que puede estar perfecto; un verde mandaría a
-   * cobrar una venta que va a rebotar igual. Ninguna de las dos.
-   */
-  it('si la consulta falla, no acusa al código ni lo aprueba', async () => {
-    buscarBaseParaPrestarAction.mockResolvedValue({ estado: 'indeterminado' })
-
-    await escribirYSalir('0042')
-
-    const aviso = await screen.findByRole('status')
-    expect(aviso).toHaveTextContent(/no pudimos verificar/i)
-    expect(screen.queryByRole('alert')).toBeNull()
-  })
-
-  it('con el campo vacío no molesta al servidor', async () => {
-    const { usuario, campo } = await abrir()
-
-    await usuario.click(campo)
-    await usuario.tab()
-
-    expect(buscarBaseParaPrestarAction).not.toHaveBeenCalled()
-    expect(screen.queryByRole('alert')).toBeNull()
-  })
-
-  /**
-   * El aviso pertenece al código que se consultó, no al campo.
-   *
-   * Si se queda pegado mientras se corrige el número, señala un problema que ya
-   * no existe — y el siguiente paso es ignorarlo siempre.
-   */
-  it('el aviso se va al corregir el número', async () => {
-    buscarBaseParaPrestarAction.mockResolvedValue({ estado: 'desconocida', sticker: '9999' })
-
-    const { usuario, campo } = await abrir()
-    await usuario.type(campo, '9999')
-    await usuario.tab()
-    await screen.findByRole('alert')
-
-    await usuario.type(campo, '8')
-
-    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
-  })
-
-  /**
-   * ── La guarda de carrera, otra vez ──────────────────────────────────────
-   *
-   * Mismo mecanismo que `useDireccionesDe`: la respuesta se guarda CON el
-   * código que se consultó y el aviso se deriva comparándolo. Una respuesta
-   * vieja que llega tarde no coincide, y no se pinta.
-   */
-  it('la respuesta de un código viejo no se pinta sobre el nuevo', async () => {
-    let resolverVieja!: (r: unknown) => void
-    buscarBaseParaPrestarAction.mockImplementation((sticker: string) =>
-      sticker === '9999'
-        ? new Promise((r) => {
-            resolverVieja = r
-          })
-        : Promise.resolve({ estado: 'disponible', idSticker: '0042' }),
-    )
-
-    const { usuario, campo } = await abrir()
-    await usuario.type(campo, '9999')
-    await usuario.tab()
-    await waitFor(() => expect(buscarBaseParaPrestarAction).toHaveBeenCalledWith('9999'))
-
-    await usuario.clear(campo)
-    await usuario.type(campo, '0042')
-    await usuario.tab()
-    await screen.findByRole('status')
-
-    // Recién ahora contesta la vieja, con el veredicto del código que ya no está.
-    resolverVieja({ estado: 'desconocida', sticker: '9999' })
-    await new Promise((r) => setTimeout(r, 50))
-
-    expect(screen.queryByRole('alert')).toBeNull()
-    expect(screen.getByRole('status')).toHaveTextContent(/bodega/i)
+    expect(await screen.findByText(/están todas prestadas o dañadas/)).toBeInTheDocument()
   })
 })

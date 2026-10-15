@@ -13,10 +13,15 @@ import {
 } from '@/app/(app)/modulos/retornables/actions'
 import { FormError } from '@/components/auth/form-error'
 import { BuscadorDeCliente } from '@/components/clientes/buscador-de-cliente'
-import { SelectorDeDireccion } from '@/components/retornables/entrega-de-base'
+import {
+  basesParaEntregar,
+  NOMBRE_DEL_TIPO,
+  SelectorDeBase,
+  SelectorDeDireccion,
+} from '@/components/retornables/entrega-de-base'
 import { Estado } from '@/components/ui/estado'
 import { Vacio } from '@/components/ui/vacio'
-import type { Base, ClienteElegido, TipoDeBase } from '@/lib/api-types'
+import type { Base, ClienteElegido } from '@/lib/api-types'
 import {
   useAvisoDeExito,
   useLimpiezaAlRegistrar,
@@ -24,12 +29,6 @@ import {
 } from '@/lib/formulario-cliente'
 
 const INICIAL: EstadoDeFormulario = {}
-
-/** Cómo se lee cada tipo en pantalla — RN-BAS-14. */
-const NOMBRE_DEL_TIPO: Record<TipoDeBase, string> = {
-  estructura: 'Estructura',
-  dispensador: 'Dispensador',
-}
 
 /**
  * El desplegable del tipo — RN-BAS-14.
@@ -452,7 +451,7 @@ export function PrestarBase({ bases }: { bases: Base[] }) {
   useAvisoDeExito(estado)
   useLimpiezaAlRegistrar(estado.token, () => setCliente(null))
 
-  const enBodega = bases.filter((b) => b.direccionId === null && b.estado === 'sana')
+  const enBodega = basesParaEntregar(bases)
 
   if (enBodega.length === 0) return null
 
@@ -469,23 +468,17 @@ export function PrestarBase({ bases }: { bases: Base[] }) {
       <FormError id={idError}>{estado.error}</FormError>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="aq-etiqueta-campo">
-          <span>Base</span>
-          <select name="baseId" required defaultValue="" className="aq-campo">
-            <option value="">Elija una</option>
-            {/*
-              El tipo va en la etiqueta de cada opción porque es lo que el
-              cliente pidió: «un dispensador», no «la 0913». Elegir por número
-              a ciegas haría que la base correcta dependa de acordarse de cuál
-              era cuál.
-            */}
-            {enBodega.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.idSticker} — {NOMBRE_DEL_TIPO[b.tipo]}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/*
+          Primero el tipo, después el número — RN-BAS-14.
+
+          El cliente pide «un dispensador», no «la 0913». Mezclar los dos
+          parques en una lista ordenada por número obliga a recorrer cuarenta
+          estructuras leyendo la etiqueta de cada una.
+
+          Es el MISMO componente que usa el mostrador: los dos lugares que
+          prestan una base tienen que ofrecer exactamente lo mismo.
+        */}
+        <SelectorDeBase bases={bases} name="baseId" identificarPor="id" />
 
       </div>
 

@@ -117,20 +117,28 @@ describe('la lista dice de qué tipo es cada base', () => {
   })
 })
 
-describe('el desplegable de prestar dice el tipo de cada base', () => {
+describe('el desplegable de prestar pregunta el tipo antes que el número', () => {
   /*
-   * El cliente pide «un dispensador», no «la 0913». Sin el tipo en la opción,
-   * elegir bien depende de acordarse de cuál era cuál.
+   * El cliente pide «un dispensador», no «la 0913».
+   *
+   * Antes el tipo viajaba como etiqueta de cada opción y los dos parques
+   * convivían en una sola lista ordenada por número: para dar un dispensador
+   * había que recorrer cuarenta estructuras leyendo una por una. Ahora el tipo
+   * es la PRIMERA pregunta y la lista de números ya viene filtrada.
+   *
+   * Acá se comprueba que la pantalla de Retornables usa ese orden; el detalle
+   * del mecanismo vive en `eleccion-de-base-por-tipo.test.tsx`.
    */
-  it('cada opción lleva el número y el tipo', () => {
+  it('ofrece los dos tipos presentes, y todavía ningún número', () => {
     render(
       <PrestarBase
         bases={[base('b-1', '0001', 'estructura'), base('b-2', '0002', 'dispensador')]}
       />,
     )
 
-    expect(screen.getByRole('option', { name: '0002 — Dispensador' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: '0001 — Estructura' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Dispensador' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Estructura' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: '0002' })).not.toBeInTheDocument()
   })
 })
 

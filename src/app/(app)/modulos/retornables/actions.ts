@@ -264,91 +264,37 @@ export async function comprarBasesAction(
 }
 
 /**
- * Qué se sabe de un sticker ANTES de cobrar — RN-BAS-03.
+ * El parque activo, para elegir una base en el mostrador — RN-BAS-03.
  *
- * `vacio` e `indeterminado` no son estados de la base: son estados de la
- * averiguación. Se distinguen a propósito de `desconocida`, que sí es una
- * afirmación sobre el parque.
- */
-export type BaseParaPrestar =
-  | { estado: 'disponible'; idSticker: string }
-  | { estado: 'prestada'; idSticker: string; clienteNombre: string; etiqueta: string }
-  | { estado: 'danada'; idSticker: string }
-  | { estado: 'desconocida'; sticker: string }
-  | { estado: 'vacio' }
-  | { estado: 'indeterminado' }
-
-/**
- * El aviso temprano del código de base — RN-BAS-03.
+ * ── Por qué el mostrador las pide y Retornables no ──────────────────────────
  *
- * ── Esto NO es la validación ────────────────────────────────────────────────
+ * La pantalla de Retornables ya trae el parque entero para dibujar la lista,
+ * así que su desplegable se arma con lo que ya tiene en la mano. El mostrador
+ * no: la mayoría de las ventas no se llevan ninguna base, y traerlas en cada
+ * carga sería pagar en todas por lo que pasa en pocas. Se piden al ABRIR el
+ * panel, igual que las direcciones se piden del cliente ya elegido.
  *
- * La barrera sigue siendo `api/`: `basePorSticker` y `prestarBaseEn` rechazan
- * la base inexistente, la descartada, la dañada y la que figura en otra
- * dirección, y lo hacen dentro de la transacción de la venta. Acá no se decide
- * nada — se adelanta lo que `api/` va a contestar.
- *
- * ── Por qué vale la pena adelantarlo ────────────────────────────────────────
- *
- * Sin esto, un dedazo en un campo OPCIONAL de cuatro dígitos rebota la venta
- * entera: los productos, el medio de pago y el descuento que ya se cargaron,
- * con el cliente parado enfrente. El costo del error no guarda ninguna relación
- * con su tamaño.
- *
- * ── Por qué la lista entera y no un endpoint nuevo ──────────────────────────
+ * ── Por qué la lista entera y no un endpoint de «disponibles» ───────────────
  *
  * `GET /bases` ya devuelve el parque activo con su ubicación resuelta por el
- * JOIN, y son decenas de filas: 0,8 ms medidos para 38. Un endpoint por sticker
- * sería superficie nueva para preguntar lo mismo. Además el rol `seller` ya
- * tiene `bases:ver`, así que no abre ningún permiso.
+ * JOIN, y son decenas de filas: 0,8 ms medidos para 38. Un endpoint nuevo
+ * sería superficie para preguntar lo mismo, y pondría el filtro de «qué se
+ * puede entregar» en un segundo lugar — el día que difieran, el mostrador y
+ * Retornables ofrecerían cosas distintas. El filtro vive en
+ * `basesParaEntregar`, una sola vez. Además el rol `seller` ya tiene
+ * `bases:ver`, así que esto no abre ningún permiso.
+ *
+ * ── `null` no es «no hay» ───────────────────────────────────────────────────
+ *
+ * Devolver la lista vacía cuando la consulta FALLA afirmaría que la bodega
+ * está vacía, y quien cobra dejaría ir al cliente sin la base que sí existe.
+ * `null` dice que no se pudo averiguar, que es otra cosa y se cuenta distinto.
+ * El error ya quedó en el log con su `x-request-id`.
  */
-export async function buscarBaseParaPrestarAction(sticker: string): Promise<BaseParaPrestar> {
-  const codigo = sticker.trim()
-
-  if (!codigo) return { estado: 'vacio' }
-
-  let parque: Base[]
-
+export async function basesParaEntregarAction(): Promise<Base[] | null> {
   try {
-    parque = await apiServerFetch<Base[]>('/bases')
+    return await apiServerFetch<Base[]>('/bases')
   } catch {
-    /*
-     * Ni `disponible` ni `desconocida`: las dos mentirían.
-     *
-     * Un verde falso manda a cobrar una venta que va a rebotar igual, y un rojo
-     * falso acusa a un código que puede estar perfecto. El error queda en el
-     * log con su `x-request-id`; acá se dice que no se pudo averiguar y quien
-     * cobra decide.
-     */
-    return { estado: 'indeterminado' }
+    return null
   }
-
-  const base = parque.find((b) => b.idSticker === codigo)
-
-  /*
-   * `GET /bases` filtra `activa = true`: una base dada de baja no está en la
-   * lista, igual que un código inventado. Desde acá son indistinguibles, y el
-   * mensaje los cubre a los dos en vez de afirmar cuál es.
-   */
-  if (!base) return { estado: 'desconocida', sticker: codigo }
-
-  /*
-   * El orden es el de `prestarBaseEn`: primero dónde está, después cómo está.
-   *
-   * Invertirlo haría que el campo diga «dañada» y que `api/` conteste «prestada
-   * en otra dirección» para la misma base — dos diagnósticos para un solo
-   * problema, y ninguna forma de saber a cuál hacerle caso.
-   */
-  if (base.ubicacion !== null) {
-    return {
-      estado: 'prestada',
-      idSticker: base.idSticker,
-      clienteNombre: base.ubicacion.clienteNombre,
-      etiqueta: base.ubicacion.etiqueta,
-    }
-  }
-
-  if (base.estado === 'danada') return { estado: 'danada', idSticker: base.idSticker }
-
-  return { estado: 'disponible', idSticker: base.idSticker }
 }

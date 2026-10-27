@@ -34,6 +34,8 @@ const UBICACION = {
   legible: 'CL 30 # 12 - 45, Campo de la Cruz',
   clienteId: 'cli-1',
   clienteNombre: 'Panadería del Centro',
+  clienteApodo: null,
+  clienteDocumento: null,
 }
 
 const base = (extra: Partial<Base> = {}): Base =>
@@ -106,12 +108,13 @@ describe('el historial', () => {
 
 describe('dónde está la base', () => {
   /*
-   * La DIRECCIÓN, no el cliente. La pregunta que se hace quien sale con la moto
-   * es «¿a cuál de sus tres locales voy a buscar la 0913?» — RN-BAS-03.
+   * El cliente y la etiqueta de la dirección. Quien sale con la moto necesita
+   * saber de quién es («¿a casa de quién voy?») y a qué dirección concreta ir
+   * cuando el cliente tiene varios locales — RN-BAS-03.
    */
-  it('prestada muestra la dirección concreta', () => {
+  it('prestada muestra el cliente y la etiqueta de la dirección', () => {
     pintar(base({ direccionId: 'dir-1', ubicacion: UBICACION }))
 
-    expect(screen.getByText(/CL 30 # 12 - 45/)).toBeTruthy()
+    expect(screen.getByText(/Panadería del Centro — La casa/)).toBeTruthy()
   })
 })

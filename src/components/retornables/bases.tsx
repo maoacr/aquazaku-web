@@ -1,7 +1,7 @@
 'use client'
 
-import { Box } from 'lucide-react'
-import { useActionState, useId, useState } from 'react'
+import { Box, Search, X } from 'lucide-react'
+import { useActionState, useId, useRef, useState } from 'react'
 import {
   comprarBasesAction,
   darDeAltaBaseAction,
@@ -77,8 +77,34 @@ function SelectorDeTipo({ token }: { token?: string }) {
  *
  * Cada una se muestra con su sticker en mono, porque es un código que alguien va
  * a comparar contra el que está pegado en la base física.
+ *
+ * ── El filtro es del navegador, no del servidor ─────────────────────────────
+ *
+ * El parque de bases es pequeño (decenas). Filtrar acá, sobre el array que ya
+ * llegó, es más simple y más rápido que un endpoint de búsqueda: no hay ida y
+ * vuelta por cada tecla. Si el parque crece a cientos, el filtro se muda a
+ * `api/` y este componente casi no cambia.
  */
 export function ListaDeBases({ bases }: { bases: Base[] }) {
+  const idBusqueda = useId()
+  const [consulta, setConsulta] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const termino = consulta.trim().toLowerCase()
+
+  const visibles = termino
+    ? bases.filter((base) => {
+        if (base.idSticker.toLowerCase().includes(termino)) return true
+        const u = base.ubicacion
+        if (!u) return false
+        if (u.clienteNombre.toLowerCase().includes(termino)) return true
+        if (u.clienteApodo?.toLowerCase().includes(termino)) return true
+        if (u.clienteDocumento?.toLowerCase().includes(termino)) return true
+        if (u.etiqueta.toLowerCase().includes(termino)) return true
+        return false
+      })
+    : bases
+
   if (bases.length === 0) {
     return (
       <Vacio variante="primera-vez" icono={Box} titulo="Todavía no hay bases">
@@ -89,79 +115,148 @@ export function ListaDeBases({ bases }: { bases: Base[] }) {
   }
 
   return (
-    <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {bases.map((base) => {
-        const direccion = base.ubicacion
+    <div className="grid gap-4">
+      {/* El campo de búsqueda solo aparece cuando hay bases que buscar */}
+      <div className="aq-tarjeta grid gap-2 p-5">
+        <label htmlFor={idBusqueda} className="aq-etiqueta-campo">
+          <span>Filtrar</span>
+        </label>
 
-        return (
-          <li key={base.id}>
-            <article className="aq-tarjeta grid h-full gap-3 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="grid gap-0.5">
-                  <p className="aq-cifra text-[17px] font-semibold text-principal">
-                    {base.idSticker}
-                  </p>
+        <div className="relative">
+          <Search
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-tenue"
+          />
+          <input
+            ref={inputRef}
+            id={idBusqueda}
+            value={consulta}
+            onChange={(e) => setConsulta(e.target.value)}
+            type="search"
+            autoComplete="off"
+            placeholder="ID de sticker o nombre del cliente"
+            className="aq-campo aq-campo-con-icono"
+          />
+          {consulta.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => {
+                setConsulta('')
+                inputRef.current?.focus()
+              }}
+              aria-label="Borrar el filtro"
+              className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-tenue hover:text-principal"
+            >
+              <X aria-hidden className="size-4" />
+            </button>
+          ) : null}
+        </div>
+
+        <p aria-live="polite" className="text-[13px] text-tenue">
+          {termino
+            ? visibles.length === 0
+              ? 'Ninguna base coincide.'
+              : visibles.length === 1
+                ? '1 base.'
+                : `${visibles.length} bases.`
+            : `${bases.length} bases en total.`}
+        </p>
+      </div>
+
+      {visibles.length === 0 ? (
+        <div
+          role="status"
+          className="aq-tarjeta grid justify-items-center gap-3 px-6 py-14 text-center"
+        >
+          <Box aria-hidden className="size-8 text-tenue" />
+          <p className="text-[17px] font-medium text-principal">Ninguna base coincide</p>
+          <div className="max-w-prose text-sm text-secundario">
+            Puede buscar por el ID del sticker, nombre, apodo o número de documento del cliente.
+          </div>
+          <button
+            type="button"
+            onClick={() => setConsulta('')}
+            className="aq-boton aq-boton-secundario"
+          >
+            Quitar el filtro
+          </button>
+        </div>
+      ) : (
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {visibles.map((base) => {
+            const direccion = base.ubicacion
+
+            return (
+              <li key={base.id}>
+                <article className="aq-tarjeta grid h-full gap-3 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="grid gap-0.5">
+                      <p className="aq-cifra text-[17px] font-semibold text-principal">
+                        {base.idSticker}
+                      </p>
+                      {/*
+                        El tipo va junto al número y no como insignia aparte: son el
+                        mismo dato de identidad —qué es y cuál es— y quien busca un
+                        dispensador en la lista lo busca de un solo golpe de vista.
+                      */}
+                      <p className="text-[13px] text-tenue">{NOMBRE_DEL_TIPO[base.tipo]}</p>
+                    </div>
+                    {base.estado === 'danada' ? (
+                      <Estado tono="expuesto">Dañada</Estado>
+                    ) : direccion ? (
+                      <Estado tono="justo">Prestada</Estado>
+                    ) : (
+                      <Estado tono="cubierto">En bodega</Estado>
+                    )}
+                  </div>
+
                   {/*
-                    El tipo va junto al número y no como insignia aparte: son el
-                    mismo dato de identidad —qué es y cuál es— y quien busca un
-                    dispensador en la lista lo busca de un solo golpe de vista.
+                    Dónde está, y no de quién es. La base se asigna a una DIRECCIÓN
+                    (RN-BAS-03) porque hay que ir a buscarla a un lugar concreto.
                   */}
-                  <p className="text-[13px] text-tenue">{NOMBRE_DEL_TIPO[base.tipo]}</p>
-                </div>
-                {base.estado === 'danada' ? (
-                  <Estado tono="expuesto">Dañada</Estado>
-                ) : direccion ? (
-                  <Estado tono="justo">Prestada</Estado>
-                ) : (
-                  <Estado tono="cubierto">En bodega</Estado>
-                )}
-              </div>
+                  <p className="text-[14px] text-secundario">
+                    {direccion
+                      ? `${direccion.clienteNombre} — ${direccion.etiqueta}`
+                      : 'En la bodega, lista para prestar'}
+                  </p>
 
-              {/*
-                Dónde está, y no de quién es. La base se asigna a una DIRECCIÓN
-                (RN-BAS-03) porque hay que ir a buscarla a un lugar concreto.
-              */}
-              <p className="text-[14px] text-secundario">
-                {direccion
-                  ? `${direccion.etiqueta} — ${direccion.legible}`
-                  : 'En la bodega, lista para prestar'}
-              </p>
+                  {/*
+                    Las acciones que se ofrecen son las que el servidor va a
+                    aceptar, y nada más.
 
-              {/*
-                Las acciones que se ofrecen son las que el servidor va a
-                aceptar, y nada más.
+                    Una base PRESTADA puede volver o romperse — el daño se le cobra
+                    a quien la tiene, así que en bodega no hay a quién cobrarle
+                    (`BASE_EN_BODEGA`). Una base EN BODEGA puede descartarse —
+                    descartar una prestada dejaría un préstamo abierto sobre algo
+                    que ya no existe (`BASE_PRESTADA`).
 
-                Una base PRESTADA puede volver o romperse — el daño se le cobra
-                a quien la tiene, así que en bodega no hay a quién cobrarle
-                (`BASE_EN_BODEGA`). Una base EN BODEGA puede descartarse —
-                descartar una prestada dejaría un préstamo abierto sobre algo
-                que ya no existe (`BASE_PRESTADA`).
+                    Mostrar el botón igual y dejar que el servidor rechace sería
+                    prometer algo que no se puede hacer.
+                  */}
+                  <div className="flex flex-wrap gap-2">
+                    {direccion ? (
+                      <>
+                        <RetornarBase base={base} />
+                        {base.estado === 'sana' ? <MarcarDano base={base} /> : null}
+                      </>
+                    ) : (
+                      <DescartarBase base={base} />
+                    )}
 
-                Mostrar el botón igual y dejar que el servidor rechace sería
-                prometer algo que no se puede hacer.
-              */}
-              <div className="flex flex-wrap gap-2">
-                {direccion ? (
-                  <>
-                    <RetornarBase base={base} />
-                    {base.estado === 'sana' ? <MarcarDano base={base} /> : null}
-                  </>
-                ) : (
-                  <DescartarBase base={base} />
-                )}
-
-                <a
-                  href={`/modulos/retornables/bases/${base.id}`}
-                  className="aq-boton aq-boton-secundario aq-boton-compacto"
-                >
-                  Historial
-                </a>
-              </div>
-            </article>
-          </li>
-        )
-      })}
-    </ul>
+                    <a
+                      href={`/modulos/retornables/bases/${base.id}`}
+                      className="aq-boton aq-boton-secundario aq-boton-compacto"
+                    >
+                      Historial
+                    </a>
+                  </div>
+                </article>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
   )
 }
 

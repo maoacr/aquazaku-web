@@ -592,6 +592,8 @@ export interface UbicacionDeBase {
   legible: string
   clienteId: string
   clienteNombre: string
+  clienteApodo: string | null
+  clienteDocumento: string | null
 }
 
 /**

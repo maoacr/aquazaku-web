@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useId, useState } from 'react'
+import { Pencil } from 'lucide-react'
 import {
   desactivarDireccionAction,
   editarDireccionAction,
@@ -17,11 +18,10 @@ const INICIAL: EstadoDeFormulario = {}
 /**
  * Editar o dar de baja una dirección — M14.
  *
- * ── Se abre tocando la dirección, no un ícono ───────────────────────────────
+ * ── Se abre tocando el ícono de lápiz ───────────────────────────────────────
  *
- * El objetivo del toque es la dirección entera. Un lápiz de dieciséis píxeles
- * al costado se falla con el pulgar, y esto se usa desde un celular al lado de
- * una llenadora.
+ * El botón de edición es solo el ícono; el texto de la dirección es solo
+ * lectura.
  */
 export function EditarDireccion({
   clienteId,
@@ -38,17 +38,23 @@ export function EditarDireccion({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setAbierto(true)}
-        className="w-full rounded-lg px-1 text-left hover:bg-tarjeta-hover"
-      >
-        <span className="text-[14px] font-medium text-principal">{direccion.etiqueta}</span>
+      <div className="w-full rounded-lg px-1">
+        <span className="flex items-center justify-between gap-1.5">
+          <span className="text-[14px] font-medium text-principal">{direccion.etiqueta}</span>
+          <button
+            type="button"
+            onClick={() => setAbierto(true)}
+            aria-label={`Editar dirección ${direccion.etiqueta}`}
+            className="rounded p-0.5 text-tenue hover:bg-tarjeta-hover hover:text-principal"
+          >
+            <Pencil aria-hidden className="size-3.5 shrink-0" />
+          </button>
+        </span>
         <span className="block text-[14px] text-secundario">{direccion.legible}</span>
         {direccion.indicaciones ? (
           <span className="block text-[13px] text-tenue">{direccion.indicaciones}</span>
         ) : null}
-      </button>
+      </div>
 
       <Modal abierto={abierto} cerrar={() => setAbierto(false)} titulo={direccion.etiqueta}>
         <FormularioDeEdicion

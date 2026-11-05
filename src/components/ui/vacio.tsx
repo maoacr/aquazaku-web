@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react'
+import { ArrowRight, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 /**
@@ -35,7 +35,26 @@ export function Vacio(props: PropsDeVacio) {
    * «crear», y el tipo hace que ni siquiera se pueda intentar.
    */
   const accion =
-    variante === 'sin-resultados' ? <QuitarFiltros href={props.hrefSinFiltros} /> : props.accion
+    variante === 'sin-resultados' ? (
+      /*
+       * Dos salidas, y el orden importa.
+       *
+       * Cuando se sabe DÓNDE está lo que se busca, esa es la acción que
+       * resuelve: va primera y va primaria. «Quitar los filtros» queda como la
+       * salida de siempre —secundaria— porque vuelve a una lista completa que
+       * igual hay que recorrer a ojo.
+       *
+       * `tambienEn` NO es un `accion` libre: es una ruta y una etiqueta. La
+       * garantía de esta variante sigue en pie —acá no se puede ofrecer
+       * «crear»— y sigue siendo el tipo el que la sostiene, no un comentario.
+       */
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {props.tambienEn ? <IrA {...props.tambienEn} /> : null}
+        <QuitarFiltros href={props.hrefSinFiltros} />
+      </div>
+    ) : (
+      props.accion
+    )
 
   return (
     <div
@@ -79,7 +98,22 @@ interface Comunes {
 export type PropsDeVacio =
   | (Comunes & { variante: 'primera-vez'; accion?: AccionDeVacio })
   | (Comunes & { variante: 'terminado'; accion?: AccionDeVacio })
-  | (Comunes & { variante: 'sin-resultados'; hrefSinFiltros: string })
+  | (Comunes & {
+      variante: 'sin-resultados'
+      hrefSinFiltros: string
+      /**
+       * Dónde SÍ está lo que se busca, cuando se puede saber.
+       *
+       * Nace del buscador de Seguimientos: sus dos pestañas son dos relojes
+       * distintos, así que una dirección puede no estar acá y estar a un clic.
+       * Decir solo «ninguna coincide» ahí es cierto y es inútil.
+       *
+       * Es una ruta y una etiqueta a propósito, y no un nodo: con un nodo libre
+       * esta variante volvería a aceptar cualquier botón —incluido un «crear»—
+       * y se perdería lo único que R50 garantiza por tipo.
+       */
+      tambienEn?: { href: string; etiqueta: string }
+    })
 
 /**
  * El icono de `terminado` va en verde: es el único de los tres que da una buena
@@ -105,6 +139,21 @@ export type AccionDeVacio = ReactNode
  * `sin-resultados`, y existe como componente para que quede una sola forma de
  * escribirlo y no diez textos distintos para lo mismo.
  */
+/**
+ * El link a donde SÍ está lo que se buscaba.
+ *
+ * Primario porque es la acción que resuelve el problema: quitar los filtros
+ * devuelve una lista completa que igual hay que recorrer a ojo.
+ */
+function IrA({ href, etiqueta }: { href: string; etiqueta: string }) {
+  return (
+    <a href={href} className="aq-boton aq-boton-primario">
+      <ArrowRight aria-hidden className="size-4" />
+      Ver en {etiqueta}
+    </a>
+  )
+}
+
 export function QuitarFiltros({ href }: { href: string }) {
   return (
     <a

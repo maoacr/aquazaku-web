@@ -892,6 +892,14 @@ export interface TelefonoParaLlamar {
 export interface DireccionALlamar {
   clienteId: string
   nombre: string
+  /**
+   * Cómo lo conocen, cuando no es por su nombre — RN-CLI-17.
+   *
+   * La lista no lo pinta: lo BUSCA. Quien se sienta a marcar se acuerda de «La
+   * Flaca», y en `nombre` ese apodo no está, porque esa columna la genera la
+   * base concatenando nombres y apellidos (ADR-0006).
+   */
+  apodo: string | null
   /** `null` cuando el cliente se registró sin documento — RN-CLI-20. */
   documento: string | null
   /** `null` cuando el cliente no tiene ninguna dirección activa cargada. */

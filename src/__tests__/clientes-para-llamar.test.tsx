@@ -31,6 +31,7 @@ import type { DireccionALlamar } from '@/lib/api-types'
 const fila = (parcial: Partial<DireccionALlamar> = {}): DireccionALlamar => ({
   clienteId: 'c1',
   nombre: 'Yeimy Padilla',
+  apodo: null,
   documento: '79123456',
   direccionId: 'd1',
   etiqueta: 'la casa',

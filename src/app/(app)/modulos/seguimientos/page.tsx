@@ -1,7 +1,8 @@
-import { ClientesParaLlamar } from '@/components/clientes/para-llamar'
+import { BuscadorDeSeguimientos } from '@/components/clientes/buscador-de-seguimientos'
 import {
   PestanasDeSeguimientos,
   canalDesde,
+  elOtroCanal,
 } from '@/components/clientes/pestanas-de-seguimientos'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch } from '@/lib/api-server'
@@ -52,10 +53,19 @@ import type { Producto, ResumenDeStock, SeguimientosALlamar } from '@/lib/api-ty
 export default async function SeguimientosPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ canal?: string }>
+  searchParams?: Promise<{ canal?: string; q?: string }>
 }) {
   const sp = searchParams ? await searchParams : undefined
   const canal = canalDesde(sp?.canal)
+  /*
+   * `?q=` SIEMBRA el buscador, no lo controla.
+   *
+   * Solo llega acá cuando alguien siguió el aviso de «esta persona está en la
+   * otra pestaña», que es una navegación que ya iba a ocurrir. Mientras se
+   * teclea, el término NO toca la URL: re-ejecutaría esta función —y sus tres
+   * peticiones— en cada letra.
+   */
+  const consultaInicial = sp?.q
 
   /*
    * El catálogo y el stock viajan con la pantalla porque el lápiz de cada fila
@@ -90,9 +100,29 @@ export default async function SeguimientosPage({
         basePath="/modulos/seguimientos"
       />
 
-      <ClientesParaLlamar
+      {/*
+        El buscador envuelve la lista: filtra en el navegador sobre las filas
+        que ya llegaron. El término NO va a la URL —a diferencia de `?canal=`—
+        porque re-ejecutar la página pediría otra vez la lista, el catálogo y el
+        stock en cada tecla. El argumento completo está en
+        `buscar-seguimientos.ts`.
+      */}
+      <BuscadorDeSeguimientos
+        /*
+         * El `key` fuerza el remontaje al cambiar de canal o de término.
+         *
+         * `consultaInicial` entra por `useState`, que mira su valor una sola
+         * vez. Sin este `key` React reusaría la instancia —es el mismo
+         * componente en la misma posición del árbol— y seguir el aviso dejaría
+         * el campo con el término anterior: se avisa dónde está la persona y al
+         * llegar la lista muestra otra cosa.
+         */
+        key={`${canal}-${consultaInicial ?? ''}`}
         filas={seguimientos[canal]}
+        enElOtroCanal={seguimientos[elOtroCanal(canal)]}
         canal={canal}
+        basePath="/modulos/seguimientos"
+        consultaInicial={consultaInicial}
         productos={productos}
         stock={stock}
       />

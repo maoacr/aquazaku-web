@@ -42,23 +42,42 @@ import { CorregirLaVenta } from './corregir-la-venta'
  * porque una diferencia que vive solo en el tono no la ve quien no distingue
  * rojo de ámbar, y esta pantalla se mira de reojo entre cliente y cliente.
  *
- * ── Server Component, sin estado ────────────────────────────────────────────
+ * ── Sin estado propio, pero ya no es solo del servidor ─────────────────────
  *
- * No hay `'use client'`. Los enlaces son `<a href>`, el número de WhatsApp
- * viene armado desde `api` y la dirección viene ya legible: no hay nada que
- * calcular en el navegador.
+ * Este archivo no lleva `'use client'` y no lo necesita: los enlaces son
+ * `<a href>`, el número de WhatsApp viene armado desde `api` y la dirección
+ * viene ya legible. No hay nada que calcular acá.
+ *
+ * Pero desde que `BuscadorDeSeguimientos` lo monta, viaja igual al bundle del
+ * navegador: un componente importado por un client component es cliente, tenga
+ * o no la directiva. Se pagó a propósito —filtrar en la URL re-pediría la lista,
+ * el catálogo y el stock en cada tecla para reordenar algo que ya está en
+ * memoria— y está argumentado en `buscar-seguimientos.ts`.
+ *
+ * Lo que sigue valiendo es que acá NO hay estado. Quien filtra es el buscador;
+ * esto recibe filas y las pinta.
  */
 export function ClientesParaLlamar({
   filas,
   canal,
   productos,
   stock,
+  hayFiltro = false,
 }: {
   filas: DireccionALlamar[]
   canal: 'botellones' | 'otros'
   /* Los necesita el mostrador que abre el lápiz — es el mismo de Ventas. */
   productos: Producto[]
   stock: ResumenDeStock[]
+  /**
+   * Si estas filas son el resultado de una búsqueda.
+   *
+   * Cambia qué dice el vacío, y eso no es un detalle: «todavía no hay ninguna
+   * venta de botellón» frente a una lista de cuarenta que no coincidieron se
+   * lee como que se perdieron los datos. Es el mismo parámetro, por la misma
+   * razón, que `TarjetasDeClientes` — R50.
+   */
+  hayFiltro?: boolean
 }) {
   /*
    * Los dos números que la cabecera necesita, contados una vez.
@@ -83,7 +102,16 @@ export function ClientesParaLlamar({
         el navegador, no en los tests: los dos textos existían y cada uno pasaba
         su propia aserción.
       */}
-      {filas.length > 0 ? (
+      {/*
+        Con búsqueda activa el resumen se CALLA.
+
+        Su primera palabra es «Todas» y describe el padrón del canal: cuántas
+        hay en rojo y cuántas al día. Sobre un subconjunto filtrado esa frase es
+        falsa, y el conteo de lo visible ya lo dice el buscador. Dos números que
+        cuentan cosas distintas, uno al lado del otro, es cómo se le pierde la
+        confianza a los dos.
+      */}
+      {filas.length > 0 && !hayFiltro ? (
         <p className="text-[13px] text-tenue">
           {resumen(canal, urgentes, alDia)}
           {/*
@@ -151,7 +179,11 @@ export function ClientesParaLlamar({
              * tabla rota: quien la vio ayer y hoy no la encuentra no piensa «no
              * hay nadie», piensa «se cayó algo».
              */
-            <SinResultados columnas={5}>{vacio(canal)}</SinResultados>
+            <SinResultados columnas={5}>
+              {hayFiltro
+                ? 'Ninguna dirección coincide con lo que buscó. Puede buscarla por nombre, por apodo, por cédula o por su dirección.'
+                : vacio(canal)}
+            </SinResultados>
           ) : (
             filas.map((fila) => (
               <Fila

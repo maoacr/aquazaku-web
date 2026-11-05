@@ -31,6 +31,52 @@ export function canalDesde(valor: string | undefined): CanalDeSeguimiento {
   return valor === 'otros' ? 'otros' : CANAL_POR_DEFECTO
 }
 
+/**
+ * Cómo se llama cada canal en la pantalla.
+ *
+ * Vive acá y no suelto en el JSX porque hay un segundo lugar que lo nombra: el
+ * aviso de «esta persona está en la OTRA pestaña». Si las dos frases se
+ * escribieran por separado, el día que una pestaña se renombre el aviso
+ * mandaría a un lugar que ya no se llama así.
+ */
+export const ETIQUETA_DE_CANAL: Record<CanalDeSeguimiento, string> = {
+  botellones: 'Recarga de botellones',
+  otros: 'Otros productos',
+}
+
+/** El canal en el que NO está parado quien mira. Son dos: es el otro. */
+export function elOtroCanal(canal: CanalDeSeguimiento): CanalDeSeguimiento {
+  return canal === 'botellones' ? 'otros' : 'botellones'
+}
+
+/**
+ * El link a un canal, con un término de búsqueda opcional sembrado.
+ *
+ * Misma forma que usa `Pestanas`: el canal por defecto no lleva `?canal=`, para
+ * que la URL canónica de la pantalla sea una sola.
+ *
+ * El `q` NO lo escribe el buscador mientras alguien teclea —eso re-ejecutaría
+ * la página en cada letra— pero sí viaja en una navegación que YA está
+ * ocurriendo. Sembrar el campo al llegar es lo que hace útil al aviso: decir
+ * «está en la otra pestaña» y que al llegar haya que escribirlo de nuevo sería
+ * media ayuda.
+ */
+export function rutaDeCanal(
+  basePath: string,
+  canal: CanalDeSeguimiento,
+  consulta?: string,
+): string {
+  const params = new URLSearchParams()
+  if (canal !== CANAL_POR_DEFECTO) params.set('canal', canal)
+
+  const limpio = consulta?.trim()
+  if (limpio) params.set('q', limpio)
+
+  const cola = params.toString()
+
+  return cola === '' ? basePath : `${basePath}?${cola}`
+}
+
 export function PestanasDeSeguimientos({
   canal,
   conteos,
@@ -48,8 +94,12 @@ export function PestanasDeSeguimientos({
       activa={canal}
       basePath={basePath}
       pestanas={[
-        { valor: 'botellones', etiqueta: 'Recarga de botellones', conteo: conteos.botellones },
-        { valor: 'otros', etiqueta: 'Otros productos', conteo: conteos.otros },
+        {
+          valor: 'botellones',
+          etiqueta: ETIQUETA_DE_CANAL.botellones,
+          conteo: conteos.botellones,
+        },
+        { valor: 'otros', etiqueta: ETIQUETA_DE_CANAL.otros, conteo: conteos.otros },
       ]}
     />
   )

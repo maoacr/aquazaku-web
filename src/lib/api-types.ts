@@ -384,6 +384,25 @@ export interface Direccion {
 }
 
 /**
+ * Una dirección del listado de la ficha, con lo que tiene prestado.
+ *
+ * ── Por qué es un tipo aparte y no un campo opcional en `Direccion` ─────────
+ *
+ * Porque el conteo lo manda el LISTADO y no las otras dos respuestas:
+ * `POST /clientes/:id/direcciones` y `PATCH /direcciones/:id` devuelven una
+ * dirección sola, y agregarla o editarla no mueve ninguna base.
+ *
+ * Con `basesPrestadas?: number` el compilador dejaría pasar un `undefined` ahí
+ * donde la pantalla pregunta «¿cuántas se van a devolver?», y `undefined` se
+ * pinta como «ninguna» justo antes de devolverlas. Es la misma trampa que los
+ * cuatro saldos en `null` de la ficha: el hueco no se ve, se lee como un cero.
+ */
+export type DireccionConBases = Direccion & {
+  /** Cuántas bases hay prestadas en esta puerta — vuelven al parque si se da de baja. */
+  basesPrestadas: number
+}
+
+/**
  * La ficha — `GET /clientes/:id`.
  *
  * ── Dos saldos acá, dos en otra ruta, y es por permisos ─────────────────────
@@ -399,7 +418,7 @@ export interface Direccion {
  * botellones a su nombre» SIEMPRE, justo antes de devolverlas al parque.
  */
 export interface FichaDeCliente extends Cliente {
-  direcciones: Direccion[]
+  direcciones: DireccionConBases[]
   /** M14: viajan con la ficha — quien abre un cliente para llamarlo ya tiene el número. */
   telefonos: Telefono[]
   saldos: {

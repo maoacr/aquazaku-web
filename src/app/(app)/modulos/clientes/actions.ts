@@ -458,25 +458,60 @@ export async function editarDireccionAction(
 }
 
 /**
- * Dar de baja una dirección.
+ * Dar de baja una dirección — RN-CLI-07 + RN-BAS-04.
  *
- * Se DESACTIVA, no se borra: puede tener bases prestadas, y el préstamo dejaría
- * de ser reclamable si la dirección desapareciera.
+ * ── Se DESACTIVA, no se borra ───────────────────────────────────────────────
+ *
+ * El historial de las bases que estuvieron ahí la necesita en pie: borrarla
+ * dejaría los préstamos viejos sin a dónde ir a reclamarlos, y la pantalla no
+ * podría decir en qué puerta estuvo cada base.
+ *
+ * ── Pero las bases que están ahí HOY vuelven al parque ──────────────────────
+ *
+ * Y eso es lo que `api/` arregló: antes solo marcaba la dirección como inactiva
+ * y la base quedaba colgada de una puerta que ya no existe —ni prestada a nadie
+ * a quien reclamarle, ni disponible para prestar—. Había que retornarla a mano.
+ *
+ * Por eso se revalida también `/modulos/retornables`: el parque cambió. Sin
+ * eso, la pantalla de retornables seguiría mostrando la base en una dirección
+ * que acabamos de dar de baja.
+ *
+ * El motivo es obligatorio y el conteo viaja de vuelta, por la misma razón que
+ * en la desactivación del cliente: es lo que confirma que `api/` hizo su parte.
  */
 export async function desactivarDireccionAction(
   _previo: EstadoDeFormulario,
   formData: FormData,
 ): Promise<EstadoDeFormulario> {
   const clienteId = String(formData.get('clienteId') ?? '')
+  const motivo = String(formData.get('motivo') ?? '').trim()
 
   const res = await apiServerFetchRaw(`/direcciones/${formData.get('id')}/desactivar`, {
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ motivo }),
   })
 
   if (!res.ok) return { error: await mensajeDeError(res, 'No pudimos dar de baja la dirección.') }
 
+  const { basesDevueltas } = (await res.json()) as { basesDevueltas: number }
+
+  revalidatePath(RUTA)
   revalidatePath(`${RUTA}/${clienteId}`)
-  return exito('Dirección dada de baja.')
+  revalidatePath('/modulos/retornables')
+
+  /*
+   * El plural de `base` se resuelve pegando una `s` acá y no en `lib/palabras`:
+   * ese archivo es para las palabras que NO pluralizan así —«botellón»— y dice
+   * por qué envolver las regulares no decide nada.
+   */
+  if (basesDevueltas === 0) return exito('Dirección dada de baja.')
+
+  const plural = basesDevueltas === 1 ? '' : 's'
+
+  return exito(
+    `Dirección dada de baja. ${basesDevueltas} base${plural} devuelta${plural} al parque, ya disponible${plural} para prestar.`,
+  )
 }
 
 /**

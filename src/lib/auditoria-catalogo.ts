@@ -120,6 +120,10 @@ export const MODULOS_AUDITABLES: ModuloAuditable[] = [
     'crear',
     'editar',
     'habilitar_credito',
+    /* Sacar una fila de la lista de seguimientos — RN-CLI-18. Acción propia y
+       no `editar`: la bitácora tiene que poder contestar «quién sacó a este
+       cliente de la lista» sin mezclarlo con las correcciones de ficha. */
+    'ocultar_seguimiento',
     'ver',
     'verificar_documento',
   ]),

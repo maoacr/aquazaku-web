@@ -1,3 +1,4 @@
+import { AvisoDeOcultas } from '@/components/clientes/aviso-de-ocultas'
 import { BuscadorDeSeguimientos } from '@/components/clientes/buscador-de-seguimientos'
 import {
   PestanasDeSeguimientos,
@@ -53,7 +54,7 @@ import type { Producto, ResumenDeStock, SeguimientosALlamar } from '@/lib/api-ty
 export default async function SeguimientosPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ canal?: string; q?: string }>
+  searchParams?: Promise<{ canal?: string; q?: string; ocultas?: string }>
 }) {
   const sp = searchParams ? await searchParams : undefined
   const canal = canalDesde(sp?.canal)
@@ -68,6 +69,16 @@ export default async function SeguimientosPage({
   const consultaInicial = sp?.q
 
   /*
+   * `?ocultas=1` cambia QUÉ lista se mira, no cómo se ve.
+   *
+   * Las filas que alguien sacó a mano son las mismas filas —mismos relojes,
+   * mismos teléfonos, mismo orden— del otro lado del ocultamiento. Por eso es
+   * la misma pantalla con un parámetro y no una pantalla aparte: duplicarla
+   * dejaría dos lugares donde arreglar la próxima cosa de la tabla.
+   */
+  const modoOcultas = sp?.ocultas === '1'
+
+  /*
    * El catálogo y el stock viajan con la pantalla porque el lápiz de cada fila
    * abre el MOSTRADOR de Ventas, precargado con la venta a corregir — y el
    * mostrador los necesita para el carrito, el piso de precio y el aviso de
@@ -75,7 +86,9 @@ export default async function SeguimientosPage({
    * alguien ya decidió actuar.
    */
   const [seguimientos, productos, stock] = await Promise.all([
-    apiServerFetch<SeguimientosALlamar>('/clientes/a-llamar'),
+    apiServerFetch<SeguimientosALlamar>(
+      `/clientes/a-llamar${modoOcultas ? '?ocultas=1' : ''}`,
+    ),
     apiServerFetch<Producto[]>('/productos'),
     apiServerFetch<ResumenDeStock[]>('/stock'),
   ])
@@ -91,6 +104,12 @@ export default async function SeguimientosPage({
         </p>
       </header>
 
+      {/*
+        Los conteos salen de las listas que se están mirando, no de un total
+        aparte. En el modo normal son las visibles; en el de ocultas, las
+        ocultas. Que la pestaña y la tabla cuenten lo mismo es lo único que hace
+        creíble al número.
+      */}
       <PestanasDeSeguimientos
         canal={canal}
         conteos={{
@@ -98,6 +117,13 @@ export default async function SeguimientosPage({
           otros: seguimientos.otros.length,
         }}
         basePath="/modulos/seguimientos"
+      />
+
+      <AvisoDeOcultas
+        cuantas={seguimientos.ocultas[canal]}
+        canal={canal}
+        basePath="/modulos/seguimientos"
+        modoOcultas={modoOcultas}
       />
 
       {/*
@@ -117,7 +143,7 @@ export default async function SeguimientosPage({
          * el campo con el término anterior: se avisa dónde está la persona y al
          * llegar la lista muestra otra cosa.
          */
-        key={`${canal}-${consultaInicial ?? ''}`}
+        key={`${canal}-${consultaInicial ?? ''}-${modoOcultas}`}
         filas={seguimientos[canal]}
         enElOtroCanal={seguimientos[elOtroCanal(canal)]}
         canal={canal}

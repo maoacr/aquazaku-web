@@ -41,6 +41,7 @@ const fila = (parcial: Partial<DireccionALlamar> = {}): DireccionALlamar => ({
   ventaSinDireccion: false,
   ventaId: 'v1',
   cuantasVentas: 1,
+  ocultadaEn: null,
   telefonos: [],
   ...parcial,
 })
@@ -350,7 +351,17 @@ describe('a qué número se escribe', () => {
      * punto de todo el ajuste: los iconos de la fila van juntos.
      */
     expect(enlace.closest('td')).toBe(celdas.at(-1))
-    expect(celdas.at(-1)).toContainElement(screen.getByRole('button', { name: /Yeimy Padilla/ }))
+    /*
+     * El lápiz se busca por «Corregir» y no por el nombre del cliente.
+     *
+     * Antes `/Yeimy Padilla/` alcanzaba porque el lápiz era el único botón que
+     * la nombraba. Desde que la fila tiene la X de «quitar de esta lista» son
+     * dos, y la query quedó ambigua — el test falló por eso, no por el layout.
+     */
+    expect(celdas.at(-1)).toContainElement(screen.getByRole('button', { name: /Corregir/ }))
+
+    /* Y la X vive en la MISMA celda: los iconos de la fila van juntos. */
+    expect(celdas.at(-1)).toContainElement(screen.getByRole('button', { name: /Quitar/ }))
   })
 
   it('con dos destinos, cada icono va pegado a SU número y no al final de la fila', () => {

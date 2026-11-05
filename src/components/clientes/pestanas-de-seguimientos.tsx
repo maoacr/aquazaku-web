@@ -65,12 +65,23 @@ export function rutaDeCanal(
   basePath: string,
   canal: CanalDeSeguimiento,
   consulta?: string,
+  /**
+   * Ir al listado de las filas que alguien sacó a mano — RN-CLI-18.
+   *
+   * Vive en la URL y no en un `useState` por lo mismo que la pestaña: es
+   * navegación entre dos vistas de lo mismo, así que se comparte, se refresca y
+   * el botón de atrás funciona. Y deja la pantalla resolviéndose en el
+   * servidor, que es lo que la hace liviana.
+   */
+  ocultas?: boolean,
 ): string {
   const params = new URLSearchParams()
   if (canal !== CANAL_POR_DEFECTO) params.set('canal', canal)
 
   const limpio = consulta?.trim()
   if (limpio) params.set('q', limpio)
+
+  if (ocultas) params.set('ocultas', '1')
 
   const cola = params.toString()
 

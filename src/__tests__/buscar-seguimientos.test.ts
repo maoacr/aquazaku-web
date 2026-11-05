@@ -35,6 +35,7 @@ function fila(parcial: Partial<DireccionALlamar>): DireccionALlamar {
     ventaSinDireccion: false,
     ventaId: 'v1',
     cuantasVentas: 3,
+    ocultadaEn: null,
     telefonos: [],
     ...parcial,
   }

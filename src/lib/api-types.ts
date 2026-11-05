@@ -954,6 +954,13 @@ export interface DireccionALlamar {
    * mientras se trabaja, en vez de los días de la más reciente, que subían.
    */
   cuantasVentas: number
+  /**
+   * Desde cuándo alguien sacó esta fila de la lista a mano — RN-CLI-18.
+   *
+   * `null` en la lista normal: las ocultas no están ahí. Tiene valor solo
+   * cuando se piden con `?ocultas=1`, y es lo que deja decidir si devolverla.
+   */
+  ocultadaEn: string | null
   telefonos: TelefonoParaLlamar[]
 }
 
@@ -970,4 +977,12 @@ export interface DireccionALlamar {
 export interface SeguimientosALlamar {
   botellones: DireccionALlamar[]
   otros: DireccionALlamar[]
+  /**
+   * Cuántas filas sacó alguien a mano de cada canal — RN-CLI-18.
+   *
+   * La pantalla decide con esto si ofrecer «mostrar clientes ocultos». Un botón
+   * que aparece siempre, y que la mitad de los días no tiene nada que mostrar,
+   * es ruido en una cabecera que se lee de reojo.
+   */
+  ocultas: { botellones: number; otros: number }
 }

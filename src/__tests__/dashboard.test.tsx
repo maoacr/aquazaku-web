@@ -79,6 +79,15 @@ function stock(sobrescribe: Partial<ResumenDeStock> = {}): ResumenDeStock {
  * que importa es que sea UNA fila. Lo que la fila dice se prueba en
  * `clientes-para-llamar.test.tsx`.
  */
+/**
+ * Los conteos de ocultas, que el tablero no usa pero el tipo exige.
+ *
+ * Va como helper y no repetido en cada caso: el día que el payload gane otro
+ * campo, se toca un solo lugar — y el tablero solo cuenta filas, así que lo que
+ * importe de las ocultas se prueba en `a-llamar`, no acá.
+ */
+const SIN_OCULTAS = { botellones: 0, otros: 0 }
+
 function aLlamar(sobrescribe: Partial<DireccionALlamar> = {}): DireccionALlamar {
   return {
     clienteId: 'c1',
@@ -93,6 +102,7 @@ function aLlamar(sobrescribe: Partial<DireccionALlamar> = {}): DireccionALlamar 
     ventaSinDireccion: false,
     ventaId: 'v1',
     cuantasVentas: 1,
+    ocultadaEn: null,
     telefonos: [],
     ...sobrescribe,
   }
@@ -173,7 +183,7 @@ function responde(respuestas: {
     if (ruta.startsWith('/produccion')) return respuestas.produccion ?? negar()
     if (ruta.startsWith('/insumos')) return respuestas.insumos ?? negar()
     if (ruta.startsWith('/clientes/a-llamar')) {
-      return respuestas.aLlamar ?? { botellones: [], otros: [] }
+      return respuestas.aLlamar ?? { botellones: [], otros: [], ocultas: SIN_OCULTAS }
     }
 
     /*
@@ -393,7 +403,7 @@ describe('el tablero compone paneles según lo que el rol puede ver', () => {
   it('cuando hay a quién llamar, avisa con la cantidad y lleva a Seguimientos', async () => {
     responde({
       stock: [stock()],
-      aLlamar: { botellones: [aLlamar()], otros: [] },
+      aLlamar: { botellones: [aLlamar()], otros: [], ocultas: SIN_OCULTAS },
     })
 
     await pintar()
@@ -422,6 +432,7 @@ describe('el tablero compone paneles según lo que el rol puede ver', () => {
       aLlamar: {
         botellones: [aLlamar({ direccionId: 'd1' })],
         otros: [aLlamar({ clienteId: 'c2', direccionId: 'd2' })],
+        ocultas: SIN_OCULTAS,
       },
     })
 
@@ -456,6 +467,7 @@ describe('el tablero compone paneles según lo que el rol puede ver', () => {
           aLlamar({ direccionId: 'd3', urgencia: 'al-dia', diasSinComprar: 1 }),
         ],
         otros: [aLlamar({ clienteId: 'c2', direccionId: 'd4', urgencia: 'aviso' })],
+        ocultas: SIN_OCULTAS,
       },
     })
 
@@ -468,7 +480,11 @@ describe('el tablero compone paneles según lo que el rol puede ver', () => {
   it('con TODAS al día, no suma el pendiente aunque la lista tenga filas', async () => {
     responde({
       stock: [stock()],
-      aLlamar: { botellones: [aLlamar({ urgencia: 'al-dia', diasSinComprar: 1 })], otros: [] },
+      aLlamar: {
+        botellones: [aLlamar({ urgencia: 'al-dia', diasSinComprar: 1 })],
+        otros: [],
+        ocultas: SIN_OCULTAS,
+      },
     })
 
     await pintar()
@@ -478,7 +494,7 @@ describe('el tablero compone paneles según lo que el rol puede ver', () => {
   })
 
   it('sin nadie para llamar, no suma el pendiente', async () => {
-    responde({ stock: [stock()], aLlamar: { botellones: [], otros: [] } })
+    responde({ stock: [stock()], aLlamar: { botellones: [], otros: [], ocultas: SIN_OCULTAS } })
 
     await pintar()
 

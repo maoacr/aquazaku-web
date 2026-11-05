@@ -8,6 +8,7 @@ import type {
   TelefonoParaLlamar,
 } from '@/lib/api-types'
 import { CorregirLaVenta } from './corregir-la-venta'
+import { SacarDeLaLista } from './sacar-de-la-lista'
 
 /**
  * Las direcciones para llamar — M15.
@@ -200,6 +201,7 @@ export function ClientesParaLlamar({
                  */
                 key={`${fila.clienteId}-${fila.direccionId ?? 'sin-direccion'}-${fila.ventaId}`}
                 fila={fila}
+                canal={canal}
                 productos={productos}
                 stock={stock}
               />
@@ -266,10 +268,13 @@ const TONO = {
 
 function Fila({
   fila,
+  canal,
   productos,
   stock,
 }: {
   fila: DireccionALlamar
+  /* La X necesita el canal: la fila que saca es «esta dirección en ESTA lista». */
+  canal: 'botellones' | 'otros'
   productos: Producto[]
   stock: ResumenDeStock[]
 }) {
@@ -511,6 +516,23 @@ function Fila({
             sinDireccion={fila.ventaSinDireccion}
             productos={productos}
             stock={stock}
+          />
+          {/*
+            La X va ÚLTIMA, y eso no es estético.
+            
+            Es la única acción de la fila que la hace desaparecer. Entre el
+            WhatsApp y el lápiz —los dos de uso diario— sería un vecino
+            peligroso: el pulgar que apunta al lápiz y se corre un milímetro no
+            puede sacar un cliente de la lista de llamados.
+          */}
+          <SacarDeLaLista
+            fila={{
+              clienteId: fila.clienteId,
+              direccionId: fila.direccionId,
+              canal,
+            }}
+            nombre={fila.nombre}
+            estaOculta={fila.ocultadaEn !== null}
           />
         </span>
       </Td>

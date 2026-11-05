@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch } from '@/lib/api-server'
-import type { Base, Cliente, Direccion, FichaDeCliente, MovimientoDeBase } from '@/lib/api-types'
+import type { Base, MovimientoDeBase } from '@/lib/api-types'
 
 /**
  * El historial de una base — RN-BAS-05.
@@ -24,10 +24,9 @@ export default async function HistorialDeBasePage({
 }) {
   const { id } = await params
 
-  const [bases, movimientos, clientes] = await Promise.all([
+  const [bases, movimientos] = await Promise.all([
     apiServerFetch<Base[]>('/bases'),
     apiServerFetch<MovimientoDeBase[]>(`/bases/${id}/historial`),
-    apiServerFetch<Cliente[]>('/clientes'),
   ])
   const leidoEn = new Date()
 
@@ -40,24 +39,22 @@ export default async function HistorialDeBasePage({
   if (!base && movimientos.length === 0) notFound()
 
   /*
-   * Las direcciones cuelgan de cada cliente, así que hay que preguntarle a cada
-   * uno para poder traducir el `direccionId` de un préstamo a un lugar con
-   * nombre. Un UUID en pantalla no le dice nada a nadie.
+   * ── El lugar ya viene dicho ────────────────────────────────────────────────
+   *
+   * Acá había una traducción a mano: se pedía `/clientes` y después la ficha de
+   * CADA uno —una petición HTTP por cliente del padrón— para resolver un puñado
+   * de `direccionId`. Con diecisiete clientes eran diecisiete viajes; con
+   * quinientos, quinientos.
+   *
+   * Y el resultado era incorrecto, que es lo que de verdad importaba: las dos
+   * consultas traen solo lo ACTIVO, así que desactivar un cliente o una
+   * dirección dejaba sin lugar a préstamos que sí habían ocurrido. Medido antes
+   * del arreglo: de nueve movimientos, cinco no decían dónde había estado la
+   * base.
+   *
+   * Ahora `api/` lo arma con un `leftJoin` sin condición de actividad. Es el
+   * único lado que puede hacerlo bien.
    */
-  const direcciones: (Direccion & { cliente: Cliente })[] = (
-    await Promise.all(
-      clientes.map(async (cliente) => {
-        const ficha = await apiServerFetch<FichaDeCliente>(`/clientes/${cliente.id}`)
-        return (ficha.direcciones ?? []).map((d) => ({ ...d, cliente }))
-      }),
-    )
-  ).flat()
-
-  const lugarDe = (direccionId: string | null) => {
-    if (!direccionId) return null
-    const d = direcciones.find((x) => x.id === direccionId)
-    return d ? `${d.cliente.nombre} — ${d.etiqueta}, ${d.legible}` : null
-  }
 
   return (
     <div className="grid gap-6">
@@ -83,8 +80,6 @@ export default async function HistorialDeBasePage({
 
       <ol className="grid gap-3">
         {movimientos.map((m) => {
-          const lugar = lugarDe(m.direccionId)
-
           return (
             <li key={m.id}>
               <article className="aq-tarjeta grid gap-1 p-4">
@@ -93,7 +88,7 @@ export default async function HistorialDeBasePage({
                   <SelloDeHora leidoEn={new Date(m.createdAt)} />
                 </div>
 
-                {lugar ? <p className="text-[14px] text-secundario">{lugar}</p> : null}
+                {m.lugar ? <p className="text-[14px] text-secundario">{m.lugar}</p> : null}
                 {m.motivo ? <p className="text-[14px] text-secundario">{m.motivo}</p> : null}
               </article>
             </li>

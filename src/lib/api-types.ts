@@ -635,6 +635,17 @@ export interface MovimientoDeBase {
   baseId: string
   tipo: TipoMovimientoBase
   direccionId: string | null
+  /**
+   * Dónde ocurrió, ya en palabras — RN-BAS-05.
+   *
+   * Lo arma `api/` con un `leftJoin` que NO filtra por activo: lo que pasó,
+   * pasó. La pantalla lo resolvía por su cuenta pidiendo la ficha de cada
+   * cliente del padrón, y además lo resolvía mal — desactivar un cliente o una
+   * dirección borraba el lugar de un préstamo que sí había ocurrido.
+   *
+   * `null` cuando el movimiento no ocurrió en una puerta: el alta, el descarte.
+   */
+  lugar: string | null
   motivo: string | null
   registradoPor: string | null
   createdAt: string

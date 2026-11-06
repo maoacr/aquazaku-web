@@ -242,40 +242,99 @@ describe('editarDireccionAction()', () => {
 })
 
 describe('desactivarDireccionAction()', () => {
-  /*
-   * Es un PATCH a `/desactivar`, no un DELETE. La dirección puede tener bases
-   * prestadas: borrarla dejaría el préstamo sin a dónde ir a reclamarlo.
-   */
-  it('desactiva, no borra: el préstamo tiene que seguir siendo reclamable', async () => {
-    respondeSiempre(200, {})
+  const UN_MOTIVO = 'el cliente devolvió el equipo de ese local'
 
-    await desactivarDireccionAction({}, form({ clienteId: 'cli-1', id: 'dir-7' }))
+  const baja = (extra: Record<string, string> = {}) =>
+    form({ clienteId: 'cli-1', id: 'dir-7', motivo: UN_MOTIVO, ...extra })
+
+  /*
+   * Es un PATCH a `/desactivar`, no un DELETE. La dirección no se borra: el
+   * historial de las bases que estuvieron ahí la necesita en pie para poder
+   * decir en qué puerta estuvo cada una.
+   */
+  it('desactiva, no borra: el historial de la base necesita la dirección en pie', async () => {
+    respondeSiempre(200, { basesDevueltas: 0 })
+
+    await desactivarDireccionAction({}, baja())
 
     expect(ultimoPedido().url).toBe('/direcciones/dir-7/desactivar')
     expect(ultimoPedido().metodo).toBe('PATCH')
     expect(ultimoPedido().metodo).not.toBe('DELETE')
   })
 
-  it('el mensaje dice «dada de baja», que es lo que pasó', async () => {
-    respondeSiempre(200, {})
+  /*
+   * El motivo es lo único que tres meses después explica por qué esta puerta
+   * quedó dada de baja y por qué su base volvió al parque. Sin él, `api/`
+   * responde 400 — y con razón.
+   */
+  it('manda el motivo en el cuerpo', async () => {
+    respondeSiempre(200, { basesDevueltas: 0 })
 
-    const estado = await desactivarDireccionAction({}, form({ clienteId: 'cli-1', id: 'dir-7' }))
+    await desactivarDireccionAction({}, baja())
+
+    expect(ultimoPedido().body).toEqual({ motivo: UN_MOTIVO })
+  })
+
+  it('recorta el motivo antes de mandarlo', async () => {
+    respondeSiempre(200, { basesDevueltas: 0 })
+
+    await desactivarDireccionAction({}, baja({ motivo: `  ${UN_MOTIVO}  ` }))
+
+    expect(ultimoPedido().body).toEqual({ motivo: UN_MOTIVO })
+  })
+
+  /*
+   * El conteo lo responde `api/` y es lo que confirma que hizo su parte. Quien
+   * apretó el botón tenía una base en ese local: necesita leer que volvió.
+   */
+  it('el aviso dice cuántas bases volvieron al parque', async () => {
+    respondeSiempre(200, { basesDevueltas: 1 })
+
+    const estado = await desactivarDireccionAction({}, baja())
+
+    expect(estado.ok).toContain('Dirección dada de baja.')
+    expect(estado.ok).toContain('1 base devuelta al parque')
+  })
+
+  it('con dos bases, el aviso va en plural', async () => {
+    respondeSiempre(200, { basesDevueltas: 2 })
+
+    const estado = await desactivarDireccionAction({}, baja())
+
+    expect(estado.ok).toContain('2 bases devueltas al parque')
+  })
+
+  it('sin bases, el aviso no habla de bases que no se movieron', async () => {
+    respondeSiempre(200, { basesDevueltas: 0 })
+
+    const estado = await desactivarDireccionAction({}, baja())
 
     expect(estado.ok).toBe('Dirección dada de baja.')
   })
 
-  it('refresca la ficha del cliente', async () => {
-    respondeSiempre(200, {})
+  /*
+   * Refresca TRES cosas, y la tercera es la que faltaba: si volvió una base al
+   * parque, el stock de retornables cambió. Sin ese `revalidatePath`, la
+   * pantalla de retornables seguiría mostrando la base como prestada a una
+   * dirección que ya no existe — exactamente el estado que esta operación viene
+   * a arreglar.
+   */
+  it('refresca la ficha, el padrón y el parque de retornables', async () => {
+    respondeSiempre(200, { basesDevueltas: 1 })
 
-    await desactivarDireccionAction({}, form({ clienteId: 'cli-1', id: 'dir-7' }))
+    await desactivarDireccionAction({}, baja())
 
-    expect(rutasRefrescadas()).toEqual(['/modulos/clientes/cli-1'])
+    expect(rutasRefrescadas()).toEqual([
+      '/modulos/clientes',
+      '/modulos/clientes/cli-1',
+      '/modulos/retornables',
+    ])
   })
 
   it('un error habla de dar de baja', async () => {
     vi.mocked(apiServerFetchRaw).mockResolvedValue(new Response('', { status: 500 }))
 
-    const estado = await desactivarDireccionAction({}, form({ clienteId: 'cli-1', id: 'dir-7' }))
+    const estado = await desactivarDireccionAction({}, baja())
 
     expect(estado.error).toBe('No pudimos dar de baja la dirección.')
   })

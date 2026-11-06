@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { EditarDireccion } from '@/components/clientes/editar-direccion'
-import type { Departamento, Direccion, Municipio } from '@/lib/api-types'
+import type { Departamento, DireccionConBases, Municipio } from '@/lib/api-types'
 
 vi.mock('@/app/(app)/modulos/clientes/actions', () => ({
   editarDireccionAction: vi.fn(),
@@ -26,7 +26,7 @@ const MUNICIPIOS: Municipio[] = [
   { codigo: '08137', departamento: '08', nombre: 'Campo de la Cruz', lat: 10.378, lng: -74.881 },
 ]
 
-const direccion = (extra: Partial<Direccion> = {}): Direccion =>
+const direccion = (extra: Partial<DireccionConBases> = {}): DireccionConBases =>
   ({
     id: 'dir-1',
     clienteId: 'cli-1',
@@ -48,8 +48,9 @@ const direccion = (extra: Partial<Direccion> = {}): Direccion =>
     legible: 'CL 45 # 12 - 34, Campo de la Cruz',
     activa: true,
     createdAt: '2026-09-07T00:00:00Z',
+    basesPrestadas: 0,
     ...extra,
-  }) as Direccion
+  }) as DireccionConBases
 
 const pintar = (d = direccion()) =>
   render(
@@ -130,7 +131,74 @@ describe('la baja', () => {
     fireEvent.click(screen.getByRole('button', { name: /Dar de baja/ }))
 
     expect(screen.getByText(/Deja de aparecer para despachar/)).toBeInTheDocument()
-    expect(screen.getByText(/siguen siendo reclamables/)).toBeInTheDocument()
+    expect(screen.getByText(/historial/)).toBeInTheDocument()
+  })
+
+  /*
+   * ── El texto decía lo contrario de lo que ahora pasa ──────────────────────
+   *
+   * Decía «las bases prestadas ahí siguen siendo reclamables», y era verdad
+   * mientras la baja solo marcaba la dirección inactiva: la base se quedaba
+   * colgada de una puerta que ya no existe.
+   *
+   * Ahora vuelve al parque. Si el texto siguiera igual, la pantalla estaría
+   * describiendo el defecto que acabamos de arreglar.
+   */
+  it('dice que la base vuelve al parque, no que sigue prestada', () => {
+    pintar(direccion({ basesPrestadas: 1 }))
+    fireEvent.click(screen.getByRole('button', { name: /el local/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Dar de baja/ }))
+
+    expect(screen.getByText(/vuelve al parque/)).toBeInTheDocument()
+    expect(screen.queryByText(/siguen siendo reclamables/)).not.toBeInTheDocument()
+  })
+
+  /*
+   * El número sale de la ficha, que lo calcula con `basesPrestadasEn` — la misma
+   * consulta que ejecuta la devolución. Preguntar «¿seguro?» sin decir qué se
+   * mueve es pedirle a alguien que decida a ciegas.
+   */
+  it('dice CUÁNTAS bases van a volver', () => {
+    pintar(direccion({ basesPrestadas: 2 }))
+    fireEvent.click(screen.getByRole('button', { name: /el local/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Dar de baja/ }))
+
+    expect(screen.getByText(/2 bases/)).toBeInTheDocument()
+  })
+
+  it('sin bases ahí, no inventa un conteo', () => {
+    pintar(direccion({ basesPrestadas: 0 }))
+    fireEvent.click(screen.getByRole('button', { name: /el local/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Dar de baja/ }))
+
+    expect(screen.getByText(/No hay bases prestadas/)).toBeInTheDocument()
+  })
+
+  /*
+   * ── El botón apagado DICE por qué ─────────────────────────────────────────
+   *
+   * Un botón deshabilitado sin explicación manda a la persona a buscar qué le
+   * falta. El piso de diez caracteres lo pone `api/`; acá se exige el mismo para
+   * poder decirlo antes del viaje, en vez de devolver un 400 que nadie iba a
+   * leer.
+   */
+  it('sin motivo, el botón está apagado y dice por qué', () => {
+    abrir()
+    fireEvent.click(screen.getByRole('button', { name: /Dar de baja/ }))
+
+    expect(screen.getByRole('button', { name: /Sí, darla de baja/ })).toBeDisabled()
+    expect(screen.getByText(/al menos 10 caracteres/)).toBeInTheDocument()
+  })
+
+  it('con el motivo escrito, el botón se habilita', () => {
+    abrir()
+    fireEvent.click(screen.getByRole('button', { name: /Dar de baja/ }))
+
+    fireEvent.change(screen.getByLabelText(/Por qué se da de baja/), {
+      target: { value: 'el cliente devolvió el equipo de ese local' },
+    })
+
+    expect(screen.getByRole('button', { name: /Sí, darla de baja/ })).toBeEnabled()
   })
 
   it('se puede cancelar y volver atrás', () => {

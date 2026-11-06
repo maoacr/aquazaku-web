@@ -9,7 +9,7 @@ import {
 } from '@/app/(app)/modulos/clientes/actions'
 import { FormError } from '@/components/auth/form-error'
 import { Modal } from '@/components/ui/modal'
-import type { Departamento, Direccion, Municipio } from '@/lib/api-types'
+import type { Departamento, DireccionConBases, Municipio } from '@/lib/api-types'
 import { useAvisoDeExito } from '@/lib/formulario-cliente'
 import { CamposDeDireccion } from './campos-de-direccion'
 
@@ -30,7 +30,7 @@ export function EditarDireccion({
   municipios,
 }: {
   clienteId: string
-  direccion: Direccion
+  direccion: DireccionConBases
   departamentos: Departamento[]
   municipios: Municipio[]
 }) {
@@ -77,7 +77,7 @@ function FormularioDeEdicion({
   alGuardar,
 }: {
   clienteId: string
-  direccion: Direccion
+  direccion: DireccionConBases
   departamentos: Departamento[]
   municipios: Municipio[]
   alGuardar: () => void
@@ -111,7 +111,7 @@ function FormularioDeEdicion({
         </button>
       </form>
 
-      <DarDeBaja clienteId={clienteId} id={direccion.id} alTerminar={alGuardar} />
+      <DarDeBaja clienteId={clienteId} direccion={direccion} alTerminar={alGuardar} />
     </div>
   )
 }
@@ -119,31 +119,40 @@ function FormularioDeEdicion({
 /**
  * ── Se da de BAJA, no se elimina ────────────────────────────────────────────
  *
- * Una dirección puede tener bases prestadas. Si desapareciera, el préstamo
- * dejaría de ser reclamable: nadie sabría a cuál de los tres locales ir a
- * buscar la base 0913.
+ * La dirección queda en pie porque el historial de las bases la necesita: sin
+ * ella, los préstamos viejos no se pueden traducir a un lugar y nadie sabría en
+ * cuál de los tres locales estuvo la base 0913 en marzo.
  *
  * El botón dice lo que pasa. Decir «Eliminar» y desactivar sería mentir sobre
  * el propio sistema.
  *
+ * ── Pero la base que está ahí HOY vuelve al parque ──────────────────────────
+ *
+ * Y el texto lo tiene que decir. Antes decía «las bases prestadas ahí siguen
+ * siendo reclamables», que era cierto mientras la baja solo marcaba la
+ * dirección inactiva —la base quedaba colgada de una puerta que ya no existe,
+ * ni reclamable a nadie ni disponible para prestar—. Dejarlo así ahora sería
+ * describir el defecto que se arregló.
+ *
  * ── La confirmación pregunta, no advierte ───────────────────────────────────
  *
- * Un «¿está seguro?» se contesta que sí sin leer. Decir qué va a pasar —«deja
- * de aparecer, el historial se conserva»— le da a la persona algo con qué
- * decidir.
+ * Un «¿está seguro?» se contesta que sí sin leer. Decir qué va a pasar —y
+ * CUÁNTAS bases se mueven— le da a la persona algo con qué decidir.
  */
 function DarDeBaja({
   clienteId,
-  id,
+  direccion,
   alTerminar,
 }: {
   clienteId: string
-  id: string
+  direccion: DireccionConBases
   alTerminar: () => void
 }) {
   const [confirmando, setConfirmando] = useState(false)
+  const [motivo, setMotivo] = useState('')
   const [estado, accion, enviando] = useActionState(desactivarDireccionAction, INICIAL)
   const idError = useId()
+  const idMotivo = useId()
 
   useAvisoDeExito(estado)
   if (estado.token) alTerminar()
@@ -162,20 +171,76 @@ function DarDeBaja({
     )
   }
 
+  /*
+   * El conteo viaja con la ficha y lo calcula `basesPrestadasEn` — la MISMA
+   * consulta que la baja usa para devolverlas. Eso es lo que hace que esta
+   * pantalla no pueda mentir: lo que se lee y lo que se ejecuta salen de la
+   * misma cuenta.
+   */
+  const bases = direccion.basesPrestadas
+  const plural = bases === 1 ? '' : 's'
+
+  /*
+   * El mismo piso que `api/`. Se exige acá para poder decir qué falta ANTES del
+   * viaje, en vez de devolver un 400 que nadie iba a leer.
+   */
+  const faltaMotivo = motivo.trim().length < 10
+
   return (
     <form action={accion} className="grid gap-3 border-t border-sutil pt-4">
       <input type="hidden" name="clienteId" value={clienteId} />
-      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="id" value={direccion.id} />
 
-      <p className="text-[14px] text-secundario">
-        Deja de aparecer para despachar y prestar bases. Lo que ya se le entregó se conserva: la
-        dirección no se borra, y las bases prestadas ahí siguen siendo reclamables.
+      <p className="text-[14px] text-principal">
+        Deja de aparecer para despachar y prestar bases. El historial de lo que se entregó ahí
+        se conserva: la dirección no se borra.
       </p>
+
+      {bases > 0 ? (
+        <p className="rounded-lg border border-sutil p-3 text-[14px] text-secundario">
+          <strong className="text-principal">
+            {bases} base{plural}
+          </strong>{' '}
+          prestada{plural} en esta dirección vuelve{plural === '' ? '' : 'n'} al parque y
+          queda{plural === '' ? '' : 'n'} disponible{plural} para prestar. Si el cliente se la
+          queda en otra de sus direcciones, préstesela de nuevo desde allá.
+        </p>
+      ) : (
+        <p className="text-[13px] text-tenue">
+          No hay bases prestadas en esta dirección, así que no se mueve nada del parque.
+        </p>
+      )}
 
       <FormError id={idError}>{estado.error}</FormError>
 
+      <label className="aq-etiqueta-campo" htmlFor={idMotivo}>
+        <span>
+          Por qué se da de baja <span className="text-alerta">·</span>{' '}
+          <span className="font-normal normal-case text-tenue">obligatorio</span>
+        </span>
+        <textarea
+          id={idMotivo}
+          name="motivo"
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+          rows={2}
+          placeholder="El cliente devolvió el equipo de ese local"
+          aria-describedby={idError}
+          className="aq-campo"
+        />
+        <span className="mt-1 text-[13px] font-normal normal-case text-tenue">
+          {faltaMotivo
+            ? 'Escriba al menos 10 caracteres: es lo que explica esta baja dentro de tres meses.'
+            : 'Queda en la bitácora con su nombre y la hora.'}
+        </span>
+      </label>
+
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={enviando} className="aq-boton aq-boton-primario">
+        <button
+          type="submit"
+          disabled={enviando || faltaMotivo}
+          className="aq-boton aq-boton-primario"
+        >
           {enviando ? 'Dando de baja…' : 'Sí, darla de baja'}
         </button>
         <button

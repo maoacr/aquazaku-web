@@ -166,7 +166,7 @@ export const ALL_MODULES: MenuModule[] = [
     roles: ['admin', 'contador'],
   },
   /*
-   * M16. Solo `admin`, y es la misma razón que en la matriz de `api/`: un
+   * M17. Solo `admin`, y es la misma razón que en la matriz de `api/`: un
    * movimiento de dinero no tiene contraparte física que lo delate. Un insumo
    * mal cargado se ve en el conteo del estante; un gasto mal cargado solo se ve
    * conciliando.

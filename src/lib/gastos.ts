@@ -1,7 +1,7 @@
 import type { TipoDeEgreso, TipoDeIngreso } from './api-types'
 
 /**
- * Los tipos de gasto, como se eligen y como se leen — M16.
+ * Los tipos de gasto, como se eligen y como se leen — M17.
  *
  * ── Por qué el orden no es el del enum ──────────────────────────────────────
  *

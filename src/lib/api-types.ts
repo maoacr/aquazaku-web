@@ -1006,7 +1006,7 @@ export interface SeguimientosALlamar {
   ocultas: { botellones: number; otros: number }
 }
 
-// ── Gastos y tesorería — M16 ─────────────────────────────────────────────────
+// ── Gastos y tesorería — M17 ─────────────────────────────────────────────────
 
 /**
  * Qué se pagó — el espejo de `tipo_de_egreso` en `api/`.

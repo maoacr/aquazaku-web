@@ -20,7 +20,7 @@ import { hoyEnLaPlanta } from '@/lib/hora-de-la-planta'
 import { siPuedeVerlo } from '@/lib/permiso-opcional'
 
 /**
- * Gastos y tesorería — M16.
+ * Gastos y tesorería — M17.
  *
  * ── El orden de la pantalla es el de la frecuencia ──────────────────────────
  *

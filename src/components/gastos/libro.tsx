@@ -19,7 +19,7 @@ import { pesos } from '@/lib/plata'
 const INICIAL: EstadoDeFormulario = {}
 
 /**
- * El libro de dinero — M16.
+ * El libro de dinero — M17.
  *
  * ── Una tabla y no tarjetas ─────────────────────────────────────────────────
  *

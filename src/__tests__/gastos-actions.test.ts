@@ -15,7 +15,7 @@ const { apiServerFetchRaw } = await import('@/lib/api-server')
 const { revalidatePath } = await import('next/cache')
 
 /**
- * Las mutaciones de gastos y tesorería — M16.
+ * Las mutaciones de gastos y tesorería — M17.
  *
  * ── Qué se afirma acá, y por qué no el render ───────────────────────────────
  *

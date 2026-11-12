@@ -6,7 +6,7 @@ import { type EstadoDeFormulario, exito } from '@/lib/formulario'
 import { pesos } from '@/lib/plata'
 
 /**
- * Gastos y tesorería — M16.
+ * Gastos y tesorería — M17.
  *
  * Todo pasa por `apiServerFetchRaw`: el browser nunca le habla a `api/`
  * (ADR-0002), así que estas acciones corren en el servidor y reenvían la cookie.

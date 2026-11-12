@@ -14,7 +14,7 @@ import { aCentavos, pesos } from '@/lib/plata'
 const INICIAL: EstadoDeFormulario = {}
 
 /**
- * Registrar un gasto — M16.
+ * Registrar un gasto — M17.
  *
  * ── Va primero en la pantalla ───────────────────────────────────────────────
  *

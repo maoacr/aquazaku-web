@@ -18,7 +18,7 @@ import { aCentavos, pesos } from '@/lib/plata'
 const INICIAL: EstadoDeFormulario = {}
 
 /**
- * Lo que se hace de vez en cuando — M16.
+ * Lo que se hace de vez en cuando — M17.
  *
  * Registrar un ingreso, cargar el saldo inicial de una cuenta y dar de alta una
  * cuenta bancaria. Va al final de la pantalla por frecuencia: el gasto pasa

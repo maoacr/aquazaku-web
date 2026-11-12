@@ -1,32 +1,34 @@
+import { BarrasHorizontales } from '@/components/graficos/barras-horizontales'
 import type { GastoPorTipo } from '@/lib/api-types'
 import { ETIQUETA_DE_EGRESO } from '@/lib/gastos'
 import { aCentavos, aMonto, pesos } from '@/lib/plata'
 
 /**
- * En qué se gastó la plata del mes.
+ * En qué se fue la plata del mes — M17.
  *
- * ── Barras de una sola tinta, no una por categoría ──────────────────────────
+ * ── Usa `BarrasHorizontales`, no barras propias ─────────────────────────────
  *
- * La tentación es pintar cada tipo de un color. No se puede: la marca tiene dos
- * cupos de serie —acento y éxito están a ΔE 7,8 con visión plena, y con
- * deficiencia de color se vuelven el mismo—, y catorce tipos necesitarían
- * catorce tintas distinguibles que esta paleta no tiene.
+ * La primera versión dibujaba su propio carril con un `div` y un `width` en
+ * porcentaje. Los anchos salían bien —100 %, 42 %, 23 %— pero las barras eran
+ * INVISIBLES: pintaban con `bg-acento`, que no existe como utilidad en este
+ * proyecto, así que el color computado era `rgba(0,0,0,0)`. Se veía el carril
+ * de fondo y nada más, y «Arriendo $1.800.000» y «Gas $66.200» quedaban
+ * idénticos.
  *
- * El largo de la barra ya codifica la magnitud, y está ordenada de mayor a
- * menor. El color no agregaría información: agregaría catorce decisiones que se
- * ven distintas en una pantalla al sol.
+ * Nada falló: typecheck, lint y la suite pasaron. Una clase de Tailwind que no
+ * existe no es un error de tipos, y jsdom no calcula color. Lo destapó mirar la
+ * pantalla y medir el `backgroundColor` computado.
+ *
+ * El componente que ya existía resuelve eso y más: pinta con `bg-agua/30`, usa
+ * el MÁXIMO como techo —misma decisión que había tomado yo, pero escrita antes
+ * y explicada— y trae el argumento de por qué el color no codifica categoría.
  */
 export function PorTipo({ gastos }: { gastos: GastoPorTipo[] }) {
   if (gastos.length === 0) {
-    return (
-      <p className="text-[14px] text-tenue">
-        Todavía no hay gastos registrados en este mes.
-      </p>
-    )
+    return <p className="text-[14px] text-tenue">Todavía no hay gastos registrados en este mes.</p>
   }
 
   const totalCentavos = gastos.reduce((t, g) => t + aCentavos(g.total), 0)
-  const mayor = aCentavos(gastos[0]!.total)
 
   return (
     <div className="grid gap-3">
@@ -35,45 +37,19 @@ export function PorTipo({ gastos }: { gastos: GastoPorTipo[] }) {
         <span className="aq-micro ml-2 font-normal text-tenue">en total</span>
       </p>
 
-      <ul className="grid gap-2">
-        {gastos.map((g) => {
-          const centavos = aCentavos(g.total)
-
-          return (
-            <li key={g.tipoDeEgreso} className="grid gap-1">
-              <div className="flex items-baseline justify-between gap-3 text-[14px]">
-                <span className="text-secundario">
-                  {ETIQUETA_DE_EGRESO[g.tipoDeEgreso]}
-                  {/*
-                    Cuántos movimientos, porque un total alto puede ser un pago
-                    grande o veinte chicos, y eso cambia qué hacer con el dato.
-                  */}
-                  <span className="aq-micro ml-2 text-tenue">
-                    {g.cuantos === 1 ? '1 pago' : `${g.cuantos} pagos`}
-                  </span>
-                </span>
-                <span className="aq-cifra font-medium text-principal">{pesos(g.total)}</span>
-              </div>
-
-              {/*
-                La barra es proporcional al MAYOR, no al total: con catorce tipos
-                donde el primero es el 30 %, todas las barras quedarían cortas y
-                la comparación entre ellas —que es para lo que sirven— se
-                perdería.
-              */}
-              <div
-                className="h-1.5 overflow-hidden rounded-full bg-sutil"
-                role="presentation"
-              >
-                <div
-                  className="h-full rounded-full bg-acento"
-                  style={{ width: `${mayor === 0 ? 0 : (centavos / mayor) * 100}%` }}
-                />
-              </div>
-            </li>
-          )
-        })}
-      </ul>
+      <BarrasHorizontales
+        filas={gastos.map((g) => ({
+          etiqueta: ETIQUETA_DE_EGRESO[g.tipoDeEgreso],
+          /* En centavos, que es como se compara sin perder plata. */
+          valor: aCentavos(g.total),
+          texto: pesos(g.total),
+          /*
+           * Cuántos pagos, porque un total alto puede ser un pago grande o
+           * veinte chicos, y eso cambia qué hacer con el dato.
+           */
+          chip: { texto: g.cuantos === 1 ? '1 pago' : `${g.cuantos} pagos`, tono: 'neutro' },
+        }))}
+      />
     </div>
   )
 }

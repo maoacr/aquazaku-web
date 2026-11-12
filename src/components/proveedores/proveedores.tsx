@@ -12,8 +12,9 @@ import {
 import { FormError } from '@/components/auth/form-error'
 import { Estado } from '@/components/ui/estado'
 import { Vacio } from '@/components/ui/vacio'
-import type { InsumoListado, Proveedor, TipoDeBase } from '@/lib/api-types'
-import { useAvisoDeExito } from '@/lib/formulario-cliente'
+import type { CuentaConSaldo, InsumoListado, Proveedor, TipoDeBase } from '@/lib/api-types'
+import { useAvisoDeExito, useSelectResistenteAlReset } from '@/lib/formulario-cliente'
+import { aCentavos, pesos } from '@/lib/plata'
 
 const INICIAL: EstadoDeFormulario = {}
 
@@ -154,9 +155,18 @@ type Renglon =
 export function RegistrarCompra({
   proveedores,
   insumos,
+  cuentas,
 }: {
   proveedores: Proveedor[]
   insumos: InsumoListado[]
+  /**
+   * De dónde sale la plata — RN-GAS-11.
+   *
+   * Vacío cuando quien compra no puede ver las cuentas. En ese caso la compra
+   * no se puede registrar de contado, y se dice por qué: antes la compra se
+   * guardaba igual y la caja quedaba con más plata de la que había.
+   */
+  cuentas: CuentaConSaldo[]
 }) {
   const [estado, accion, enviando] = useActionState(registrarCompraAction, INICIAL)
   const idError = useId()
@@ -169,11 +179,14 @@ export function RegistrarCompra({
   const [porKilo, setPorKilo] = useState(false)
   const [tipoDeBase, setTipoDeBase] = useState('')
   const [costoUnitario, setCostoUnitario] = useState('')
+  const [cuentaId, setCuentaId] = useState('')
+  const refCuenta = useSelectResistenteAlReset(cuentaId)
 
   useAvisoDeExito(estado)
 
   const activos = proveedores.filter((p) => p.activo)
   const aCredito = medioDePago === 'credito'
+  const conSaldo = cuentas.filter((c) => c.activa && aCentavos(c.saldo) > 0)
 
   const linea =
     que === 'insumo'
@@ -212,6 +225,11 @@ export function RegistrarCompra({
     que === 'bases' && tipoDeBase === '' && 'decir si son estructuras o dispensadores',
     !(cantidad > 0) && 'poner cuántos llegaron',
     costoUnitario === '' && 'poner el costo unitario',
+    /*
+     * RN-GAS-11. Sin cuenta, `api/` rechaza la compra entera, así que el botón
+     * dice qué falta en vez de dejar cargar todo y rebotar al final.
+     */
+    !aCredito && cuentaId === '' && 'decir de qué cuenta sale la plata',
   ].filter((x): x is string => typeof x === 'string')
 
   const completa = falta.length === 0
@@ -372,6 +390,36 @@ export function RegistrarCompra({
             <input type="date" name="venceEl" required className="aq-campo" />
           </label>
         ) : null}
+
+        {/*
+          ── De qué cuenta sale la plata — RN-GAS-11 ────────────────────────
+
+          Al revés que el vencimiento: aparece cuando NO es a crédito, porque lo
+          que se fía no mueve plata hoy. La cuenta se elige el día que se paga.
+
+          El saldo va en la opción para no tener que ir a mirarlo a otra
+          pantalla: si no alcanza, `api/` rechaza la compra entera —mercadería
+          incluida— y el error llegaría después de cargar todas las líneas.
+        */}
+        {aCredito ? null : (
+          <label className="aq-etiqueta-campo min-w-[13rem] flex-1">
+            <span>De qué cuenta sale</span>
+            <select
+              ref={refCuenta}
+              name="cuentaId"
+              value={cuentaId}
+              onChange={(e) => setCuentaId(e.target.value)}
+              className="aq-campo"
+            >
+              <option value="">Elija una cuenta…</option>
+              {conSaldo.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre} — {pesos(c.saldo)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
       {aCredito ? (

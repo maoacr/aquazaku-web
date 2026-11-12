@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { apiServerFetchRaw } from '@/lib/api-server'
 import { type EstadoDeFormulario, exito } from '@/lib/formulario'
+import { pesos } from '@/lib/plata'
 
 /**
  * Compras y proveedores — M9.
@@ -97,6 +98,7 @@ export async function registrarCompraAction(
   const lineas = JSON.parse(String(formData.get('lineas') ?? '[]')) as unknown[]
   const medioDePago = String(formData.get('medioDePago') ?? 'efectivo')
   const venceEl = String(formData.get('venceEl') ?? '').trim()
+  const cuentaId = String(formData.get('cuentaId') ?? '').trim()
 
   return enviar(
     '/compras',
@@ -105,14 +107,19 @@ export async function registrarCompraAction(
       medioDePago,
       // Solo a crédito: de contado el servidor la rechaza, y con razón.
       ...(medioDePago === 'credito' && venceEl && { venceEl }),
+      /*
+       * Y al revés con la cuenta — RN-GAS-11: lo que se paga ahora dice de
+       * dónde sale la plata; lo que se fía la elige el día que se paga.
+       */
+      ...(medioDePago !== 'credito' && cuentaId && { cuentaId }),
       lineas,
     },
     'No pudimos registrar la compra.',
     (r) => {
       const { compra } = r as { compra: { total: string; pagada: boolean; venceEl: string | null } }
       return compra.pagada
-        ? `Compra registrada por $${compra.total}.`
-        : `Compra registrada por $${compra.total}. Vence el ${compra.venceEl}.`
+        ? `Compra registrada por ${pesos(compra.total)}, y la plata salió de la cuenta.`
+        : `Compra registrada por ${pesos(compra.total)}. Vence el ${compra.venceEl}.`
     },
   )
 }
@@ -123,11 +130,12 @@ export async function marcarPagadaAction(
 ): Promise<EstadoDeFormulario> {
   const id = String(formData.get('compraId') ?? '')
 
+  /* Pagar mueve plata, así que hay que decir de qué cuenta sale — RN-GAS-11. */
   return enviar(
     `/compras/${id}/pago`,
-    {},
+    { cuentaId: String(formData.get('cuentaId') ?? '') },
     'No pudimos marcarla pagada.',
-    (r) => `Compra de $${(r as { total: string }).total} marcada como pagada.`,
+    (r) => `Compra de ${pesos((r as { total: string }).total)} pagada.`,
   )
 }
 

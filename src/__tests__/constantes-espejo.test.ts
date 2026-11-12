@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { TipoDeBase } from '@/lib/api-types'
+import type { TipoDeBase, TipoDeEgreso, TipoDeIngreso } from '@/lib/api-types'
 import { DIAS_MAXIMOS_HACIA_ATRAS } from '@/components/ventas/mostrador'
+import { TIPOS_DE_EGRESO, TIPOS_DE_INGRESO } from '@/lib/gastos'
 import { LARGO_MINIMO_MOTIVO } from '@/lib/motivos'
 
 /**
@@ -64,5 +65,104 @@ describe('las constantes que `api/` también define', () => {
       tipos,
       'si `api/` agrega un tipo de base, agregalo acá, en `TipoDeBase` y en el desplegable de `src/components/retornables/bases.tsx`',
     ).toEqual(['estructura', 'dispensador'])
+  })
+
+  /**
+   * RN-GAS-06. Los catorce tipos de gasto.
+   *
+   * `ETIQUETA_DE_EGRESO` y `AYUDA_DE_EGRESO` son `Record<TipoDeEgreso, string>`,
+   * así que al compilador ya no se le escapa un tipo sin etiqueta. Lo que NO
+   * vigila el compilador es `TIPOS_DE_EGRESO`: es la lista del desplegable, y un
+   * tipo que falte ahí queda **imposible de elegir desde la pantalla** sin que
+   * falle nada — simplemente no aparece, el gasto se carga como «otro» o no se
+   * carga, y la caja deja de cuadrar contra la plata física.
+   *
+   * El orden es el de uso, no el del enum: lo que se paga todos los meses va
+   * arriba. Por eso se compara ordenado — lo que importa es el CONJUNTO.
+   *
+   * El espejo es `api/src/lib/__tests__/constantes-espejo.test.ts`, que fija la
+   * misma lista contra el enum `tipo_de_egreso` de la base.
+   */
+  it('hay diecisiete tipos de gasto, los mismos que el enum de `api/`', () => {
+    const tipos: TipoDeEgreso[] = [...TIPOS_DE_EGRESO]
+
+    expect(
+      [...tipos].sort(),
+      'si `api/` agrega un tipo de gasto, agregalo en `TIPOS_DE_EGRESO` de `src/lib/gastos.ts` y en `TipoDeEgreso`: sin eso no se puede elegir desde la pantalla',
+    ).toEqual(
+      [
+        'energia',
+        'acueducto',
+        'gas',
+        'internet',
+        'arriendo',
+        'nomina',
+        'software',
+        'servicio',
+        'repuesto',
+        'mantenimiento',
+        'litografia',
+        'impuesto',
+        'equipo',
+        'mueble',
+        'transporte',
+        'comision_bancaria',
+        'otro',
+      ].sort(),
+    )
+  })
+
+  /**
+   * RN-GAS-07. Lo que NO puede estar, y es la mitad que protege el dinero.
+   *
+   * Los insumos, las bases y los botellones entran por una compra a proveedor,
+   * que mueve el inventario en la misma transacción. Un tipo de gasto para
+   * ellos abriría una segunda vía para el mismo peso, y el mes se contaría dos
+   * veces. Acá se vigila desde `web/` también porque es el lado donde alguien
+   * «completaría la lista» mirando el desplegable.
+   */
+  it('ningún tipo de gasto mueve inventario', () => {
+    for (const prohibido of ['insumo', 'insumos', 'base', 'bases', 'botellon', 'botellones']) {
+      expect(
+        TIPOS_DE_EGRESO as readonly string[],
+        `«${prohibido}» no va acá: eso entra por una compra a proveedor, que mueve el inventario. Con las dos vías abiertas, el mes se cuenta dos veces (RN-GAS-07)`,
+      ).not.toContain(prohibido)
+    }
+  })
+
+  /** RN-GAS-10. Los cinco orígenes de ingreso, con el recaudo de ventas entre ellos. */
+  it('hay cinco orígenes de ingreso, los mismos que el enum de `api/`', () => {
+    const tipos: TipoDeIngreso[] = [...TIPOS_DE_INGRESO]
+
+    expect(
+      [...tipos].sort(),
+      'si `api/` agrega un origen de ingreso, agregalo en `TIPOS_DE_INGRESO` de `src/lib/gastos.ts` y en `TipoDeIngreso`',
+    ).toEqual(
+      ['aporte_socio', 'prestamo', 'recaudo_de_ventas', 'devolucion_de_proveedor', 'otro'].sort(),
+    )
+  })
+})
+
+/**
+ * Los grupos del desplegable — M17.
+ *
+ * La agrupación es de PANTALLA: no viaja a `api/` ni se guarda. Pero si un tipo
+ * se queda fuera de todos los grupos, **desaparece del desplegable** sin que
+ * falle nada — el mismo modo de falla silencioso que vigila el espejo del enum,
+ * un nivel más abajo.
+ */
+describe('los grupos del desplegable de gastos', () => {
+  it('cubren exactamente los diecisiete tipos, sin repetir ninguno', async () => {
+    const { GRUPOS_DE_EGRESO, TIPOS_DE_EGRESO } = await import('@/lib/gastos')
+    const agrupados = GRUPOS_DE_EGRESO.flatMap((g) => g.tipos)
+
+    expect(
+      [...agrupados].sort(),
+      'un tipo que no esté en ningún grupo no aparece en el desplegable, y nada falla',
+    ).toEqual([...TIPOS_DE_EGRESO].sort())
+
+    expect(new Set(agrupados).size, 'un tipo en dos grupos se ofrece dos veces').toBe(
+      agrupados.length,
+    )
   })
 })

@@ -5,7 +5,20 @@ import { AvisoDeBases } from '@/components/retornables/aviso-de-bases'
 import { RegistrarCompra } from '@/components/proveedores/proveedores'
 import { DarDeAltaBase, ListaDeBases, PrestarBase } from '@/components/retornables/bases'
 import { darDeAltaBaseAction } from '@/app/(app)/modulos/retornables/actions'
-import type { Base, DisponibilidadDeBases, Proveedor } from '@/lib/api-types'
+import type { Base, CuentaConSaldo, DisponibilidadDeBases, Proveedor } from '@/lib/api-types'
+
+/** La caja de la que sale la plata de las compras — RN-GAS-11. */
+const CAJA_DE_PRUEBA: CuentaConSaldo = {
+  id: 'cta-1',
+  nombre: 'Caja menor',
+  tipo: 'caja_menor',
+  banco: null,
+  numero: null,
+  tipoDeCuentaBancaria: null,
+  activa: true,
+  createdAt: '2026-11-01T12:00:00.000Z',
+  saldo: '5000000.00',
+}
 
 vi.mock('@/app/(app)/modulos/retornables/actions', () => ({
   darDeAltaBaseAction: vi.fn(),
@@ -212,7 +225,7 @@ describe('la compra a proveedor pide el tipo cuando la línea trae bases', () =>
 
   it('el selector aparece solo al elegir bases', async () => {
     const usuario = userEvent.setup()
-    render(<RegistrarCompra proveedores={proveedores} insumos={[]} />)
+    render(<RegistrarCompra proveedores={proveedores} insumos={[]} cuentas={[CAJA_DE_PRUEBA]} />)
 
     expect(screen.queryByRole('combobox', { name: /tipo de base/i })).not.toBeInTheDocument()
 
@@ -227,7 +240,7 @@ describe('la compra a proveedor pide el tipo cuando la línea trae bases', () =>
    */
   it('el tipo elegido entra en la línea que viaja', async () => {
     const usuario = userEvent.setup()
-    const { container } = render(<RegistrarCompra proveedores={proveedores} insumos={[]} />)
+    const { container } = render(<RegistrarCompra proveedores={proveedores} insumos={[]} cuentas={[CAJA_DE_PRUEBA]} />)
 
     await usuario.selectOptions(screen.getByRole('combobox', { name: /proveedor/i }), 'prov-1')
     await usuario.selectOptions(screen.getByRole('combobox', { name: /qué llegó/i }), 'bases')
@@ -237,6 +250,8 @@ describe('la compra a proveedor pide el tipo cuando la línea trae bases', () =>
     )
     await usuario.type(screen.getByRole('spinbutton', { name: /cuántos/i }), '5')
     await usuario.type(screen.getByLabelText(/costo por unidad/i), '950000')
+    /* RN-GAS-11: una compra de contado dice de qué cuenta sale la plata. */
+    await usuario.selectOptions(screen.getByLabelText(/de qué cuenta sale/i), 'cta-1')
 
     const lineas = container.querySelector('input[name="lineas"]') as HTMLInputElement
 
@@ -251,12 +266,14 @@ describe('la compra a proveedor pide el tipo cuando la línea trae bases', () =>
    */
   it('sin tipo elegido la línea no sale, y la pantalla dice qué falta', async () => {
     const usuario = userEvent.setup()
-    const { container } = render(<RegistrarCompra proveedores={proveedores} insumos={[]} />)
+    const { container } = render(<RegistrarCompra proveedores={proveedores} insumos={[]} cuentas={[CAJA_DE_PRUEBA]} />)
 
     await usuario.selectOptions(screen.getByRole('combobox', { name: /proveedor/i }), 'prov-1')
     await usuario.selectOptions(screen.getByRole('combobox', { name: /qué llegó/i }), 'bases')
     await usuario.type(screen.getByRole('spinbutton', { name: /cuántos/i }), '5')
     await usuario.type(screen.getByLabelText(/costo por unidad/i), '950000')
+    /* RN-GAS-11: una compra de contado dice de qué cuenta sale la plata. */
+    await usuario.selectOptions(screen.getByLabelText(/de qué cuenta sale/i), 'cta-1')
 
     const lineas = container.querySelector('input[name="lineas"]') as HTMLInputElement
 

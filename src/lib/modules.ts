@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Truck,
   Users,
+  Wallet,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Role } from './roles'
@@ -163,6 +164,19 @@ export const ALL_MODULES: MenuModule[] = [
     href: '/modulos/reportes',
     icono: FileSpreadsheet,
     roles: ['admin', 'contador'],
+  },
+  /*
+   * M17. Solo `admin`, y es la misma razón que en la matriz de `api/`: un
+   * movimiento de dinero no tiene contraparte física que lo delate. Un insumo
+   * mal cargado se ve en el conteo del estante; un gasto mal cargado solo se ve
+   * conciliando.
+   */
+  {
+    id: 'gastos',
+    label: 'Gastos',
+    href: '/modulos/gastos',
+    icono: Wallet,
+    roles: ['admin'],
   },
   { id: 'usuarios', label: 'Usuarios', href: '/modulos/usuarios', icono: Users, roles: ['admin'] },
   // Admin y contador ven la MISMA auditoría. Qué filas trae cada uno lo decide

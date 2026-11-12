@@ -145,6 +145,7 @@ describe('computeVisibleModules()', () => {
       'retornables',
       'proveedores',
       'reportes',
+      'gastos',
       'usuarios',
       'auditoria',
       // M12: mover un umbral es una decisión del negocio, no de la operación.

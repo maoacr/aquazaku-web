@@ -7,7 +7,20 @@ import {
   MarcarPagada,
   RegistrarCompra,
 } from '@/components/proveedores/proveedores'
-import type { InsumoListado, Proveedor } from '@/lib/api-types'
+import type { CuentaConSaldo, InsumoListado, Proveedor } from '@/lib/api-types'
+
+/** La caja de la que sale la plata de las compras — RN-GAS-11. */
+const CAJA_DE_PRUEBA: CuentaConSaldo = {
+  id: 'cta-1',
+  nombre: 'Caja menor',
+  tipo: 'caja_menor',
+  banco: null,
+  numero: null,
+  tipoDeCuentaBancaria: null,
+  activa: true,
+  createdAt: '2026-11-01T12:00:00.000Z',
+  saldo: '5000000.00',
+}
 
 vi.mock('@/app/(app)/modulos/proveedores/actions', () => ({
   cambiarEstadoAction: vi.fn(async () => ({})),
@@ -189,7 +202,7 @@ describe('RegistrarCompra — una línea compra una sola cosa', () => {
     return render(
       <RegistrarCompra
         proveedores={over.proveedores ?? [proveedor()]}
-        insumos={over.insumos ?? [insumo()]}
+        insumos={over.insumos ?? [insumo()]} cuentas={[CAJA_DE_PRUEBA]}
       />,
     )
   }
@@ -274,7 +287,7 @@ describe('RegistrarCompra — una línea compra una sola cosa', () => {
 describe('RegistrarCompra — el vencimiento solo a crédito (RN-PRO-07)', () => {
   async function elegirPago(medio: string) {
     const usuario = userEvent.setup()
-    render(<RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} />)
+    render(<RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} cuentas={[CAJA_DE_PRUEBA]} />)
     await usuario.selectOptions(screen.getByRole('combobox', { name: /Cómo se pagó/ }), medio)
   }
 
@@ -316,11 +329,20 @@ describe('RegistrarCompra — lo que viaja en el campo oculto', () => {
     await usuario.selectOptions(screen.getByRole('combobox', { name: /Cuál/ }), 'ins-1')
     await usuario.type(screen.getByRole('spinbutton', { name: /Cuántos/ }), '10')
     await usuario.type(screen.getByRole('textbox', { name: /Costo por unidad/ }), '18000')
+    /*
+     * Desde M17, una compra que se paga ahora tiene que decir de qué cuenta
+     * sale la plata — RN-GAS-11. Sin esto el formulario queda incompleto y la
+     * línea no viaja, que es exactamente lo que debe pasar.
+     */
+    await usuario.selectOptions(
+      screen.getByRole('combobox', { name: /De qué cuenta sale/ }),
+      'cta-1',
+    )
   }
 
   it('incompleta manda la lista vacía y el botón bloqueado', () => {
     const { container } = render(
-      <RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} />,
+      <RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} cuentas={[CAJA_DE_PRUEBA]} />,
     )
 
     expect(lineasQueViajan(container)).toEqual([])
@@ -330,7 +352,7 @@ describe('RegistrarCompra — lo que viaja en el campo oculto', () => {
   it('completa manda la línea y habilita el botón', async () => {
     const usuario = userEvent.setup()
     const { container } = render(
-      <RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} />,
+      <RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} cuentas={[CAJA_DE_PRUEBA]} />,
     )
 
     await llenar(usuario)
@@ -344,7 +366,7 @@ describe('RegistrarCompra — lo que viaja en el campo oculto', () => {
   it('sin elegir el insumo la línea no viaja, aunque haya cantidad y costo', async () => {
     const usuario = userEvent.setup()
     const { container } = render(
-      <RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} />,
+      <RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} cuentas={[CAJA_DE_PRUEBA]} />,
     )
 
     await usuario.selectOptions(screen.getByRole('combobox', { name: /Proveedor/ }), 'prv-1')
@@ -363,7 +385,7 @@ describe('RegistrarCompra — lo que viaja en el campo oculto', () => {
   it('por kilo manda los kilos junto a la cantidad', async () => {
     const usuario = userEvent.setup()
     const { container } = render(
-      <RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} />,
+      <RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} cuentas={[CAJA_DE_PRUEBA]} />,
     )
 
     await llenar(usuario)
@@ -377,7 +399,7 @@ describe('RegistrarCompra — lo que viaja en el campo oculto', () => {
   it('comprando bases la línea no lleva insumoId', async () => {
     const usuario = userEvent.setup()
     const { container } = render(
-      <RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} />,
+      <RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} cuentas={[CAJA_DE_PRUEBA]} />,
     )
 
     await usuario.selectOptions(screen.getByRole('combobox', { name: /Proveedor/ }), 'prv-1')
@@ -389,6 +411,11 @@ describe('RegistrarCompra — lo que viaja en el campo oculto', () => {
     )
     await usuario.type(screen.getByRole('spinbutton', { name: /Cuántos/ }), '20')
     await usuario.type(screen.getByRole('textbox', { name: /Costo por unidad/ }), '35000')
+    /* RN-GAS-11: una compra de contado dice de qué cuenta sale la plata. */
+    await usuario.selectOptions(
+      screen.getByRole('combobox', { name: /De qué cuenta sale/ }),
+      'cta-1',
+    )
 
     const [linea] = lineasQueViajan(container) as Record<string, unknown>[]
     expect(linea).not.toHaveProperty('insumoId')
@@ -403,7 +430,7 @@ describe('RegistrarCompra — lo que viaja en el campo oculto', () => {
   it('el medio de pago también viaja en su campo oculto', async () => {
     const usuario = userEvent.setup()
     const { container } = render(
-      <RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} />,
+      <RegistrarCompra proveedores={[proveedor()]} insumos={[insumo()]} cuentas={[CAJA_DE_PRUEBA]} />,
     )
 
     await usuario.selectOptions(screen.getByRole('combobox', { name: /Cómo se pagó/ }), 'credito')

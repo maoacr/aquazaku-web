@@ -6,7 +6,7 @@ import {
 } from '@/components/proveedores/proveedores'
 import { SelloDeHora } from '@/components/ui/sello-de-hora'
 import { apiServerFetch } from '@/lib/api-server'
-import type { CompraVencida, InsumoListado, Proveedor } from '@/lib/api-types'
+import type { CompraVencida, CuentaConSaldo, InsumoListado, Proveedor } from '@/lib/api-types'
 import { siPuedeVerlo } from '@/lib/permiso-opcional'
 
 /**
@@ -30,7 +30,7 @@ import { siPuedeVerlo } from '@/lib/permiso-opcional'
  * cambie, y lo haría en silencio.
  */
 export default async function ProveedoresPage() {
-  const [proveedores, insumos, vencidas] = await Promise.all([
+  const [proveedores, insumos, vencidas, cuentas] = await Promise.all([
     apiServerFetch<Proveedor[]>('/proveedores?incluirInactivos=si'),
     /*
      * Los insumos alimentan el desplegable de la compra. El `contador` no los
@@ -38,6 +38,12 @@ export default async function ProveedoresPage() {
      */
     siPuedeVerlo(apiServerFetch<InsumoListado[]>('/insumos')),
     siPuedeVerlo(apiServerFetch<CompraVencida[]>('/compras/vencidas')),
+    /*
+     * De dónde sale la plata de la compra — RN-GAS-11. Opcional porque solo el
+     * `admin` ve las cuentas: quien no las vea no puede registrar una compra de
+     * contado, y el formulario lo dice en vez de dejarla rebotar en `api/`.
+     */
+    siPuedeVerlo(apiServerFetch<CuentaConSaldo[]>('/cuentas')),
   ])
 
   const leidoEn = new Date()
@@ -58,7 +64,9 @@ export default async function ProveedoresPage() {
         proveedor pasa una vez cada tanto, y va al final por eso — el mismo
         orden que en retornables.
       */}
-      {insumos ? <RegistrarCompra proveedores={proveedores} insumos={insumos} /> : null}
+      {insumos ? (
+        <RegistrarCompra proveedores={proveedores} insumos={insumos} cuentas={cuentas ?? []} />
+      ) : null}
 
       <section className="grid gap-3">
         <h2 className="aq-micro text-tenue">

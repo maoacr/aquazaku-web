@@ -1005,3 +1005,104 @@ export interface SeguimientosALlamar {
    */
   ocultas: { botellones: number; otros: number }
 }
+
+// ── Gastos y tesorería — M17 ─────────────────────────────────────────────────
+
+/**
+ * Qué se pagó — el espejo de `tipo_de_egreso` en `api/`.
+ *
+ * Es un HECHO operacional, no una clasificación contable: «es costo, gasto o
+ * activo fijo» vive en `clasificacion` y nace en `null` (RN-GAS-06).
+ *
+ * No hay `insumo`, `base` ni `botellon`: esos entran por una compra a proveedor,
+ * que mueve el inventario en la misma transacción. Si se pudieran registrar
+ * también como gasto, el mes se contaría dos veces (RN-GAS-07).
+ */
+export type TipoDeEgreso =
+  | 'energia'
+  | 'acueducto'
+  | 'gas'
+  | 'internet'
+  | 'arriendo'
+  | 'nomina'
+  | 'software'
+  | 'servicio'
+  | 'repuesto'
+  | 'mantenimiento'
+  | 'litografia'
+  | 'impuesto'
+  | 'equipo'
+  | 'mueble'
+  | 'transporte'
+  | 'comision_bancaria'
+  | 'otro'
+
+/** De dónde vino la plata que entró — espejo de `tipo_de_ingreso`. */
+export type TipoDeIngreso =
+  | 'aporte_socio'
+  | 'prestamo'
+  | 'recaudo_de_ventas'
+  | 'devolucion_de_proveedor'
+  | 'otro'
+
+export type TipoDeCuentaDeDinero = 'caja_menor' | 'caja_mayor' | 'banco'
+
+/** Los tipos que el tramo 1 sabe escribir. Traslados y arqueos son el tramo 2. */
+export type TipoDeMovimientoDeDinero =
+  | 'saldo_inicial'
+  | 'ingreso'
+  | 'egreso'
+  | 'traslado_salida'
+  | 'traslado_entrada'
+  | 'sobrante_de_arqueo'
+  | 'faltante_de_arqueo'
+
+/**
+ * Una cuenta con su saldo.
+ *
+ * El saldo viaja JUNTO con la cuenta y no en otro endpoint, porque son el mismo
+ * dato: dos llamadas dejarían la pantalla capaz de pintar un saldo de una carga
+ * vieja al lado de una cuenta de la nueva.
+ */
+export interface CuentaConSaldo {
+  id: string
+  nombre: string
+  tipo: TipoDeCuentaDeDinero
+  banco: string | null
+  numero: string | null
+  tipoDeCuentaBancaria: 'ahorros' | 'corriente' | null
+  activa: boolean
+  createdAt: string
+  /** `SUM(efecto)` sobre el libro. No existe como columna — RN-GAS-01. */
+  saldo: string
+}
+
+/** Una fila del libro de dinero, con el nombre de la cuenta ya resuelto. */
+export interface MovimientoDeDinero {
+  id: string
+  cuentaId: string
+  cuenta: string
+  tipo: TipoDeMovimientoDeDinero
+  /** Siempre positivo. El signo lo pone `efecto` desde el tipo — RN-GAS-02. */
+  monto: string
+  /** Cuánto movió el saldo, con signo. Cero si está anulado. */
+  efecto: string
+  /** Cuándo OCURRIÓ, que no es cuándo se registró — RN-GAS-08. */
+  ocurridoEl: string
+  concepto: string
+  tipoDeEgreso: TipoDeEgreso | null
+  tipoDeIngreso: TipoDeIngreso | null
+  proveedor: string | null
+  beneficiario: string | null
+  numeroDeFactura: string | null
+  anulado: boolean
+  motivoAnulacion: string | null
+  createdAt: string
+}
+
+/** En qué se gastó la plata del período. */
+export interface GastoPorTipo {
+  tipoDeEgreso: TipoDeEgreso
+  total: string
+  cuantos: number
+}

@@ -1019,7 +1019,10 @@ export interface SeguimientosALlamar {
  * también como gasto, el mes se contaría dos veces (RN-GAS-07).
  */
 export type TipoDeEgreso =
-  | 'recibo_publico'
+  | 'energia'
+  | 'acueducto'
+  | 'gas'
+  | 'internet'
   | 'arriendo'
   | 'nomina'
   | 'software'

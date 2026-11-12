@@ -83,7 +83,7 @@ describe('las constantes que `api/` también define', () => {
    * El espejo es `api/src/lib/__tests__/constantes-espejo.test.ts`, que fija la
    * misma lista contra el enum `tipo_de_egreso` de la base.
    */
-  it('hay catorce tipos de gasto, los mismos que el enum de `api/`', () => {
+  it('hay diecisiete tipos de gasto, los mismos que el enum de `api/`', () => {
     const tipos: TipoDeEgreso[] = [...TIPOS_DE_EGRESO]
 
     expect(
@@ -91,7 +91,10 @@ describe('las constantes que `api/` también define', () => {
       'si `api/` agrega un tipo de gasto, agregalo en `TIPOS_DE_EGRESO` de `src/lib/gastos.ts` y en `TipoDeEgreso`: sin eso no se puede elegir desde la pantalla',
     ).toEqual(
       [
-        'recibo_publico',
+        'energia',
+        'acueducto',
+        'gas',
+        'internet',
         'arriendo',
         'nomina',
         'software',
@@ -149,7 +152,7 @@ describe('las constantes que `api/` también define', () => {
  * un nivel más abajo.
  */
 describe('los grupos del desplegable de gastos', () => {
-  it('cubren exactamente los catorce tipos, sin repetir ninguno', async () => {
+  it('cubren exactamente los diecisiete tipos, sin repetir ninguno', async () => {
     const { GRUPOS_DE_EGRESO, TIPOS_DE_EGRESO } = await import('@/lib/gastos')
     const agrupados = GRUPOS_DE_EGRESO.flatMap((g) => g.tipos)
 

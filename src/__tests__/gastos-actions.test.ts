@@ -60,7 +60,7 @@ function loQueViajo(): { url: string; metodo: string; cuerpo: Record<string, unk
 
 const UN_GASTO = {
   cuentaId: '11111111-1111-1111-1111-111111111111',
-  tipoDeEgreso: 'recibo_publico',
+  tipoDeEgreso: 'energia',
   monto: '80000',
   ocurridoEl: '2026-11-10',
   concepto: 'Recibo de la luz de octubre',

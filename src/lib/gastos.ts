@@ -13,7 +13,10 @@ import type { TipoDeEgreso, TipoDeIngreso } from './api-types'
  * `otro` va último a propósito: es la salida, no la primera opción.
  */
 export const TIPOS_DE_EGRESO: readonly TipoDeEgreso[] = [
-  'recibo_publico',
+  'energia',
+  'acueducto',
+  'gas',
+  'internet',
   'arriendo',
   'nomina',
   'transporte',
@@ -37,7 +40,10 @@ export const TIPOS_DE_EGRESO: readonly TipoDeEgreso[] = [
  * `NOMBRE` en las columnas de reportes.
  */
 export const ETIQUETA_DE_EGRESO: Record<TipoDeEgreso, string> = {
-  recibo_publico: 'Recibo público',
+  energia: 'Energía',
+  acueducto: 'Agua',
+  gas: 'Gas',
+  internet: 'Internet',
   arriendo: 'Arriendo',
   nomina: 'Nómina',
   transporte: 'Transporte',
@@ -55,14 +61,17 @@ export const ETIQUETA_DE_EGRESO: Record<TipoDeEgreso, string> = {
 
 /** La ayuda de cada tipo, para que nadie tenga que adivinar dónde va un gasto. */
 export const AYUDA_DE_EGRESO: Record<TipoDeEgreso, string> = {
-  recibo_publico: 'Agua, luz, gas, internet',
+  energia: 'El recibo de la luz',
+  acueducto: 'Acueducto y alcantarillado',
+  gas: 'El recibo del gas',
+  internet: 'El internet del local',
   arriendo: 'El local, la bodega',
   nomina: 'Sueldos y quincenas',
   transporte: 'Gasolina, fletes, domicilios',
   servicio: 'Mano de obra, contrataciones, desarrollo',
   mantenimiento: 'De la planta y de los equipos',
   repuesto: 'Piezas de la planta de tratamiento',
-  software: 'Hosting, licencias, suscripciones',
+  software: 'Hosting, licencias y suscripciones — el internet va aparte',
   litografia: 'Facturas, stickers, publicidad, banners',
   impuesto: 'Impuestos y declaraciones',
   comision_bancaria: 'Cuota de manejo, 4x1000, costo de transferencia',
@@ -91,7 +100,13 @@ export const GRUPOS_DE_EGRESO: ReadonlyArray<{
   titulo: string
   tipos: readonly TipoDeEgreso[]
 }> = [
-  { titulo: 'Todos los meses', tipos: ['recibo_publico', 'arriendo', 'nomina'] },
+  /*
+   * Los servicios públicos van en su propio grupo y uno por empresa que
+   * factura. Agrupados en un solo «recibo público» no se podía contestar
+   * «¿cuánto se me va en luz?» — que es la pregunta que se hace de verdad.
+   */
+  { titulo: 'Servicios públicos', tipos: ['energia', 'acueducto', 'gas', 'internet'] },
+  { titulo: 'Todos los meses', tipos: ['arriendo', 'nomina'] },
   { titulo: 'La operación', tipos: ['transporte', 'servicio', 'mantenimiento', 'repuesto'] },
   {
     titulo: 'Administración',

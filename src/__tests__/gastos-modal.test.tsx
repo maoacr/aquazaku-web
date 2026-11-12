@@ -150,7 +150,7 @@ describe('el formulario manda lo que se llenó', () => {
    * `<optgroup>` es cosmético, pero un tipo que se caiga de los grupos
    * desaparece del desplegable sin que falle nada.
    */
-  it('ofrece los catorce tipos, agrupados por categoría', async () => {
+  it('ofrece los diecisiete tipos, agrupados por categoría', async () => {
     const { GRUPOS_DE_EGRESO, TIPOS_DE_EGRESO } = await import('@/lib/gastos')
 
     render(<RegistrarGasto cuentas={[cajaMenor]} proveedores={[]} hoy={HOY} />)

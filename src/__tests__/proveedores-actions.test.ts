@@ -149,8 +149,13 @@ describe('cambiarEstadoAction()', () => {
  * venta: son una lista de largo variable y un formulario plano no la expresa.
  */
 describe('registrarCompraAction()', () => {
-  const COMPRA_PAGADA = { compra: { total: '12.000', pagada: true, venceEl: null } }
-  const COMPRA_A_CREDITO = { compra: { total: '12.000', pagada: false, venceEl: '2026-10-18' } }
+  /*
+   * `api/` devuelve `numeric(12,2)`: `'12000.00'`. El punto de miles es formato
+   * de PRESENTACIÓN y nunca viaja en el JSON — con `'12.000'` acá, `Number()`
+   * lee el punto como decimal y el mensaje dice «$ 12».
+   */
+  const COMPRA_PAGADA = { compra: { total: '12000.00', pagada: true, venceEl: null } }
+  const COMPRA_A_CREDITO = { compra: { total: '12000.00', pagada: false, venceEl: '2026-10-18' } }
 
   it('va por POST a compras', async () => {
     respondeSiempre(201, COMPRA_PAGADA)
@@ -242,7 +247,12 @@ describe('registrarCompraAction()', () => {
 
     const estado = await registrarCompraAction({}, form({ proveedorId: 'prv-1', lineas: LINEAS }))
 
-    expect(estado.ok).toBe('Compra registrada por $12.000.')
+    /*
+     * El espacio entre `$` y el número es un NBSP (U+00A0), no un espacio
+     * común: lo pone `Intl.NumberFormat`. Escrito con un espacio normal el
+     * test falla mostrando dos cadenas que se ven idénticas.
+     */
+    expect(estado.ok).toBe('Compra registrada por $\u00a012.000, y la plata salió de la cuenta.')
   })
 
   /*
@@ -295,7 +305,7 @@ describe('registrarCompraAction()', () => {
 
 describe('marcarPagadaAction()', () => {
   it('va por POST al pago de esa compra', async () => {
-    respondeSiempre(200, { total: '12.000' })
+    respondeSiempre(200, { total: '12000.00' })
 
     await marcarPagadaAction({}, form({ compraId: 'com-1' }))
 
@@ -304,23 +314,27 @@ describe('marcarPagadaAction()', () => {
   })
 
   /*
-   * Cuerpo vacío: cuánto se pagó y cuándo lo sabe `api/`. Mandar un monto desde
-   * la pantalla dejaría que el navegador decida cuánto se saldó.
+   * Manda la CUENTA y nada más — RN-GAS-11.
+   *
+   * Cuánto se pagó lo sabe `api/`: mandar el monto desde la pantalla dejaría
+   * que el navegador decida cuánto se saldó. Pero de qué cuenta sale la plata
+   * SÍ es una decisión de quien paga, y sin ella la compra quedaba pagada sin
+   * que ninguna caja bajara.
    */
-  it('no manda monto: cuánto se saldó lo sabe api/', async () => {
-    respondeSiempre(200, { total: '12.000' })
+  it('manda la cuenta y no el monto: cuánto se saldó lo sabe api/', async () => {
+    respondeSiempre(200, { total: '12000.00' })
 
-    await marcarPagadaAction({}, form({ compraId: 'com-1' }))
+    await marcarPagadaAction({}, form({ compraId: 'com-1', cuentaId: 'cta-1' }))
 
-    expect(ultimoPedido().body).toEqual({})
+    expect(ultimoPedido().body).toEqual({ cuentaId: 'cta-1' })
   })
 
   it('el mensaje confirma el monto que devolvió api/', async () => {
-    respondeSiempre(200, { total: '12.000' })
+    respondeSiempre(200, { total: '12000.00' })
 
     const estado = await marcarPagadaAction({}, form({ compraId: 'com-1' }))
 
-    expect(estado.ok).toBe('Compra de $12.000 marcada como pagada.')
+    expect(estado.ok).toBe('Compra de $\u00a012.000 pagada.')
   })
 
   it('su genérico habla de marcarla pagada', async () => {

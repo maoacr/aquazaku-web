@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RegistrarGasto } from '@/components/gastos/registrar-gasto'
@@ -178,7 +178,14 @@ describe('el formulario manda lo que se llenó', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Registrar el pago' }))
 
-    expect(screen.queryByLabelText(/Qué se pagó/)).not.toBeInTheDocument()
+    /*
+     * `waitFor` y no una aserción seca: el cierre lo hace un efecto, y un
+     * efecto corre DESPUÉS del commit. Sin esperar, el test pasa cuando la
+     * máquina va lenta y falla cuando va rápida — o al revés.
+     */
+    await waitFor(() => {
+      expect(screen.queryByLabelText(/Qué se pagó/)).not.toBeInTheDocument()
+    })
   })
 
   it('con un error se queda abierto, y muestra qué pasó', async () => {

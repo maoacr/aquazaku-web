@@ -1,7 +1,7 @@
 'use client'
 
 import { Plus } from 'lucide-react'
-import { useActionState, useId, useState } from 'react'
+import { useActionState, useEffect, useId, useRef, useState } from 'react'
 import {
   type EstadoDeFormulario,
   registrarGastoAction,
@@ -9,11 +9,7 @@ import {
 import { FormError } from '@/components/auth/form-error'
 import { Modal } from '@/components/ui/modal'
 import type { CuentaConSaldo, Proveedor, TipoDeEgreso } from '@/lib/api-types'
-import {
-  useAvisoDeExito,
-  useLimpiezaAlRegistrar,
-  useSelectResistenteAlReset,
-} from '@/lib/formulario-cliente'
+import { useAvisoDeExito, useSelectResistenteAlReset } from '@/lib/formulario-cliente'
 import { AYUDA_DE_EGRESO, ETIQUETA_DE_EGRESO, GRUPOS_DE_EGRESO } from '@/lib/gastos'
 import { aCentavos, pesos } from '@/lib/plata'
 
@@ -115,11 +111,27 @@ function Formulario({
   useAvisoDeExito(estado)
 
   /*
-   * El modal se cierra SOLO cuando el pago quedó registrado. Corre durante el
-   * render, atado al token del éxito: con un error se queda abierto y conserva
-   * lo escrito, que es cuando más duele perderlo.
+   * ── El modal se cierra SOLO cuando el pago quedó registrado ─────────────
+   *
+   * Va en un `useEffect` y NO en `useLimpiezaAlRegistrar`, aunque ese hook
+   * parezca el indicado: ese ajusta estado del PROPIO componente durante el
+   * render, y `cerrar` es un `setState` del PADRE. React lo prohíbe —
+   * «Cannot update a component while rendering a different component»— y lo
+   * destapó la suite completa, no el test aislado: con el componente solo, el
+   * aviso sale por consola y el render igual termina.
+   *
+   * Cerrar un modal ajeno es un efecto externo, igual que disparar el toast.
+   * El `ref` lo ancla al token para que no se repita, y con error no hay token:
+   * se queda abierto y conserva lo escrito, que es cuando más duele perderlo.
    */
-  useLimpiezaAlRegistrar(estado.token, cerrar)
+  const ultimoCerrado = useRef<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (!estado.token || estado.token === ultimoCerrado.current) return
+
+    ultimoCerrado.current = estado.token
+    cerrar()
+  }, [estado.token, cerrar])
 
   const cuenta = cuentas.find((c) => c.id === cuentaId)
 

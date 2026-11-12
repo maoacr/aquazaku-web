@@ -84,9 +84,15 @@ export default async function GastosPage() {
         </p>
       </header>
 
-      <Saldos cuentas={cuentas} />
-
-      <RegistrarGasto cuentas={cuentas} proveedores={proveedores ?? []} hoy={hoy} />
+      {/*
+        El botón de registrar va PEGADO a los saldos, no en una tarjeta aparte:
+        la secuencia real es mirar cuánto hay y después pagar. Separarlos con una
+        tarjeta de por medio rompe ese gesto.
+      */}
+      <section className="grid gap-3">
+        <Saldos cuentas={cuentas} />
+        <RegistrarGasto cuentas={cuentas} proveedores={proveedores ?? []} hoy={hoy} />
+      </section>
 
       <section className="aq-tarjeta grid gap-3 p-5">
         <div>

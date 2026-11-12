@@ -71,6 +71,35 @@ export const AYUDA_DE_EGRESO: Record<TipoDeEgreso, string> = {
   otro: 'Lo que no encaja en ninguno — queda para revisar',
 }
 
+/**
+ * Los tipos agrupados, como se leen en el desplegable.
+ *
+ * ── Por qué agrupar y no agregar una columna «categoría» ────────────────────
+ *
+ * Catorce opciones planas se recorren leyéndolas todas. Agrupadas, el ojo salta
+ * al grupo y después elige dentro — tres o cuatro por grupo, que es lo que se
+ * compara de un vistazo.
+ *
+ * La agrupación es **de pantalla**: no viaja a `api/`, no se guarda y no hay una
+ * segunda columna que mantener de acuerdo con el tipo. Un grupo mal elegido se
+ * corrige editando este archivo; una columna mal llenada hay que migrarla.
+ *
+ * El orden de los grupos es el de frecuencia, igual que el de `TIPOS_DE_EGRESO`:
+ * lo que se paga todos los meses va arriba.
+ */
+export const GRUPOS_DE_EGRESO: ReadonlyArray<{
+  titulo: string
+  tipos: readonly TipoDeEgreso[]
+}> = [
+  { titulo: 'Todos los meses', tipos: ['recibo_publico', 'arriendo', 'nomina'] },
+  { titulo: 'La operación', tipos: ['transporte', 'servicio', 'mantenimiento', 'repuesto'] },
+  {
+    titulo: 'Administración',
+    tipos: ['software', 'litografia', 'impuesto', 'comision_bancaria'],
+  },
+  { titulo: 'Compras y equipo', tipos: ['equipo', 'mueble', 'otro'] },
+] as const
+
 export const TIPOS_DE_INGRESO: readonly TipoDeIngreso[] = [
   'recaudo_de_ventas',
   'aporte_socio',

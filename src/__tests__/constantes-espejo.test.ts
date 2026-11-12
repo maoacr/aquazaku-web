@@ -139,3 +139,27 @@ describe('las constantes que `api/` también define', () => {
     )
   })
 })
+
+/**
+ * Los grupos del desplegable — M17.
+ *
+ * La agrupación es de PANTALLA: no viaja a `api/` ni se guarda. Pero si un tipo
+ * se queda fuera de todos los grupos, **desaparece del desplegable** sin que
+ * falle nada — el mismo modo de falla silencioso que vigila el espejo del enum,
+ * un nivel más abajo.
+ */
+describe('los grupos del desplegable de gastos', () => {
+  it('cubren exactamente los catorce tipos, sin repetir ninguno', async () => {
+    const { GRUPOS_DE_EGRESO, TIPOS_DE_EGRESO } = await import('@/lib/gastos')
+    const agrupados = GRUPOS_DE_EGRESO.flatMap((g) => g.tipos)
+
+    expect(
+      [...agrupados].sort(),
+      'un tipo que no esté en ningún grupo no aparece en el desplegable, y nada falla',
+    ).toEqual([...TIPOS_DE_EGRESO].sort())
+
+    expect(new Set(agrupados).size, 'un tipo en dos grupos se ofrece dos veces').toBe(
+      agrupados.length,
+    )
+  })
+})
